@@ -38,6 +38,7 @@ jobs:
         with:
           role-to-assume: ${{ steps.cfg.outputs.role }}
           aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
 
       # ── Java 빌드 ───────────────────────────────────────────────────────
       - name: Set up JDK 21
