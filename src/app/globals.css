@@ -1,10 +1,10 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 @import 'tailwindcss';
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-pretendard: 'Pretendard', sans-serif;
 
   /* Orange */
   --color-orange-100: #FFEEC7;
@@ -60,6 +60,10 @@
 }
 
 /* CSS Reset */
+html {
+  font-size: 62.5%; /* 1rem = 10px */
+}
+
 *,
 *::before,
 *::after {
@@ -94,7 +98,83 @@ img {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), sans-serif;
+  font-family: 'Pretendard', sans-serif;
+  font-size: 1.6rem;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+
+/* ========== Typography Utilities ========== */
+
+/* PC / TITLE */
+@utility text-head1 {
+  font-size: 4.8rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+
+@utility text-head2 {
+  font-size: 2.6rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+@utility text-head3 {
+  font-size: 2rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-weight: 500;
+}
+
+@utility text-head4 {
+  font-size: 1.8rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-weight: 500;
+}
+
+@utility text-head5 {
+  font-size: 1.8rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+/* PC / BODY */
+@utility text-body1 {
+  font-size: 1.8rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-weight: 400;
+}
+
+@utility text-body2 {
+  font-size: 1.5rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-weight: 400;
+}
+
+@utility text-body3 {
+  font-size: 1.5rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+@utility text-body4 {
+  font-size: 1.2rem;
+  line-height: 2rem;
+  letter-spacing: -0.02em;
+  font-weight: 400;
+}
+
+/* PC / CAPTION */
+@utility text-caption {
+  font-size: 1.5rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-weight: 400;
 }
