@@ -1,29 +1,75 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 @import 'tailwindcss';
 
 @theme inline {
+  --color-*: initial;
+  --spacing-*: initial;
+  --radius-*: initial;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-pretendard: 'Pretendard', sans-serif;
 
-  /* Project Colors - 프로젝트에 맞게 수정하세요 */
-  --color-primary: #6366f1;
-  --color-primary-hover: #4f46e5;
-  --color-secondary: #8b5cf6;
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
+  /* Orange */
+  --color-orange-100: #FFEEC7;
+  --color-orange-200: #FFE7B2;
+  --color-orange-300: #FFD365;
+  --color-orange-400: #FFA947;
+  --color-orange-500: #FC8320;
+  --color-orange-600: #E85D00;
+  --color-orange-700: #BE3C00;
+  --color-orange-800: #7C1F05;
+  --color-orange-900: #510F01;
 
-  --color-gray-50: #f9fafb;
-  --color-gray-100: #f3f4f6;
-  --color-gray-200: #e5e7eb;
-  --color-gray-300: #d1d5db;
-  --color-gray-400: #9ca3af;
-  --color-gray-500: #6b7280;
-  --color-gray-600: #4b5563;
-  --color-gray-700: #374151;
-  --color-gray-800: #1f2937;
-  --color-gray-900: #111827;
+  /* Blue */
+  --color-blue-100: #edeeff;
+  --color-blue-200: #DBDDFF;
+  --color-blue-300: #C5C8FF;
+  --color-blue-400: #9398F9;
+  --color-blue-500: #4951FA;
+  --color-blue-600: #373dbc;
+  --color-blue-700: #2c3196;
+  --color-blue-800: #212470;
+  --color-blue-900: #1a1c58;
+
+  /* Error */
+  --color-error-500: #FD312E;
+
+  /* Gray */
+  --color-gray-100: #FBFBFB;
+  --color-gray-200: #F7F7F7;
+  --color-gray-300: #ECECEC;
+  --color-gray-400: #DDDDDD;
+  --color-gray-500: #BFBFBF;
+  --color-gray-600: #ADADAD;
+  --color-gray-700: #999999;
+  --color-gray-800: #505050;
+  --color-gray-900: #111111;
+
+  /* W&B */
+  --color-white: #ffffff;
+  --color-black: #111111;
+
+  /* Spacing */
+  --spacing-2: 0.2rem;
+  --spacing-4: 0.4rem;
+  --spacing-8: 0.8rem;
+  --spacing-12: 1.2rem;
+  --spacing-16: 1.6rem;
+  --spacing-24: 2.4rem;
+  --spacing-28: 2.8rem;
+  --spacing-32: 3.2rem;
+  --spacing-36: 3.6rem;
+  --spacing-40: 4rem;
+
+  /* Radius */
+  --radius-0: 0;
+  --radius-2: 0.2rem;
+  --radius-4: 0.4rem;
+  --radius-8: 0.8rem;
+  --radius-12: 1.2rem;
+  --radius-16: 1.6rem;
+  --radius-20: 2rem;
 }
 
 :root {
@@ -39,6 +85,10 @@
 }
 
 /* CSS Reset */
+html {
+  font-size: 62.5%; /* 1rem = 10px */
+}
+
 *,
 *::before,
 *::after {
@@ -73,7 +123,120 @@ img {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), sans-serif;
+  font-family: 'Pretendard', sans-serif;
+  font-size: 1.6rem;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+
+/* ========== Typography Utilities ========== */
+
+/* PC / TITLE */
+@utility text-head1 {
+  font-size: 4.8rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+
+@utility text-head2 {
+  font-size: 2.6rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+@utility text-head3 {
+  font-size: 2rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-weight: 500;
+}
+
+@utility text-head4 {
+  font-size: 1.8rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-weight: 500;
+}
+
+@utility text-head5 {
+  font-size: 1.8rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+/* PC / BODY */
+@utility text-body1 {
+  font-size: 1.8rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-weight: 400;
+}
+
+@utility text-body2 {
+  font-size: 1.5rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-weight: 400;
+}
+
+@utility text-body3 {
+  font-size: 1.5rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+@utility text-body4 {
+  font-size: 1.2rem;
+  line-height: 2rem;
+  letter-spacing: -0.02em;
+  font-weight: 400;
+}
+
+/* PC / CAPTION */
+@utility text-caption {
+  font-size: 1.5rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  font-weight: 400;
+}
+
+/* ========== Icon Sizing Utilities ========== */
+
+@utility icon-16 {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+@utility icon-20 {
+  width: 2rem;
+  height: 2rem;
+}
+
+@utility icon-24 {
+  width: 2.4rem;
+  height: 2.4rem;
+}
+
+@utility icon-28 {
+  width: 2.8rem;
+  height: 2.8rem;
+}
+
+@utility icon-32 {
+  width: 3.2rem;
+  height: 3.2rem;
+}
+
+@utility icon-36 {
+  width: 3.6rem;
+  height: 3.6rem;
+}
+
+@utility icon-44 {
+  width: 4.4rem;
+  height: 4.4rem;
 }
