@@ -6,24 +6,45 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  /* Project Colors - 프로젝트에 맞게 수정하세요 */
-  --color-primary: #6366f1;
-  --color-primary-hover: #4f46e5;
-  --color-secondary: #8b5cf6;
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
+  /* Orange */
+  --color-orange-100: #FFEEC7;
+  --color-orange-200: #FFE7B2;
+  --color-orange-300: #FFD365;
+  --color-orange-400: #FFA947;
+  --color-orange-500: #FC8320;
+  --color-orange-600: #E85D00;
+  --color-orange-700: #BE3C00;
+  --color-orange-800: #7C1F05;
+  --color-orange-900: #510F01;
 
-  --color-gray-50: #f9fafb;
-  --color-gray-100: #f3f4f6;
-  --color-gray-200: #e5e7eb;
-  --color-gray-300: #d1d5db;
-  --color-gray-400: #9ca3af;
-  --color-gray-500: #6b7280;
-  --color-gray-600: #4b5563;
-  --color-gray-700: #374151;
-  --color-gray-800: #1f2937;
-  --color-gray-900: #111827;
+  /* Blue */
+  --color-blue-100: #edeeff;
+  --color-blue-200: #DBDDFF;
+  --color-blue-300: #C5C8FF;
+  --color-blue-400: #9398F9;
+  --color-blue-500: #4951FA;
+  --color-blue-600: #373dbc;
+  --color-blue-700: #2c3196;
+  --color-blue-800: #212470;
+  --color-blue-900: #1a1c58;
+
+  /* Error */
+  --color-error-500: #FD312E;
+
+  /* Gray */
+  --color-gray-100: #FBFBFB;
+  --color-gray-200: #F7F7F7;
+  --color-gray-300: #ECECEC;
+  --color-gray-400: #DDDDDD;
+  --color-gray-500: #BFBFBF;
+  --color-gray-600: #ADADAD;
+  --color-gray-700: #999999;
+  --color-gray-800: #505050;
+  --color-gray-900: #111111;
+
+  /* W&B */
+  --color-white: #ffffff;
+  --color-black: #111111;
 }
 
 :root {
