@@ -2,6 +2,10 @@
 @import 'tailwindcss';
 
 @theme inline {
+  --color-*: initial;
+  --spacing-*: initial;
+  --radius-*: initial;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-pretendard: 'Pretendard', sans-serif;
@@ -45,6 +49,27 @@
   /* W&B */
   --color-white: #ffffff;
   --color-black: #111111;
+
+  /* Spacing */
+  --spacing-2: 0.2rem;
+  --spacing-4: 0.4rem;
+  --spacing-8: 0.8rem;
+  --spacing-12: 1.2rem;
+  --spacing-16: 1.6rem;
+  --spacing-24: 2.4rem;
+  --spacing-28: 2.8rem;
+  --spacing-32: 3.2rem;
+  --spacing-36: 3.6rem;
+  --spacing-40: 4rem;
+
+  /* Radius */
+  --radius-0: 0;
+  --radius-2: 0.2rem;
+  --radius-4: 0.4rem;
+  --radius-8: 0.8rem;
+  --radius-12: 1.2rem;
+  --radius-16: 1.6rem;
+  --radius-20: 2rem;
 }
 
 :root {
@@ -177,4 +202,41 @@ body {
   line-height: 1.4;
   letter-spacing: -0.02em;
   font-weight: 400;
+}
+
+/* ========== Icon Sizing Utilities ========== */
+
+@utility icon-16 {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+@utility icon-20 {
+  width: 2rem;
+  height: 2rem;
+}
+
+@utility icon-24 {
+  width: 2.4rem;
+  height: 2.4rem;
+}
+
+@utility icon-28 {
+  width: 2.8rem;
+  height: 2.8rem;
+}
+
+@utility icon-32 {
+  width: 3.2rem;
+  height: 3.2rem;
+}
+
+@utility icon-36 {
+  width: 3.6rem;
+  height: 3.6rem;
+}
+
+@utility icon-44 {
+  width: 4.4rem;
+  height: 4.4rem;
 }
