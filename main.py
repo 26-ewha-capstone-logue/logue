@@ -1,9 +1,14 @@
 import logging
 import os
+import traceback
+from contextlib import asynccontextmanager
+from datetime import datetime, timedelta, timezone
 from urllib.error import URLError
 from urllib.request import urlopen
 
-from fastapi import FastAPI
+import httpx
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
 
 logging.basicConfig(
@@ -12,9 +17,69 @@ logging.basicConfig(
 )
 logger = logging.getLogger("logue_ai")
 
-app = FastAPI(title="logue-ai", version="0.1.0")
 UPSTREAM_HEALTH_URL = os.getenv("UPSTREAM_HEALTH_URL", "https://ai.logue-kr.site/health")
 UPSTREAM_TIMEOUT_SEC = float(os.getenv("UPSTREAM_TIMEOUT_SEC", "3"))
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
+
+KST = timezone(timedelta(hours=9))
+
+
+async def _post_discord(payload: dict) -> None:
+    if not DISCORD_WEBHOOK_URL:
+        return
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            await client.post(DISCORD_WEBHOOK_URL, json=payload)
+    except Exception:
+        logger.warning("Discord 알림 전송 실패", exc_info=True)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    now = datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    await _post_discord({
+        "embeds": [{
+            "title": "✅ 서버 시작",
+            "color": 0x57F287,
+            "fields": [
+                {"name": "🧩 서비스", "value": "logue", "inline": True},
+                {"name": "⏰ 시간", "value": now, "inline": True},
+            ],
+        }]
+    })
+    logger.info("Startup Discord notification sent")
+    yield
+
+
+app = FastAPI(title="logue-ai", version="0.1.0", lifespan=lifespan)
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    logger.error(
+        "Unhandled exception: %s %s — %s: %s",
+        request.method,
+        request.url.path,
+        type(exc).__name__,
+        exc,
+        exc_info=True,
+    )
+
+    tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+    if len(tb) > 1800:
+        tb = "...(truncated)\n" + tb[-1780:]
+
+    await _post_discord({
+        "embeds": [{
+            "title": f":red_circle: Unhandled 500 — `{request.method} {request.url.path}`",
+            "color": 0xED4245,
+            "fields": [
+                {"name": "Exception", "value": f"`{type(exc).__name__}: {exc}`", "inline": False},
+                {"name": "Traceback", "value": f"```\n{tb}\n```", "inline": False},
+            ],
+        }]
+    })
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
 def check_upstream_health(url: str, timeout_sec: float) -> tuple[bool, int | None, str | None]:
