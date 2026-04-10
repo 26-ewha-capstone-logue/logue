@@ -57,9 +57,9 @@ public class DataSourceColumn {
     @Column(name = "null_ratio", nullable = false)
     private Double nullRatio;
 
-    /** 고유값 수. */
-    @Column(name = "unique_count", nullable = false)
-    private Integer uniqueCount;
+    /** 고유값 비율 (0.0 ~ 1.0). 전체 행 수 대비 고유값 수의 비율. */
+    @Column(name = "unique_ratio", nullable = false)
+    private Double uniqueRatio;
 
     /** 대표 샘플 값 목록. */
     @JdbcTypeCode(SqlTypes.JSON)
