@@ -20,6 +20,8 @@ import lombok.NoArgsConstructor;
 
 /**
  * 시맨틱 롤 마스터 아래의 실제 선택 옵션과 연결된 경고 정보를 저장하는 엔티티입니다.
+ *
+ * <p>각 옵션이 실제로 어떤 컬럼에 적용됐는지는 {@link AnalysisFlowColumn}을 통해 확인합니다.</p>
  */
 @Getter
 @Entity
@@ -33,10 +35,12 @@ public class SemanticRoleOption {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** 이 옵션이 속한 시맨틱 롤 마스터. */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "master_id", nullable = false)
     private SemanticRoleMaster master;
 
+    /** 이 옵션 선택 시 함께 표시될 데이터 경고 정보. */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "warning_id", nullable = false)
     private DataWarning warning;
@@ -53,7 +57,8 @@ public class SemanticRoleOption {
     @Column(name = "is_active", nullable = false)
     private boolean active;
 
+    /** 이 옵션이 적용된 분석 플로우별 컬럼 매핑 목록. */
     @Builder.Default
     @OneToMany(mappedBy = "semanticRoleOption", fetch = FetchType.LAZY)
-    private List<DataSourceColumn> dataSourceColumns = new ArrayList<>();
+    private List<AnalysisFlowColumn> analysisFlowColumns = new ArrayList<>();
 }
