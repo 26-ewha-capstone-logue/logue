@@ -46,6 +46,10 @@ public class AnalysisResult {
     @JoinColumn(name = "analysis_criteria_id", nullable = false)
     private AnalysisCriteria analysisCriteria;
 
+    /** 분석 결과 설명. */
+    @Column(name = "description", nullable = false, length = 255)
+    private String description;
+
     /** 분석에 사용된 지표 코드. */
     @Column(name = "metric", nullable = false, length = 30)
     private String metric;
