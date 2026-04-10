@@ -63,6 +63,11 @@ public class AnalysisResult {
     @Column(name = "dimensions", nullable = false, columnDefinition = "jsonb")
     private JsonNode dimensions;
 
+    /** 분석에 사용된 상세 지표 목록. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "detail_metrics", nullable = false, columnDefinition = "jsonb")
+    private JsonNode detailMetrics;
+
     /** 비교 기간 설정값. */
     @Column(name = "compare_period", nullable = false, length = 255)
     private String comparePeriod;

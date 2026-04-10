@@ -68,6 +68,11 @@ public class AnalysisCriteria {
     @Column(name = "dimensions", nullable = false, columnDefinition = "jsonb")
     private JsonNode dimensions;
 
+    /** 분석에 사용된 상세 지표 목록. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "detail_metrics", nullable = false, columnDefinition = "jsonb")
+    private JsonNode detailMetrics;
+
     /** 집계에서 제외할 조건 목록. */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "exclude_conditions", nullable = false, columnDefinition = "jsonb")
