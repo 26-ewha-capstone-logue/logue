@@ -1,0 +1,34 @@
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OMC / Claude
+.omc/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ── apps/fe (Next.js) ──────────────────────────
+apps/fe/.next/
+apps/fe/out/
+apps/fe/node_modules/
+apps/fe/.env*.local
+apps/fe/storybook-static/
+apps/fe/coverage/
+
+# ── apps/be (Spring Boot / Gradle) ────────────
+apps/be/build/
+apps/be/.gradle/
+apps/be/*.jar
+apps/be/*.war
+apps/be/HELP.md
+
+# ── apps/ai (Python / uv) ─────────────────────
+apps/ai/__pycache__/
+apps/ai/*.py[cod]
+apps/ai/.venv/
+apps/ai/.env
+apps/ai/dist/
+apps/ai/*.egg-info/
