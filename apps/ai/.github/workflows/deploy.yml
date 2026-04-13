@@ -1,0 +1,186 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-northeast-2
+  ECR_REGISTRY: 801367894593.dkr.ecr.ap-northeast-2.amazonaws.com
+  ECR_REPOSITORY: logue-ai-ecr
+  DEPLOY_ROLE: arn:aws:iam::801367894593:role/gh-actions-deploy-ai
+  CONTAINER_NAME: logue-ai
+  CONTAINER_PORT: "8000"
+  SSM_PARAM_PATH: /logue/ai/
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: astral-sh/setup-uv@v4
+
+      - run: uv sync --group dev
+
+      - run: uv run pytest -q
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      image_uri: ${{ steps.meta.outputs.image_uri }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set image URI
+        id: meta
+        run: echo "image_uri=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        run: |
+          docker build -t ${{ steps.meta.outputs.image_uri }} .
+          docker push ${{ steps.meta.outputs.image_uri }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Build SSM command payload
+        env:
+          IMAGE_URI: ${{ needs.build-and-push.outputs.image_uri }}
+        run: |
+          python3 - << 'EOF'
+          import json, os
+
+          image_uri     = os.environ["IMAGE_URI"]
+          ecr_registry  = os.environ["ECR_REGISTRY"]
+          aws_region    = os.environ["AWS_REGION"]
+          ssm_path      = os.environ["SSM_PARAM_PATH"]
+          container     = os.environ["CONTAINER_NAME"]
+          port          = os.environ["CONTAINER_PORT"]
+
+          commands = [
+              "set -euo pipefail",
+
+              # ECR 로그인
+              f'echo "[deploy] Logging in to ECR"',
+              f'aws ecr get-login-password --region {aws_region} | docker login --username AWS --password-stdin {ecr_registry}',
+
+              # 이미지 Pull
+              f'echo "[deploy] Pulling {image_uri}"',
+              f'docker pull {image_uri}',
+
+              # SSM Parameter Store → env 파일 생성
+              f'echo "[deploy] Fetching SSM parameters from {ssm_path}"',
+              (
+                  f'aws ssm get-parameters-by-path'
+                  f' --path {ssm_path}'
+                  f' --with-decryption'
+                  f' --region {aws_region}'
+                  f' --output text'
+                  f' --query "Parameters[*].[Name,Value]"'
+                  f' | awk -F\'\\t\' \'{{n=$1; sub("{ssm_path}","",n); print n"="$2}}\''
+                  f' > /tmp/{container}.env'
+              ),
+
+              # 기존 컨테이너 중단 및 제거
+              f'echo "[deploy] Stopping existing container ({container})"',
+              f'docker stop {container} 2>/dev/null || true',
+              f'docker rm   {container} 2>/dev/null || true',
+
+              # 새 컨테이너 기동
+              f'echo "[deploy] Starting container {container}"',
+              f'docker run -d'
+              f' --name {container}'
+              f' --restart unless-stopped'
+              f' -p {port}:{port}'
+              f' --env-file /tmp/{container}.env'
+              f' {image_uri}',
+
+              # env 파일 삭제
+              f'rm -f /tmp/{container}.env',
+              f'echo "[deploy] Done — {image_uri}"',
+          ]
+
+          payload = {"commands": commands, "executionTimeout": ["300"]}
+          with open("/tmp/ssm-params.json", "w") as f:
+              json.dump(payload, f)
+
+          print("SSM payload written to /tmp/ssm-params.json")
+          EOF
+
+      - name: Send deploy command via SSM
+        id: ssm
+        run: |
+          COMMAND_ID=$(aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets "Key=tag:Role,Values=ai" \
+            --parameters file:///tmp/ssm-params.json \
+            --comment "Deploy ${{ github.sha }} by ${{ github.actor }}" \
+            --region "${{ env.AWS_REGION }}" \
+            --query "Command.CommandId" \
+            --output text)
+          echo "command_id=$COMMAND_ID" >> $GITHUB_OUTPUT
+          echo "SSM Command ID: $COMMAND_ID"
+
+      - name: Wait for deploy to complete
+        env:
+          COMMAND_ID: ${{ steps.ssm.outputs.command_id }}
+        run: |
+          echo "Polling SSM command $COMMAND_ID (max 5 min) …"
+
+          for i in $(seq 1 30); do
+            STATUS=$(aws ssm list-command-invocations \
+              --command-id "$COMMAND_ID" \
+              --region "${{ env.AWS_REGION }}" \
+              --query "CommandInvocations[0].Status" \
+              --output text 2>/dev/null || echo "Pending")
+
+            echo "[$i/30] $STATUS"
+
+            case "$STATUS" in
+              Success)
+                echo "Deploy succeeded."
+                exit 0
+                ;;
+              Failed|Cancelled|TimedOut|DeliveryTimedOut)
+                echo "Deploy failed with status: $STATUS"
+                aws ssm list-command-invocations \
+                  --command-id "$COMMAND_ID" \
+                  --details \
+                  --region "${{ env.AWS_REGION }}" \
+                  --query "CommandInvocations[0].CommandPlugins[0].Output" \
+                  --output text
+                exit 1
+                ;;
+            esac
+
+            sleep 10
+          done
+
+          echo "Timed out waiting for SSM command."
+          exit 1
