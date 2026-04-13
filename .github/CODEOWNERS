@@ -1,0 +1,8 @@
+# 모노레포 루트 (워크플로, 공통 설정)
+/.github/  @gyesswhat
+/Makefile  @gyesswhat
+
+# 앱별 담당자
+/apps/fe/  @yeeeww
+/apps/be/  @jxxxxxn @gyesswhat
+/apps/ai/  @yeeeww @maetelson
