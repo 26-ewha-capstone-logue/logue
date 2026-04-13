@@ -1,0 +1,25 @@
+name: Discord Notification (FE)
+
+on:
+  pull_request:
+    types: [opened, closed, reopened]
+    paths:
+      - 'apps/fe/**'
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/fe/**'
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Discord Notification
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_FE_URL }}
+          title: '${{ github.event_name }} - ${{ github.repository }}'
+          description: |
+            **Branch:** ${{ github.ref_name }}
+            **By:** ${{ github.actor }}
+            **Message:** ${{ github.event.head_commit.message || github.event.pull_request.title }}
