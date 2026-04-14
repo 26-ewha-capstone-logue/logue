@@ -1,25 +1,33 @@
 ---
-name: 🐛 Bug report
-about: 버그 리포트
-title: "fix: "
-labels: ["🐛fix", "⏳status:todo"]
+name: "Bug report"
+about: "버그를 제보하고 재현 정보를 남깁니다."
+title: "[Bug] "
+labels: ["type:bug"]
 ---
 
-## 증상
-- 무엇이 어떻게 깨지는지
+## Summary
+- 어떤 문제가 발생했는지 간단히 적어주세요.
 
-## 재현 방법
+## Team
+- [ ] FE (`team:fe`)
+- [ ] BE (`team:be`)
+- [ ] AI (`team:ai`)
+
+## Current Behavior
+- 실제로 어떤 문제가 발생했는지 적어주세요.
+
+## Expected Behavior
+- 원래 기대한 동작을 적어주세요.
+
+## Steps To Reproduce
 1.
 2.
 3.
 
-## 기대 동작
-- 원래는 어떻게 동작해야 하는지
-
-## 환경
+## Environment
 - OS:
-- 브랜치/커밋:
-- 기타:
+- Branch/Commit:
+- Browser or Runtime:
 
-## 로그/스크린샷
-- 가능하면 첨부
+## Logs / Screenshots
+- 가능하면 에러 로그, 스크린샷, 재현 영상 등을 첨부해주세요.

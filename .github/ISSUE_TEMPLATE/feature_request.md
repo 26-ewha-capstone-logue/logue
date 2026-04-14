@@ -1,21 +1,33 @@
 ---
-name: "✨ Feature Request"
-about: 기능 제안/요청
-description: "새로운 기능 추가 또는 기존 기능 확장"
-labels: ["✨feat", "⏳status:todo"]
+name: "Feature request"
+about: "새 기능이나 개선 아이디어를 제안합니다."
+title: "[Feature] "
+labels: ["type:feature"]
 ---
 
-## 목적
-- 왜 필요한지
+## Summary
+- 어떤 기능이 필요한지 한두 문장으로 적어주세요.
 
-## 범위
-- 포함(필수):
-- 제외(명시):
+## Team
+- [ ] FE (`team:fe`)
+- [ ] BE (`team:be`)
+- [ ] AI (`team:ai`)
 
-## 완료 조건(DoD)
-- [ ] API/기능 동작
-- [ ] 테스트/검증
-- [ ] 문서 업데이트(필요 시)
+## Problem / Context
+- 어떤 문제나 맥락 때문에 이 기능이 필요한지 적어주세요.
 
-## 참고
-- 화면/기획/레퍼런스 링크
+## Proposed Solution
+- 기대하는 동작이나 구현 방향을 적어주세요.
+
+## Scope
+- 포함되어야 할 내용:
+- 제외해도 되는 내용:
+
+## Definition Of Done
+- [ ] 요구사항이 명확하다.
+- [ ] 관련 영향 범위를 확인했다.
+- [ ] 테스트 또는 검증 기준이 있다.
+- [ ] 문서 업데이트 필요 여부를 확인했다.
+
+## References
+- 기획 문서, 화면 설계, 레퍼런스 링크가 있다면 적어주세요.

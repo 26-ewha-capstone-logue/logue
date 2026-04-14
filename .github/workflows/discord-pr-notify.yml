@@ -1,0 +1,92 @@
+name: Discord PR Notify
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - labeled
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  notify-fe:
+    if: contains(github.event.pull_request.labels.*.name, 'team:fe')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send FE PR notification
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_FE }}
+          EVENT_ACTION: ${{ github.event.action }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "DISCORD_WEBHOOK_FE is not configured."
+            exit 1
+          fi
+
+          payload=$(jq -n \
+            --arg content "[PR][FE][$EVENT_ACTION] #$PR_NUMBER $PR_TITLE by @$PR_AUTHOR $PR_URL" \
+            '{content: $content}')
+
+          curl -sS -X POST "$WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$payload"
+
+  notify-be:
+    if: contains(github.event.pull_request.labels.*.name, 'team:be')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send BE PR notification
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_BE }}
+          EVENT_ACTION: ${{ github.event.action }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "DISCORD_WEBHOOK_BE is not configured."
+            exit 1
+          fi
+
+          payload=$(jq -n \
+            --arg content "[PR][BE][$EVENT_ACTION] #$PR_NUMBER $PR_TITLE by @$PR_AUTHOR $PR_URL" \
+            '{content: $content}')
+
+          curl -sS -X POST "$WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$payload"
+
+  notify-ai:
+    if: contains(github.event.pull_request.labels.*.name, 'team:ai')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send AI PR notification
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_AI }}
+          EVENT_ACTION: ${{ github.event.action }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "DISCORD_WEBHOOK_AI is not configured."
+            exit 1
+          fi
+
+          payload=$(jq -n \
+            --arg content "[PR][AI][$EVENT_ACTION] #$PR_NUMBER $PR_TITLE by @$PR_AUTHOR $PR_URL" \
+            '{content: $content}')
+
+          curl -sS -X POST "$WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$payload"

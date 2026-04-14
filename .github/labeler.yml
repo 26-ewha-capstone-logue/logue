@@ -1,0 +1,14 @@
+team:fe:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'apps/fe/**'
+
+team:be:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'apps/be/**'
+
+team:ai:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'apps/ai/**'

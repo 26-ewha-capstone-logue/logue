@@ -1,0 +1,90 @@
+name: Discord Issue Notify
+
+on:
+  issues:
+    types:
+      - opened
+      - labeled
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  notify-fe:
+    if: contains(github.event.issue.labels.*.name, 'team:fe')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send FE issue notification
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_FE }}
+          EVENT_ACTION: ${{ github.event.action }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "DISCORD_WEBHOOK_FE is not configured."
+            exit 1
+          fi
+
+          payload=$(jq -n \
+            --arg content "[ISSUE][FE][$EVENT_ACTION] #$ISSUE_NUMBER $ISSUE_TITLE by @$ISSUE_AUTHOR $ISSUE_URL" \
+            '{content: $content}')
+
+          curl -sS -X POST "$WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$payload"
+
+  notify-be:
+    if: contains(github.event.issue.labels.*.name, 'team:be')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send BE issue notification
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_BE }}
+          EVENT_ACTION: ${{ github.event.action }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "DISCORD_WEBHOOK_BE is not configured."
+            exit 1
+          fi
+
+          payload=$(jq -n \
+            --arg content "[ISSUE][BE][$EVENT_ACTION] #$ISSUE_NUMBER $ISSUE_TITLE by @$ISSUE_AUTHOR $ISSUE_URL" \
+            '{content: $content}')
+
+          curl -sS -X POST "$WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$payload"
+
+  notify-ai:
+    if: contains(github.event.issue.labels.*.name, 'team:ai')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send AI issue notification
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_AI }}
+          EVENT_ACTION: ${{ github.event.action }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "DISCORD_WEBHOOK_AI is not configured."
+            exit 1
+          fi
+
+          payload=$(jq -n \
+            --arg content "[ISSUE][AI][$EVENT_ACTION] #$ISSUE_NUMBER $ISSUE_TITLE by @$ISSUE_AUTHOR $ISSUE_URL" \
+            '{content: $content}')
+
+          curl -sS -X POST "$WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$payload"

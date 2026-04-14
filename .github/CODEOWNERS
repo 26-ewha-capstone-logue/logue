@@ -1,8 +1,8 @@
-# 모노레포 루트 (워크플로, 공통 설정)
-/.github/  @gyesswhat
-/Makefile  @gyesswhat
+# Application ownership
+/apps/fe/ @yeeeww
+/apps/be/ @gyesswhat @jxxxxxn
+/apps/ai/ @maetelson @yeeeww
 
-# 앱별 담당자
-/apps/fe/  @yeeeww
-/apps/be/  @jxxxxxn @gyesswhat
-/apps/ai/  @yeeeww @maetelson
+# Minimal shared ownership for GitHub automation files
+/.github/workflows/ @gyesswhat
+/.github/labeler.yml @gyesswhat
