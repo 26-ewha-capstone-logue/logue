@@ -1,0 +1,12 @@
+[
+  {
+    "id": "conversion_rate",
+    "label": "가입 전환율",
+    "description": "랜딩 세션 대비 가입 완료 비율",
+    "formula": "signup_complete / landing_sessions",
+    "metricType": "ratio",
+    "numeratorField": "signup_complete",
+    "denominatorField": "landing_sessions",
+    "businessLabel": "가입 전환율"
+  }
+]

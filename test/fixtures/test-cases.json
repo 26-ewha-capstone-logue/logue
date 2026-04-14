@@ -1,0 +1,211 @@
+[
+  {
+    "id": "TC-01",
+    "datasetId": "dataset-a",
+    "question": "이번 주 가입 전환율이 가장 낮은 채널·디바이스 top 5를 보여줘",
+    "expected": {
+      "analysis_type": "ranking",
+      "metric_id": "conversion_rate",
+      "metric_type": "ratio",
+      "date_field": "event_date",
+      "period_standard": "this_week",
+      "sort_by": "metric_value",
+      "sort_direction": "asc",
+      "group_by": ["channel", "device"],
+      "limit": 5,
+      "filters": [],
+      "display_metrics": ["conversion_rate"],
+      "warnings": []
+    },
+    "note": "기본 ranking 케이스"
+  },
+  {
+    "id": "TC-02",
+    "datasetId": "dataset-a",
+    "question": "이번 주 채널·디바이스별 가입 전환율 낮은 순 5개 보여줘",
+    "expected": {
+      "analysis_type": "ranking",
+      "metric_id": "conversion_rate",
+      "date_field": "event_date",
+      "period_standard": "this_week",
+      "sort_direction": "asc",
+      "group_by": ["channel", "device"],
+      "limit": 5
+    },
+    "note": "ranking 패러프레이즈"
+  },
+  {
+    "id": "TC-03",
+    "datasetId": "dataset-a",
+    "question": "이번 주 전환율 하위 5개 채널·디바이스 조합 보여줘",
+    "expected": {
+      "analysis_type": "ranking",
+      "metric_id": "conversion_rate",
+      "date_field": "event_date",
+      "period_standard": "this_week",
+      "sort_direction": "asc",
+      "group_by": ["channel", "device"],
+      "limit": 5
+    },
+    "note": "하위 표현을 포함한 ranking"
+  },
+  {
+    "id": "TC-04",
+    "datasetId": "dataset-a",
+    "question": "이번 주 가입 전환율이 지난주 대비 어디에서 가장 많이 떨어졌어?",
+    "expected": {
+      "analysis_type": "comparison",
+      "metric_id": "conversion_rate",
+      "metric_type": "ratio",
+      "date_field": "event_date",
+      "period_standard": "this_week",
+      "period_compare": "last_week",
+      "sort_by": "delta",
+      "sort_direction": "asc",
+      "group_by": ["channel", "device"],
+      "limit": 1,
+      "display_metrics": ["conversion_rate", "delta"]
+    },
+    "note": "기본 comparison 케이스"
+  },
+  {
+    "id": "TC-05",
+    "datasetId": "dataset-a",
+    "question": "지난주와 비교했을 때 이번 주 전환율이 가장 많이 하락한 채널·디바이스는 어디야?",
+    "expected": {
+      "analysis_type": "comparison",
+      "metric_id": "conversion_rate",
+      "date_field": "event_date",
+      "period_standard": "this_week",
+      "period_compare": "last_week",
+      "sort_by": "delta",
+      "sort_direction": "asc",
+      "group_by": ["channel", "device"],
+      "limit": 1
+    },
+    "note": "comparison 패러프레이즈"
+  },
+  {
+    "id": "TC-06",
+    "datasetId": "dataset-a",
+    "question": "이번 주 전환율이 전주 대비 크게 떨어진 구간을 보여줘",
+    "expected": {
+      "analysis_type": "comparison",
+      "metric_id": "conversion_rate",
+      "date_field": "event_date",
+      "period_standard": "this_week",
+      "period_compare": "last_week",
+      "sort_by": "delta",
+      "sort_direction": "asc",
+      "group_by": ["channel", "device"],
+      "warnings": ["구간 표현이 다소 모호하지만 채널·디바이스 기준으로 해석"]
+    },
+    "note": "비교 의도는 명확하지만 grouping 해석 경고 포함"
+  },
+  {
+    "id": "TC-07",
+    "datasetId": "dataset-a",
+    "question": "internal_test 계정은 제외하고 이번 주 가입 전환율이 가장 낮은 채널·디바이스 top 5를 보여줘",
+    "expected": {
+      "analysis_type": "ranking",
+      "metric_id": "conversion_rate",
+      "date_field": "event_date",
+      "period_standard": "this_week",
+      "sort_direction": "asc",
+      "group_by": ["channel", "device"],
+      "limit": 5,
+      "filters": [
+        {
+          "field": "account_flag",
+          "operator": "!=",
+          "value": "internal_test"
+        }
+      ]
+    },
+    "note": "필터 포함 ranking"
+  },
+  {
+    "id": "TC-08",
+    "datasetId": "dataset-a",
+    "question": "internal_test 제외하고 이번 주 전환율이 지난주 대비 가장 많이 떨어진 곳을 보여줘",
+    "expected": {
+      "analysis_type": "comparison",
+      "metric_id": "conversion_rate",
+      "date_field": "event_date",
+      "period_standard": "this_week",
+      "period_compare": "last_week",
+      "sort_by": "delta",
+      "sort_direction": "asc",
+      "group_by": ["channel", "device"],
+      "limit": 1,
+      "filters": [
+        {
+          "field": "account_flag",
+          "operator": "!=",
+          "value": "internal_test"
+        }
+      ]
+    },
+    "note": "필터 포함 comparison"
+  },
+  {
+    "id": "TC-09",
+    "datasetId": "dataset-b",
+    "question": "dataset B에서 이번 주 가입 전환율이 가장 낮은 채널·디바이스 top 5를 보여줘",
+    "expected": {
+      "analysis_type": "ranking",
+      "metric_id": "conversion_rate",
+      "date_field": "dt",
+      "period_standard": "this_week",
+      "sort_direction": "asc",
+      "group_by": ["source", "device"],
+      "limit": 5,
+      "warnings": ["채널은 source로 매핑"]
+    },
+    "note": "스키마 변형 ranking"
+  },
+  {
+    "id": "TC-10",
+    "datasetId": "dataset-b",
+    "question": "dataset B에서 이번 주 전환율이 지난주 대비 가장 많이 떨어진 곳을 보여줘",
+    "expected": {
+      "analysis_type": "comparison",
+      "metric_id": "conversion_rate",
+      "date_field": "dt",
+      "period_standard": "this_week",
+      "period_compare": "last_week",
+      "sort_by": "delta",
+      "sort_direction": "asc",
+      "group_by": ["source", "device"],
+      "limit": 1,
+      "warnings": ["채널은 source로 매핑"]
+    },
+    "note": "스키마 변형 comparison"
+  },
+  {
+    "id": "TC-11",
+    "datasetId": "dataset-c",
+    "question": "dataset C에서 이번 주 가입 전환율이 가장 낮은 채널 top 5를 보여줘",
+    "expected": {
+      "analysis_type": "ranking",
+      "metric_id": "conversion_rate",
+      "group_by": ["channel"],
+      "limit": 5,
+      "warnings": ["날짜 필드가 모호함"],
+      "unsupported_reason": "dataset C에는 기준 날짜 필드를 하나로 확정하기 어렵습니다."
+    },
+    "note": "모호한 날짜 필드로 실패 처리 기대"
+  },
+  {
+    "id": "TC-12",
+    "datasetId": "dataset-a",
+    "question": "신규/기존 유저별 가입 전환율 보여줘",
+    "expected": {
+      "analysis_type": "ranking",
+      "metric_id": "conversion_rate",
+      "group_by": ["user_type"],
+      "unsupported_reason": "데이터셋에 신규/기존 유저를 구분하는 필드가 없습니다."
+    },
+    "note": "존재하지 않는 차원으로 unsupported 처리"
+  }
+]

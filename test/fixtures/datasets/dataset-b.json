@@ -1,0 +1,38 @@
+{
+  "id": "dataset-b",
+  "label": "데이터셋 B",
+  "description": "동일 의미를 다른 컬럼명으로 가진 변형 스키마",
+  "tableName": "traffic_signup_daily",
+  "dateFields": [
+    { "name": "dt", "label": "기준 일자", "role": "date", "primary": true }
+  ],
+  "fields": [
+    { "name": "dt", "label": "기준 일자", "role": "date" },
+    { "name": "source", "label": "유입 소스", "role": "dimension" },
+    { "name": "device", "label": "디바이스", "role": "dimension" },
+    { "name": "visits", "label": "방문 수", "role": "measure" },
+    { "name": "signups", "label": "가입 수", "role": "measure" },
+    { "name": "user_key", "label": "사용자 키", "role": "id" },
+    { "name": "account_flag", "label": "계정 플래그", "role": "flag" }
+  ],
+  "sampleRows": [
+    {
+      "dt": "2026-04-06",
+      "source": "affiliate",
+      "device": "mobile",
+      "visits": 530,
+      "signups": 21,
+      "user_key": "usr_1001",
+      "account_flag": "normal"
+    },
+    {
+      "dt": "2026-04-06",
+      "source": "direct",
+      "device": "desktop",
+      "visits": 610,
+      "signups": 44,
+      "user_key": "usr_1002",
+      "account_flag": "normal"
+    }
+  ]
+}

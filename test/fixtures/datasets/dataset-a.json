@@ -1,0 +1,41 @@
+{
+  "id": "dataset-a",
+  "label": "데이터셋 A",
+  "description": "명확한 스키마를 가진 기본 예시 데이터셋",
+  "tableName": "marketing_funnel_daily",
+  "dateFields": [
+    { "name": "event_date", "label": "이벤트 일자", "role": "date", "primary": true }
+  ],
+  "fields": [
+    { "name": "event_date", "label": "이벤트 일자", "role": "date" },
+    { "name": "channel", "label": "채널", "role": "dimension" },
+    { "name": "device", "label": "디바이스", "role": "dimension" },
+    { "name": "landing_sessions", "label": "랜딩 세션", "role": "measure" },
+    { "name": "signup_complete", "label": "가입 완료", "role": "measure" },
+    { "name": "account_id", "label": "계정 ID", "role": "id" },
+    { "name": "account_flag", "label": "계정 플래그", "role": "flag" },
+    { "name": "signup_status", "label": "가입 상태", "role": "status" }
+  ],
+  "sampleRows": [
+    {
+      "event_date": "2026-04-06",
+      "channel": "paid_search",
+      "device": "mobile",
+      "landing_sessions": 1200,
+      "signup_complete": 96,
+      "account_id": "acct_001",
+      "account_flag": "normal",
+      "signup_status": "complete"
+    },
+    {
+      "event_date": "2026-04-06",
+      "channel": "organic",
+      "device": "desktop",
+      "landing_sessions": 820,
+      "signup_complete": 102,
+      "account_id": "acct_002",
+      "account_flag": "normal",
+      "signup_status": "complete"
+    }
+  ]
+}
