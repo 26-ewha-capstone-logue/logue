@@ -1,0 +1,58 @@
+name: 🐛 Bug Report
+description: 버그 리포트
+title: "fix: "
+labels: ["🐛fix", "⏳status:todo"]
+body:
+  - type: dropdown
+    id: part
+    attributes:
+      label: 파트
+      description: 어느 파트의 이슈인가요?
+      options:
+        - fe
+        - be
+        - ai
+    validations:
+      required: true
+
+  - type: textarea
+    id: symptom
+    attributes:
+      label: 증상
+      description: 무엇이 어떻게 깨지는지
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 재현 방법
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대 동작
+      description: 원래는 어떻게 동작해야 하는지
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 환경
+      value: |
+        - OS:
+        - 브랜치/커밋:
+        - 기타:
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 로그/스크린샷
+      description: 가능하면 첨부

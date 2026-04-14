@@ -1,0 +1,45 @@
+name: Discord Notification (Issues)
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: FE Discord Notification
+        if: github.event.label.name == 'fe'
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_FE_URL }}
+          nodetail: true
+          title: '${{ github.event.issue.title }}'
+          description: |
+            **파트:** FE
+            **작성자:** ${{ github.actor }}
+            ${{ github.event.issue.html_url }}
+
+      - name: BE Discord Notification
+        if: github.event.label.name == 'be'
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_BE_URL }}
+          nodetail: true
+          title: '${{ github.event.issue.title }}'
+          description: |
+            **파트:** BE
+            **작성자:** ${{ github.actor }}
+            ${{ github.event.issue.html_url }}
+
+      - name: AI Discord Notification
+        if: github.event.label.name == 'ai'
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_AI_URL }}
+          nodetail: true
+          title: '${{ github.event.issue.title }}'
+          description: |
+            **파트:** AI
+            **작성자:** ${{ github.actor }}
+            ${{ github.event.issue.html_url }}

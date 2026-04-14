@@ -1,0 +1,25 @@
+name: Discord Notification (AI)
+
+on:
+  pull_request:
+    types: [opened, closed, reopened]
+    paths:
+      - 'apps/ai/**'
+  push:
+    branches: [main, develop]
+    paths:
+      - 'apps/ai/**'
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Discord Notification
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_AI_URL }}
+          title: '${{ github.event_name }} - ${{ github.repository }}'
+          description: |
+            **Branch:** ${{ github.ref_name }}
+            **By:** ${{ github.actor }}
+            **Message:** ${{ github.event.head_commit.message || github.event.pull_request.title }}
