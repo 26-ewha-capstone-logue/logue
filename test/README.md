@@ -153,25 +153,9 @@
     
     | 구분 | 용도 | 필드 |
     | --- | --- | --- |
-    | Dataset A: 명확한 마케팅 퍼널형 | 정상 케이스 | • `signup_date`
-    • `landing_sessions`
-    • `signup_complete`
-    • `channel`
-    • `device_type`
-    • `internal_test` |
-    | Dataset B: 같은 의미, 다른 컬럼명 | 매핑/표현 다양화 | • `created_at`
-    • `visits`
-    • `signups`
-    • `source`
-    • `device`
-    • `is_test` |
-    | Dataset C: 모호한 데이터셋 | 기준일 충돌, ambiguity 처리 | `signup_date
-    created_at
-    landing_sessions
-    signup_complete
-    channel
-    device_type
-    internal_test` |
+    | Dataset A: 명확한 마케팅 퍼널형 | 정상 케이스 | `signup_date`, `landing_sessions`, `signup_complete`, `channel`, `device_type`, `internal_test` |
+    | Dataset B: 같은 의미, 다른 컬럼명 | 매핑/표현 다양화 | `created_at`, `visits`, `signups`, `source`, `device`, `is_test` |
+    | Dataset C: 모호한 데이터셋 | 기준일 충돌, ambiguity 처리 | `signup_date`, created_at`, `landing_sessions`, `signup_complete`, `channel`, `device_type`, `internal_test` |
 - **4. golden set (기댓값)**
     
     
