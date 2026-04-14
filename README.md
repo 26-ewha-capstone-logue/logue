@@ -1,5 +1,3 @@
-# Logue
-
 <br />
 
 # Logue 🎙️ <img src="assets/logo.png" width="110" align="left" />
