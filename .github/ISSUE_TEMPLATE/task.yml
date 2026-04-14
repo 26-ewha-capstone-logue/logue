@@ -1,0 +1,32 @@
+name: 🧹 Task
+description: 세팅/문서/잡일
+title: "chore: "
+labels: ["🧹chore", "⏳status:todo"]
+body:
+  - type: dropdown
+    id: part
+    attributes:
+      label: 파트
+      description: 어느 파트의 이슈인가요?
+      options:
+        - fe
+        - be
+        - ai
+    validations:
+      required: true
+
+  - type: textarea
+    id: todos
+    attributes:
+      label: 할 일
+      value: |
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: dod
+    attributes:
+      label: 완료 조건(DoD)
+      value: |
+        - [ ]

@@ -1,0 +1,47 @@
+name: ✨ Feature Request
+description: 기능 제안/요청
+title: "feat: "
+labels: ["✨feat", "⏳status:todo"]
+body:
+  - type: dropdown
+    id: part
+    attributes:
+      label: 파트
+      description: 어느 파트의 이슈인가요?
+      options:
+        - fe
+        - be
+        - ai
+    validations:
+      required: true
+
+  - type: textarea
+    id: purpose
+    attributes:
+      label: 목적
+      description: 왜 필요한지
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: 범위
+      value: |
+        - 포함(필수):
+        - 제외(명시):
+
+  - type: checkboxes
+    id: dod
+    attributes:
+      label: 완료 조건(DoD)
+      options:
+        - label: API/기능 동작
+        - label: 테스트/검증
+        - label: 문서 업데이트(필요 시)
+
+  - type: textarea
+    id: reference
+    attributes:
+      label: 참고
+      description: 화면/기획/레퍼런스 링크
