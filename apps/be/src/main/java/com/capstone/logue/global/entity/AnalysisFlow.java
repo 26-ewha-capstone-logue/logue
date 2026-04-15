@@ -27,7 +27,7 @@ import lombok.NoArgsConstructor;
  *
  * <p>플로우 내부에서는 여러 차례 메시지를 주고받을 수 있고({@link Message}),
  * 분석 기준({@link AnalysisCriteria})이 여러 번 수정될 수 있습니다.
- * 실제 분석에 사용된 기준은 {@link AnalysisCriteria#isConfirmed()} 로 구분합니다.</p>
+ * 실제 분석에 사용된 기준은 {@link AnalysisCriteria#getIsConfirmed()} 로 구분합니다.</p>
  */
 @Getter
 @Entity
@@ -66,14 +66,6 @@ public class AnalysisFlow extends BaseTimeEntity {
     @Builder.Default
     @OneToMany(mappedBy = "analysisFlow", fetch = FetchType.LAZY)
     private List<AnalysisCriteria> analysisCriteria = new ArrayList<>();
-
-    /**
-     * 이 플로우에서 생성된 분석 결과 목록.
-     * MVP 기준 하나이며, 이후 확장 가능합니다.
-     */
-    @Builder.Default
-    @OneToMany(mappedBy = "analysisFlow", fetch = FetchType.LAZY)
-    private List<AnalysisResult> analysisResults = new ArrayList<>();
 
     /** 이 플로우에서 사용하는 데이터 소스 컬럼별 시맨틱 역할 매핑 목록. */
     @Builder.Default

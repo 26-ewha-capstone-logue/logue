@@ -1,5 +1,6 @@
 package com.capstone.logue.global.entity;
 
+import com.capstone.logue.global.entity.base.CreatedTimeEntity;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -26,6 +27,9 @@ import org.hibernate.type.SqlTypes;
  *
  * <p>하나의 데이터 소스는 여러 {@link AnalysisFlow}에서 참조될 수 있으며,
  * 컬럼 단위 메타데이터는 {@link DataSourceColumn}에 분리 저장됩니다.</p>
+ *
+ * <p>업로드 직후 생성만 되고 이후 수정되지 않는 불변 레코드이므로
+ * {@code created_at}만 관리하는 {@link CreatedTimeEntity}를 상속합니다.</p>
  */
 @Getter
 @Entity
@@ -33,7 +37,7 @@ import org.hibernate.type.SqlTypes;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class DataSource {
+public class DataSource extends CreatedTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -61,10 +65,13 @@ public class DataSource {
     @Column(name = "schema_json", nullable = false, columnDefinition = "jsonb")
     private JsonNode schemaJson;
 
-    /** 날짜 컬럼의 범위·연속성 등 날짜 품질 상태 정보. */
+    /**
+     * 데이터 상태 요약 정보.
+     * 날짜 컬럼 범위·연속성 등 업로드 시 분석된 데이터 품질 개요를 담습니다.
+     */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "date_status", columnDefinition = "jsonb")
-    private JsonNode dateStatus;
+    @Column(name = "data_status", columnDefinition = "jsonb")
+    private JsonNode dataStatus;
 
     /** 데이터 행 수. */
     @Column(name = "row_count", nullable = false)
@@ -74,7 +81,7 @@ public class DataSource {
     @Column(name = "column_count", nullable = false)
     private Integer columnCount;
 
-    /** 컬럼별 메타데이터 및 시맨틱 분류 결과 목록. */
+    /** 컬럼별 메타데이터 목록. */
     @Builder.Default
     @OneToMany(mappedBy = "dataSource", fetch = FetchType.LAZY)
     private List<DataSourceColumn> dataSourceColumns = new ArrayList<>();
@@ -83,4 +90,9 @@ public class DataSource {
     @Builder.Default
     @OneToMany(mappedBy = "dataSource", fetch = FetchType.LAZY)
     private List<AnalysisFlow> analysisFlows = new ArrayList<>();
+
+    /** 이 데이터 소스에서 감지된 경고 목록. */
+    @Builder.Default
+    @OneToMany(mappedBy = "dataSource", fetch = FetchType.LAZY)
+    private List<SourceDataWarning> sourceDataWarnings = new ArrayList<>();
 }
