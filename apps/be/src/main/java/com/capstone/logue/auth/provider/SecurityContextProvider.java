@@ -35,11 +35,10 @@ public class SecurityContextProvider {
      */
     public Long getAuthenticatedUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Object principal = authentication.getPrincipal();
-        if (Objects.isNull(principal)) {
-            throw new LogueException(ErrorCode.UNAUTHORIZED);  // 인증되지 않은 경우 예외 발생
+        if (authentication == null || authentication.getPrincipal() == null) {
+            throw new LogueException(ErrorCode.UNAUTHORIZED); // 인증되지 않은 경우 예외 발생
         }
-        return (Long) principal;  // 사용자 ID 반환
+        return (Long) authentication.getPrincipal();  // 사용자 ID 반환
     }
 
     /**
