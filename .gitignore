@@ -10,9 +10,6 @@
 .DS_Store
 Thumbs.db
 
-# Dependencies
-node_modules/
-
 # ── apps/fe (Next.js) ──────────────────────────
 apps/fe/.next/
 apps/fe/out/
