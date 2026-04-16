@@ -46,7 +46,7 @@ public class GetUserInfoResponse {
                 .email(user.getEmail())
                 .name(user.getName())
                 .provider(user.getProvider().toLowerCase())
-                .profileImageUrl(null)
+                .profileImageUrl(user.getProfileImageUrl())
                 .build();
     }
 }
