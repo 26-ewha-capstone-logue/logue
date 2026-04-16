@@ -1,7 +1,11 @@
 package com.capstone.logue.global.entity;
 
+import com.capstone.logue.global.entity.base.BaseTimeEntity;
+import com.capstone.logue.global.entity.enums.SemanticRoleType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -17,10 +21,11 @@ import lombok.NoArgsConstructor;
 
 /**
  * 특정 분석 플로우({@link AnalysisFlow})에서 데이터 소스의 컬럼({@link DataSourceColumn})에
- * 부여한 시맨틱 역할과 확정 여부를 저장하는 매핑 엔티티입니다.
+ * 부여한 시맨틱 역할을 저장하는 매핑 엔티티입니다.
  *
- * <p>같은 {@link DataSourceColumn}이라도 플로우마다 다른 시맨틱 역할로 분류·확정될 수 있으므로,
- * 컬럼의 객관적 메타데이터({@link DataSourceColumn})와 플로우별 주관적 분류 결과를 분리합니다.</p>
+ * <p>같은 {@link DataSourceColumn}이라도 플로우마다 다른 시맨틱 역할({@link SemanticRoleType})로
+ * 분류될 수 있으므로, 컬럼의 객관적 메타데이터({@link DataSourceColumn})와
+ * 플로우별 주관적 분류 결과를 분리합니다.</p>
  */
 @Getter
 @Entity
@@ -28,7 +33,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class AnalysisFlowColumn {
+public class AnalysisFlowColumn extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,12 +49,8 @@ public class AnalysisFlowColumn {
     @JoinColumn(name = "data_source_column_id", nullable = false)
     private DataSourceColumn dataSourceColumn;
 
-    /** 이 플로우에서 해당 컬럼에 부여한 시맨틱 역할 옵션. */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "semantic_role_option_id", nullable = false)
-    private SemanticRoleOption semanticRoleOption;
-
-    /** 사용자가 이 컬럼의 시맨틱 역할을 최종 확정했는지 여부. */
-    @Column(name = "is_confirmed", nullable = false)
-    private boolean confirmed;
+    /** 이 플로우에서 해당 컬럼에 부여한 시맨틱 역할. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "semantic_role", nullable = false, length = 30)
+    private SemanticRoleType semanticRole;
 }

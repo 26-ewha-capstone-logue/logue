@@ -1,0 +1,101 @@
+package com.capstone.logue.global.entity;
+
+import com.capstone.logue.global.entity.base.BaseTimeEntity;
+import com.capstone.logue.global.entity.enums.JobStage;
+import com.capstone.logue.global.entity.enums.JobStatus;
+import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import java.time.OffsetDateTime;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+/**
+ * AI 분석 파이프라인의 각 단계에서 실행되는 비동기 작업을 추적하는 엔티티입니다.
+ *
+ * <p>하나의 사용자 메시지를 처리하기 위해 복수의 단계({@link JobStage})가 순서대로 실행되며,
+ * 각 단계마다 별도의 작업 레코드가 생성됩니다.</p>
+ *
+ * <p>상태는 {@code QUEUED → RUNNING → SUCCESS / FAILED / CANCELED} 순서로 전이되며,
+ * 클라이언트는 폴링 API를 통해 진행 상황을 확인합니다.
+ * 작업 요청 당시의 입력값 스냅샷은 {@code requestPayload}에 보존되어 디버깅과 재실행에 활용됩니다.</p>
+ */
+@Getter
+@Entity
+@Table(name = "ai_tagging_jobs")
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+public class AiTaggingJob extends BaseTimeEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    /** 이 작업이 실행된 대화. */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "conversation_id", nullable = false)
+    private Conversation conversation;
+
+    /**
+     * 이 작업을 트리거한 사용자 메시지.
+     * 어떤 사용자 발화로부터 작업이 생성되었는지 추적합니다.
+     */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "message_id", nullable = false)
+    private Message message;
+
+    /** 이 작업이 처리하는 파이프라인 단계. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "stage", nullable = false, length = 30)
+    private JobStage stage;
+
+    /**
+     * 작업 실행 상태.
+     * {@code QUEUED → RUNNING → SUCCESS / FAILED / CANCELED} 순서로 전이됩니다.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private JobStatus status;
+
+    /**
+     * 작업 실패 시 기록되는 에러 메시지.
+     * {@link JobStatus#FAILED} 상태일 때만 값이 존재합니다.
+     */
+    @Column(name = "error_message", columnDefinition = "TEXT")
+    private String errorMessage;
+
+    /**
+     * 작업 요청 당시의 입력값 스냅샷.
+     * 디버깅 및 재실행 시 당시 컨텍스트를 복원하기 위해 사용됩니다.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "request_payload", columnDefinition = "jsonb")
+    private JsonNode requestPayload;
+
+    /** 작업 실행 시작 시각. */
+    @Column(name = "started_at", nullable = false)
+    private OffsetDateTime startedAt;
+
+    /**
+     * 작업 종료 시각.
+     * 성공·실패·취소 모든 최종 상태에서 기록됩니다.
+     * 아직 완료되지 않은 경우 null 입니다.
+     */
+    @Column(name = "finished_at")
+    private OffsetDateTime finishedAt;
+}
