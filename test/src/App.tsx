@@ -142,10 +142,11 @@ export default function App() {
     // 프런트는 OpenAI를 직접 호출하지 않고 저장된 결과 파일만 읽는다.
     async function loadSavedArtifacts() {
       try {
+        const cacheBuster = `?t=${Date.now()}`;
         const [resultsJson, consoleOutput] = await Promise.all([
-          fetchJsonOrNull<SavedResults>(toBaseUrl('results/latest-results.json')),
+          fetchJsonOrNull<SavedResults>(toBaseUrl('results/latest-results.json') + cacheBuster),
           fetchTextOrFallback(
-            toBaseUrl('results/latest-console.txt'),
+            toBaseUrl('results/latest-console.txt') + cacheBuster,
             '아직 저장된 콘솔 로그가 없습니다. 먼저 npm run ai:test 를 실행하세요.',
           ),
         ]);
@@ -364,8 +365,8 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* expected / actual JSON을 나란히 보여줘 모델 출력을 바로 비교할 수 있게 한다. */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                {/* expected / raw / corrected JSON을 나란히 보여줘 모델 출력과 후처리 효과를 분리 확인한다. */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
                   <div style={softBlockStyle}>
                     <strong>기대 partial criteria</strong>
                     <div style={{ marginTop: 12 }}>
@@ -373,12 +374,40 @@ export default function App() {
                     </div>
                   </div>
                   <div style={softBlockStyle}>
-                    <strong>실제 criteria</strong>
+                    <strong>Raw criteria <span style={{ ...pillStyle, fontSize: 11, background: '#e3e8de' }}>모델 원본</span></strong>
+                    <div style={{ marginTop: 12 }}>
+                      <JsonBlock value={selectedResult?.raw_criteria ?? null} emptyText="아직 실행 결과가 없습니다." />
+                    </div>
+                  </div>
+                  <div style={softBlockStyle}>
+                    <strong>Corrected criteria <span style={{ ...pillStyle, fontSize: 11, background: '#dcead2' }}>후처리 적용</span></strong>
                     <div style={{ marginTop: 12 }}>
                       <JsonBlock value={selectedResult?.actual_criteria ?? null} emptyText="아직 실행 결과가 없습니다." />
                     </div>
                   </div>
                 </div>
+
+                {selectedResult?.heuristics_diff && selectedResult.heuristics_diff.length > 0 ? (
+                  <div style={{ ...softBlockStyle, border: '1px solid #c9dbc1' }}>
+                    <strong>Heuristics 보정 내역 <span style={{ ...pillStyle, fontSize: 11, background: '#fef3cd', color: '#664d03' }}>{selectedResult.heuristics_diff.length}개 필드</span></strong>
+                    <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+                      {selectedResult.heuristics_diff.map((diff) => (
+                        <div key={diff.field} style={{ background: '#ffffff', borderRadius: 12, padding: 12, border: '1px solid #d7dfd4' }}>
+                          <div style={{ fontWeight: 700, color: '#664d03' }}>{diff.field}</div>
+                          <div style={{ marginTop: 8, fontSize: 13, color: '#556b50' }}>raw (모델 원본)</div>
+                          <pre style={{ ...codeBlockStyle, marginTop: 6 }}>{JSON.stringify(diff.raw, null, 2)}</pre>
+                          <div style={{ marginTop: 8, fontSize: 13, color: '#556b50' }}>corrected (후처리)</div>
+                          <pre style={{ ...codeBlockStyle, marginTop: 6 }}>{JSON.stringify(diff.corrected, null, 2)}</pre>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : selectedResult ? (
+                  <div style={{ ...softBlockStyle, border: '1px solid #d7dfd4', color: '#556b50' }}>
+                    <strong style={{ color: '#20331b' }}>Heuristics 보정 내역</strong>
+                    <p style={{ margin: '8px 0 0' }}>후처리로 변경된 필드가 없습니다. 모델 원본 출력이 그대로 사용되었습니다.</p>
+                  </div>
+                ) : null}
 
                 {/* 일치/불일치 필드는 발표 중 원인 설명이 쉽도록 별도 영역으로 분리한다. */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
