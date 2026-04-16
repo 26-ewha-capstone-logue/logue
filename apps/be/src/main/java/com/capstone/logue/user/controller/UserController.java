@@ -1,0 +1,52 @@
+package com.capstone.logue.user.controller;
+
+import com.capstone.logue.auth.provider.SecurityContextProvider;
+import com.capstone.logue.global.entity.User;
+import com.capstone.logue.global.exception.ErrorCode;
+import com.capstone.logue.global.exception.LogueException;
+import com.capstone.logue.global.response.ApiResponse;
+import com.capstone.logue.user.dto.GetUserInfoResponse;
+import com.capstone.logue.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * 사용자 관련 API를 제공하는 컨트롤러입니다.
+ *
+ * <p>현재 로그인한 사용자의 정보를 조회하는 기능을 제공합니다.</p>
+ */
+@RestController
+@RequiredArgsConstructor
+public class UserController {
+    /** 현재 인증된 사용자 정보를 조회하기 위한 provider */
+    private final SecurityContextProvider securityContextProvider;
+
+    /** 사용자 조회를 위한 repository */
+    private final UserRepository userRepository;
+
+
+    /**
+     * 현재 로그인한 사용자의 정보를 조회합니다.
+     *
+     * <p>JWT 인증을 통해 {@link SecurityContextProvider}에서 userId를 가져온 후,
+     * 해당 ID로 사용자를 조회하여 응답 DTO로 변환합니다.</p>
+     *
+     * <p>요청에는 별도의 Request Body가 필요하지 않으며,
+     * Authorization 헤더에 포함된 JWT 토큰을 기반으로 인증이 수행됩니다.</p>
+     *
+     * @return 사용자 정보 조회 결과
+     * @throws LogueException 사용자를 찾을 수 없는 경우 (USER_NOT_FOUND)
+     */
+    @GetMapping("/api/user/me")
+    public ApiResponse<GetUserInfoResponse> getMyInfo() {
+        Long userId = securityContextProvider.getAuthenticatedUserId();
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new LogueException(ErrorCode.USER_NOT_FOUND));
+
+        GetUserInfoResponse response = GetUserInfoResponse.from(user);
+        return ApiResponse.success("사용자 정보 조회 성공", response);
+
+    }
+}
