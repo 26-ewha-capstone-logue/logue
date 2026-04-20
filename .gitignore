@@ -32,3 +32,10 @@ apps/ai/.venv/
 apps/ai/.env
 apps/ai/dist/
 apps/ai/*.egg-info/
+
+# ── test ──────────────────────────
+test/node_modules/
+test/dist/
+test/.env
+test/public/results/latest-results.json
+test/public/results/latest-console.txt
