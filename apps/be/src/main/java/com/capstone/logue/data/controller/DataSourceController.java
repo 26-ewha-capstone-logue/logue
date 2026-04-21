@@ -6,10 +6,6 @@ import com.capstone.logue.data.service.DataSourceService;
 import com.capstone.logue.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Encoding;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -48,14 +44,7 @@ public class DataSourceController {
      */
     @Operation(
             summary = "CSV 파일 업로드",
-            description = "multipart/form-data 로 CSV 파일을 업로드하고 DataSource 를 생성합니다.",
-            requestBody = @RequestBody(
-                    content = @Content(
-                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-                            schema = @Schema(implementation = UploadFormSchema.class),
-                            encoding = @Encoding(name = "file", contentType = "text/csv")
-                    )
-            )
+            description = "multipart/form-data 로 CSV 파일을 업로드하고 DataSource 를 생성합니다."
     )
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<UploadFileResponse> upload(
@@ -117,12 +106,5 @@ public class DataSourceController {
     ) {
         dataSourceService.deleteMany(userId, ids);
         return ApiResponse.success("선택한 데이터 소스들을 삭제했습니다.");
-    }
-
-    /** Swagger multipart request schema 문서용 (실제 요청 바인딩에 사용되지 않음). */
-    @Schema(name = "UploadFileRequest", description = "CSV 업로드 multipart 요청")
-    private static class UploadFormSchema {
-        @Schema(type = "string", format = "binary", description = "업로드할 CSV 파일")
-        public MultipartFile file;
     }
 }
