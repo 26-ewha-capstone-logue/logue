@@ -3,13 +3,13 @@ package com.capstone.logue.data.service;
 import com.capstone.logue.data.dto.FilePreview;
 import com.capstone.logue.data.dto.GetFileResponse;
 import com.capstone.logue.data.dto.UploadFileResponse;
-import com.capstone.logue.data.exception.DataSourceErrorCode;
 import com.capstone.logue.data.repository.DataSourceRepository;
 import com.capstone.logue.data.repository.UserLookupRepository;
 import com.capstone.logue.data.service.CsvPreviewExtractor.ExtractResult;
 import com.capstone.logue.data.storage.DataSourceStorage;
 import com.capstone.logue.global.entity.DataSource;
 import com.capstone.logue.global.entity.User;
+import com.capstone.logue.global.exception.ErrorCode;
 import com.capstone.logue.global.exception.LogueException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -62,7 +62,7 @@ public class DataSourceService {
             bytes = file.getBytes();
         } catch (IOException e) {
             log.error("[DataSourceService] read upload bytes failed", e);
-            throw new LogueException(DataSourceErrorCode.STORAGE_ERROR);
+            throw new LogueException(ErrorCode.DATASOURCE_STORAGE_ERROR);
         }
 
         ExtractResult extracted = csvPreviewExtractor.extract(
@@ -129,18 +129,18 @@ public class DataSourceService {
     @Transactional
     public void deleteMany(Long userId, Collection<Long> ids) {
         if (ids == null || ids.isEmpty()) {
-            throw new LogueException(DataSourceErrorCode.NOT_FOUND);
+            throw new LogueException(ErrorCode.DATASOURCE_NOT_FOUND);
         }
         List<DataSource> found = dataSourceRepository.findAllByIdIn(ids);
         Set<Long> foundIds = found.stream().map(DataSource::getId).collect(java.util.stream.Collectors.toSet());
         for (Long requestedId : ids) {
             if (!foundIds.contains(requestedId)) {
-                throw new LogueException(DataSourceErrorCode.NOT_FOUND);
+                throw new LogueException(ErrorCode.DATASOURCE_NOT_FOUND);
             }
         }
         for (DataSource dataSource : found) {
             if (!dataSource.getUser().getId().equals(userId)) {
-                throw new LogueException(DataSourceErrorCode.FORBIDDEN);
+                throw new LogueException(ErrorCode.DATASOURCE_FORBIDDEN);
             }
         }
         for (DataSource dataSource : found) {
@@ -151,24 +151,24 @@ public class DataSourceService {
 
     private void validateCsv(MultipartFile file) {
         if (file == null || file.isEmpty() || file.getSize() == 0) {
-            throw new LogueException(DataSourceErrorCode.INVALID_FILE);
+            throw new LogueException(ErrorCode.DATASOURCE_INVALID_FILE);
         }
         String name = file.getOriginalFilename();
         if (name == null || !name.toLowerCase().endsWith(".csv")) {
-            throw new LogueException(DataSourceErrorCode.INVALID_FILE);
+            throw new LogueException(ErrorCode.DATASOURCE_INVALID_FILE);
         }
     }
 
     private User loadUser(Long userId) {
         return userLookupRepository.findById(userId)
-                .orElseThrow(() -> new LogueException(DataSourceErrorCode.FORBIDDEN));
+                .orElseThrow(() -> new LogueException(ErrorCode.DATASOURCE_FORBIDDEN));
     }
 
     private DataSource loadOwnedDataSource(Long userId, Long dataSourceId) {
         DataSource dataSource = dataSourceRepository.findById(dataSourceId)
-                .orElseThrow(() -> new LogueException(DataSourceErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new LogueException(ErrorCode.DATASOURCE_NOT_FOUND));
         if (!dataSource.getUser().getId().equals(userId)) {
-            throw new LogueException(DataSourceErrorCode.FORBIDDEN);
+            throw new LogueException(ErrorCode.DATASOURCE_FORBIDDEN);
         }
         return dataSource;
     }

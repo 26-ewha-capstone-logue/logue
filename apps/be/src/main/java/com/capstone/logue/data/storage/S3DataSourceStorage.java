@@ -1,6 +1,6 @@
 package com.capstone.logue.data.storage;
 
-import com.capstone.logue.data.exception.DataSourceErrorCode;
+import com.capstone.logue.global.exception.ErrorCode;
 import com.capstone.logue.global.exception.LogueException;
 import java.io.InputStream;
 import java.time.LocalDate;
@@ -50,7 +50,7 @@ public class S3DataSourceStorage implements DataSourceStorage {
             s3Client.putObject(request, RequestBody.fromInputStream(input, size));
         } catch (SdkException e) {
             log.error("[S3Storage] put failed key={} bucket={}", key, properties.bucket(), e);
-            throw new LogueException(DataSourceErrorCode.STORAGE_ERROR);
+            throw new LogueException(ErrorCode.DATASOURCE_STORAGE_ERROR);
         }
         return key;
     }
@@ -65,10 +65,10 @@ public class S3DataSourceStorage implements DataSourceStorage {
             return s3Client.getObject(request);
         } catch (NoSuchKeyException e) {
             log.warn("[S3Storage] object not found key={}", storageKey);
-            throw new LogueException(DataSourceErrorCode.STORAGE_ERROR);
+            throw new LogueException(ErrorCode.DATASOURCE_STORAGE_ERROR);
         } catch (SdkException e) {
             log.error("[S3Storage] get failed key={}", storageKey, e);
-            throw new LogueException(DataSourceErrorCode.STORAGE_ERROR);
+            throw new LogueException(ErrorCode.DATASOURCE_STORAGE_ERROR);
         }
     }
 

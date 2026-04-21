@@ -1,7 +1,7 @@
 package com.capstone.logue.data.service;
 
 import com.capstone.logue.data.dto.FilePreview;
-import com.capstone.logue.data.exception.DataSourceErrorCode;
+import com.capstone.logue.global.exception.ErrorCode;
 import com.capstone.logue.global.exception.LogueException;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -42,7 +42,7 @@ public class CsvPreviewExtractor {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))) {
             String headerLine = reader.readLine();
             if (headerLine == null) {
-                throw new LogueException(DataSourceErrorCode.INVALID_FILE);
+                throw new LogueException(ErrorCode.DATASOURCE_INVALID_FILE);
             }
             headers = parseCsvLine(headerLine);
 
@@ -58,11 +58,11 @@ public class CsvPreviewExtractor {
             }
         } catch (IOException e) {
             log.error("[CsvPreviewExtractor] read failed", e);
-            throw new LogueException(DataSourceErrorCode.STORAGE_ERROR);
+            throw new LogueException(ErrorCode.DATASOURCE_STORAGE_ERROR);
         }
 
         if (headers.isEmpty()) {
-            throw new LogueException(DataSourceErrorCode.INVALID_FILE);
+            throw new LogueException(ErrorCode.DATASOURCE_INVALID_FILE);
         }
 
         return new ExtractResult(
