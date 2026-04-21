@@ -1,6 +1,5 @@
-package com.capstone.logue.data.storage;
+package com.capstone.logue.global.storage.s3;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,7 +11,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 
 /**
- * DataSource S3 스토리지용 Bean 설정.
+ * 공용 S3 Client Bean 설정.
  *
  * <p>로컬/개발 환경에서 accessKey/secretKey 가 주입된 경우 {@link StaticCredentialsProvider} 를,
  * 그렇지 않으면 {@link DefaultCredentialsProvider} 를 사용합니다.
@@ -23,7 +22,6 @@ import software.amazon.awssdk.services.s3.S3ClientBuilder;
 public class S3StorageConfig {
 
     @Bean
-    @ConditionalOnProperty(prefix = "logue.storage.s3", name = "bucket")
     public S3Client s3Client(S3StorageProperties properties) {
         S3ClientBuilder builder = S3Client.builder()
                 .region(Region.of(properties.region()));

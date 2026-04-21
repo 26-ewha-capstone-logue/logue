@@ -5,8 +5,7 @@ import java.io.InputStream;
 /**
  * DataSource CSV 파일 바이너리를 저장·조회·삭제하는 추상화 인터페이스.
  *
- * <p>본 이슈(#31)에서는 로컬 파일 시스템 구현체({@link LocalDataSourceStorage})만 제공되며,
- * 추후 오브젝트 스토리지(S3 등) 구현체로 교체 가능합니다.</p>
+ * <p>본 이슈(#31)에서는 S3 구현체({@link S3DataSourceStorage})를 제공합니다.</p>
  */
 public interface DataSourceStorage {
 

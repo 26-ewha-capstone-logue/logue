@@ -2,6 +2,7 @@ package com.capstone.logue.data.storage;
 
 import com.capstone.logue.global.exception.ErrorCode;
 import com.capstone.logue.global.exception.LogueException;
+import com.capstone.logue.global.storage.s3.S3StorageProperties;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -9,7 +10,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -26,7 +26,6 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
  */
 @Slf4j
 @Component
-@ConditionalOnBean(S3Client.class)
 @RequiredArgsConstructor
 public class S3DataSourceStorage implements DataSourceStorage {
 
