@@ -30,7 +30,7 @@ public class GoogleUserInfo implements OAuth2UserInfo {
     }
 
     @Override
-    public String getProviderId() {
+    public String getProviderUserId() {
         return attribute.get("sub").toString();
     }
 

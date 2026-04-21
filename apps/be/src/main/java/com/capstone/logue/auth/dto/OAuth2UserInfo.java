@@ -26,7 +26,7 @@ public interface OAuth2UserInfo {
      *
      * @return provider 고유 사용자 ID
      */
-    String getProviderId();
+    String getProviderUserId();
 
     /**
      * 사용자 이메일을 반환합니다.

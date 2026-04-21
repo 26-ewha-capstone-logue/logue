@@ -4,6 +4,8 @@ import com.capstone.logue.auth.provider.JWTProvider;
 import com.capstone.logue.global.entity.User;
 import com.capstone.logue.auth.dto.GoogleUserInfo;
 import com.capstone.logue.auth.dto.OAuth2UserInfo;
+import com.capstone.logue.global.exception.ErrorCode;
+import com.capstone.logue.global.exception.LogueException;
 import com.capstone.logue.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -19,6 +21,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * OAuth2 로그인 성공 시 후속 처리를 담당하는 핸들러입니다.
@@ -51,10 +54,6 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     @Value("${spring.jwt.access-token.expiration-time}")
     private long ACCESS_TOKEN_EXPIRATION_TIME;
 
-//    @Value("${spring.jwt.register-token.expiration-time}")
-//    private long REGISTER_TOKEN_EXPIRATION_TIME;
-//    @Value("${spring.jwt.refresh-token.expiration-time}")
-//    private long REFRESH_TOKEN_EXPIRATION_TIME;
 
     /** JWT 생성 및 파싱을 담당하는 provider */
     private final JWTProvider jwtProvider;
@@ -68,7 +67,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
      *
      * <p>OAuth2 인증 객체에서 provider와 사용자 속성을 추출한 뒤,
      * provider에 맞는 {@link OAuth2UserInfo} 구현체로 변환합니다.
-     * 이후 providerId를 기준으로 기존 회원 여부를 조회하여 다음과 같이 처리합니다.</p>
+     * 이후 pproviderUserId를 기준으로 기존 회원 여부를 조회하여 다음과 같이 처리합니다.</p>
      *
      * <ul>
      *     <li>신규 사용자이면 온보딩 페이지로 리다이렉트</li>
@@ -90,24 +89,24 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         OAuth2UserInfo oAuth2UserInfo;
         switch (provider) {
             case "google" -> oAuth2UserInfo = new GoogleUserInfo(attributes);
-            default ->  throw new IllegalArgumentException("지원하지 않는 OAuth provider입니다: " + provider);
+            default -> throw new LogueException(ErrorCode.UNSUPPORTED_OAUTH_PROVIDER);
         }
 
-        String providerId = oAuth2UserInfo.getProviderId();
+        String providerUserId = oAuth2UserInfo.getProviderUserId();
         String email = oAuth2UserInfo.getEmail();
         String profileImageUrl = oAuth2UserInfo.getProfileImageUrl();
 
-        log.info("OAuth 로그인 성공. providerId = {}", providerId);
+        log.info("OAuth 로그인 성공. providerUserId = {}", providerUserId);
         log.info("email = {}", email);
 
-        User existUser = userRepository.findByProviderId(providerId);
-        if (existUser == null) {
-            log.info("신규 유저입니다. provider={}, providerId={}", provider, providerId);
+        Optional<User> optionalUser = userRepository.findByProviderUserId(providerUserId);
+        if (optionalUser.isEmpty()) {
+            log.info("신규 유저입니다. provider={}, providerUserId={}", provider, providerUserId);
 
             String redirectUrl = UriComponentsBuilder
                     .fromUriString(REDIRECT_URI_ONBOARDING)
                     .queryParam("provider", provider)
-                    .queryParam("providerId", providerId)
+                    .queryParam("providerUserId", providerUserId)
                     .queryParam("email", email)
                     .queryParam("profileImageUrl", profileImageUrl)
                     .build()
@@ -115,6 +114,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
             getRedirectStrategy().sendRedirect(request, response, redirectUrl);
         } else {
+            User existUser = optionalUser.get();
             log.info("기존 유저입니다. userId={}", existUser.getId());
 
             String accessToken = jwtProvider.generateToken(existUser.getId(), ACCESS_TOKEN_EXPIRATION_TIME);

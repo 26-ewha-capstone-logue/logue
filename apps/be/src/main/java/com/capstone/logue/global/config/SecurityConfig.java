@@ -2,6 +2,7 @@ package com.capstone.logue.global.config;
 
 import java.util.List;
 
+import com.capstone.logue.auth.filter.JWTFilter;
 import com.capstone.logue.auth.handler.OAuth2LoginFailureHandler;
 import com.capstone.logue.auth.handler.OAuth2LoginSuccessHandler;
 import com.capstone.logue.auth.provider.JWTProvider;
@@ -71,8 +72,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
                                 "/",
-                                "/login",
-                                "/login/google",
+                                "/oauth2/**",
+                                "/login/oauth2/**",
                                 "/health",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
@@ -81,6 +82,7 @@ public class SecurityConfig {
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
+                .addFilterBefore(new JWTFilter(jwtProvider), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 

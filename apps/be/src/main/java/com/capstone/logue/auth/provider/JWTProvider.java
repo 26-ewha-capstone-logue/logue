@@ -33,7 +33,7 @@ public class JWTProvider {
     private final SecretKey secretKey;
 
     /**
-     * application.yml에 설정된 secret 값을 기반으로 SecretKey를 생성합니다.
+     * SSM에 저장된 파라미터 `/logue/~/JWT_SECRET` 값을 기반으로 SecretKey를 생성합니다.
      *
      * @param secret JWT 서명용 비밀 문자열
      */
