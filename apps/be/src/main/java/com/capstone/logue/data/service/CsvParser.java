@@ -15,29 +15,24 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * CSV 바이트 스트림에서 간단한 미리보기 표 데이터(헤더/행)를 추출하는 경량 파서.
+ * CSV 바이트 스트림에서 헤더와 전체 행 데이터를 추출하는 경량 파서.
  *
  * <p>본 이슈(#31) 범위에서 고도화된 CSV 파서는 사용하지 않으며,
  * 따옴표(")로 감싼 값과 이스케이프된 따옴표(""), 콤마 구분자만 최소 지원합니다.</p>
  */
 @Slf4j
 @Component
-public class CsvPreviewExtractor {
-
-    /** 미리보기에 포함할 최대 행 수. */
-    public static final int DEFAULT_PREVIEW_ROWS = 100;
+public class CsvParser {
 
     /**
-     * CSV 스트림에서 {@link FilePreview}·행/컬럼 수를 추출합니다.
+     * CSV 스트림을 파싱해 헤더·행 전체가 담긴 {@link FilePreview} 를 반환합니다.
      *
-     * @param input       CSV 바이트 입력 스트림
-     * @param maxPreviewRows preview 에 담을 최대 행 수
-     * @return 추출된 preview 및 전체 통계
+     * @param input CSV 바이트 입력 스트림
+     * @return 파싱된 표 데이터
      */
-    public ExtractResult extract(InputStream input, int maxPreviewRows) {
-        List<String> headers = new ArrayList<>();
-        List<List<String>> previewRows = new ArrayList<>();
-        long totalRows = 0;
+    public FilePreview parse(InputStream input) {
+        List<String> headers;
+        List<List<String>> rows = new ArrayList<>();
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))) {
             String headerLine = reader.readLine();
@@ -51,13 +46,10 @@ public class CsvPreviewExtractor {
                 if (line.isEmpty()) {
                     continue;
                 }
-                totalRows++;
-                if (previewRows.size() < maxPreviewRows) {
-                    previewRows.add(parseCsvLine(line));
-                }
+                rows.add(parseCsvLine(line));
             }
         } catch (IOException e) {
-            log.error("[CsvPreviewExtractor] read failed", e);
+            log.error("[CsvParser] read failed", e);
             throw new LogueException(ErrorCode.DATASOURCE_STORAGE_ERROR);
         }
 
@@ -65,11 +57,7 @@ public class CsvPreviewExtractor {
             throw new LogueException(ErrorCode.DATASOURCE_INVALID_FILE);
         }
 
-        return new ExtractResult(
-                new FilePreview(Collections.unmodifiableList(headers), Collections.unmodifiableList(previewRows)),
-                totalRows,
-                headers.size()
-        );
+        return new FilePreview(Collections.unmodifiableList(headers), Collections.unmodifiableList(rows));
     }
 
     private List<String> parseCsvLine(String line) {
@@ -103,15 +91,5 @@ public class CsvPreviewExtractor {
         }
         values.add(current.toString());
         return values;
-    }
-
-    /**
-     * 추출 결과.
-     *
-     * @param preview     미리보기 표 데이터
-     * @param totalRows   전체 데이터 행 수 (헤더 제외)
-     * @param columnCount 컬럼 수 (헤더 기준)
-     */
-    public record ExtractResult(FilePreview preview, long totalRows, int columnCount) {
     }
 }

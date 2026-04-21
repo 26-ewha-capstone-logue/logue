@@ -5,7 +5,6 @@ import com.capstone.logue.data.dto.GetFileResponse;
 import com.capstone.logue.data.dto.UploadFileResponse;
 import com.capstone.logue.data.repository.DataSourceRepository;
 import com.capstone.logue.data.repository.UserLookupRepository;
-import com.capstone.logue.data.service.CsvPreviewExtractor.ExtractResult;
 import com.capstone.logue.data.storage.DataSourceStorage;
 import com.capstone.logue.global.entity.DataSource;
 import com.capstone.logue.global.entity.User;
@@ -42,7 +41,7 @@ public class DataSourceService {
     private final DataSourceRepository dataSourceRepository;
     private final UserLookupRepository userLookupRepository;
     private final DataSourceStorage storage;
-    private final CsvPreviewExtractor csvPreviewExtractor;
+    private final CsvParser csvParser;
     private final ObjectMapper objectMapper;
 
     /**
@@ -65,10 +64,7 @@ public class DataSourceService {
             throw new LogueException(ErrorCode.DATASOURCE_STORAGE_ERROR);
         }
 
-        ExtractResult extracted = csvPreviewExtractor.extract(
-                new ByteArrayInputStream(bytes),
-                CsvPreviewExtractor.DEFAULT_PREVIEW_ROWS
-        );
+        FilePreview preview = csvParser.parse(new ByteArrayInputStream(bytes));
 
         String storageKey = storage.store(
                 userId,
@@ -83,9 +79,9 @@ public class DataSourceService {
                 .fileName(file.getOriginalFilename())
                 .fileSize((long) bytes.length)
                 .storageKey(storageKey)
-                .schemaJson(buildSchemaJson(extracted.preview()))
-                .rowCount(Math.toIntExact(extracted.totalRows()))
-                .columnCount(extracted.columnCount())
+                .schemaJson(buildSchemaJson(preview))
+                .rowCount(preview.rows().size())
+                .columnCount(preview.headers().size())
                 .build());
 
         return new UploadFileResponse(saved.getId());
