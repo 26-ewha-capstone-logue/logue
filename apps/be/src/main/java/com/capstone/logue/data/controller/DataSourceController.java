@@ -1,5 +1,6 @@
 package com.capstone.logue.data.controller;
 
+import com.capstone.logue.auth.provider.SecurityContextProvider;
 import com.capstone.logue.data.dto.GetFileResponse;
 import com.capstone.logue.data.dto.UploadFileResponse;
 import com.capstone.logue.data.service.DataSourceService;
@@ -14,7 +15,6 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -24,8 +24,8 @@ import org.springframework.web.multipart.MultipartFile;
 /**
  * DataSource CRUD REST 엔드포인트.
  *
- * <p>인증 모듈이 도입되기 전까지 사용자 식별은 임시로 {@code X-User-Id} 요청 헤더로 전달받습니다.
- * 추후 이슈에서 {@code Authorization: Bearer &lt;accessToken&gt;} 기반 인증으로 교체됩니다.</p>
+ * <p>사용자 식별은 {@code Authorization: Bearer &lt;accessToken&gt;} 기반 JWT 인증으로 처리되며,
+ * 인증된 사용자 ID 는 {@link SecurityContextProvider} 를 통해 조회됩니다.</p>
  */
 @Tag(name = "DataSource", description = "CSV 데이터 소스 업로드/조회/삭제 API")
 @RestController
@@ -34,12 +34,12 @@ import org.springframework.web.multipart.MultipartFile;
 public class DataSourceController {
 
     private final DataSourceService dataSourceService;
+    private final SecurityContextProvider securityContextProvider;
 
     /**
      * CSV 파일을 업로드하여 DataSource 를 생성합니다.
      *
-     * @param userId 요청 사용자 id (임시 헤더, 추후 인증으로 교체)
-     * @param file   업로드할 CSV 파일
+     * @param file 업로드할 CSV 파일
      * @return 생성된 DataSource id 포함 응답
      */
     @Operation(
@@ -48,10 +48,9 @@ public class DataSourceController {
     )
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<UploadFileResponse> upload(
-            @Parameter(description = "요청 사용자 id (임시)", example = "1")
-            @RequestHeader("X-User-Id") Long userId,
             @RequestPart("file") MultipartFile file
     ) {
+        Long userId = securityContextProvider.getAuthenticatedUserId();
         UploadFileResponse response = dataSourceService.upload(userId, file);
         return ApiResponse.success("CSV 파일이 업로드되었습니다.", response);
     }
@@ -59,18 +58,16 @@ public class DataSourceController {
     /**
      * 지정한 DataSource 단건을 조회합니다.
      *
-     * @param userId       요청 사용자 id (임시 헤더)
      * @param dataSourceId 조회할 DataSource id
      * @return 파일 메타 및 미리보기 데이터를 포함한 응답
      */
     @Operation(summary = "데이터 소스 단건 조회", description = "DataSource 메타데이터와 CSV 미리보기(헤더+행)를 반환합니다.")
     @GetMapping("/{dataSourceId}")
     public ApiResponse<GetFileResponse> getOne(
-            @Parameter(description = "요청 사용자 id (임시)", example = "1")
-            @RequestHeader("X-User-Id") Long userId,
             @Parameter(description = "조회할 DataSource id", example = "1")
             @PathVariable Long dataSourceId
     ) {
+        Long userId = securityContextProvider.getAuthenticatedUserId();
         GetFileResponse response = dataSourceService.getOne(userId, dataSourceId);
         return ApiResponse.success("데이터 소스 조회에 성공했습니다.", response);
     }
@@ -81,11 +78,10 @@ public class DataSourceController {
     @Operation(summary = "데이터 소스 단건 삭제")
     @DeleteMapping("/{dataSourceId}")
     public ApiResponse<Void> deleteOne(
-            @Parameter(description = "요청 사용자 id (임시)", example = "1")
-            @RequestHeader("X-User-Id") Long userId,
             @Parameter(description = "삭제할 DataSource id", example = "1")
             @PathVariable Long dataSourceId
     ) {
+        Long userId = securityContextProvider.getAuthenticatedUserId();
         dataSourceService.deleteOne(userId, dataSourceId);
         return ApiResponse.success("데이터 소스를 삭제했습니다.");
     }
@@ -99,11 +95,10 @@ public class DataSourceController {
     @Operation(summary = "데이터 소스 다건 삭제")
     @DeleteMapping
     public ApiResponse<Void> deleteMany(
-            @Parameter(description = "요청 사용자 id (임시)", example = "1")
-            @RequestHeader("X-User-Id") Long userId,
             @Parameter(description = "삭제할 DataSource id 리스트", example = "1,2,3")
             @RequestParam("id") List<Long> ids
     ) {
+        Long userId = securityContextProvider.getAuthenticatedUserId();
         dataSourceService.deleteMany(userId, ids);
         return ApiResponse.success("선택한 데이터 소스들을 삭제했습니다.");
     }

@@ -80,9 +80,6 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/swagger-resources/**"
                         ).permitAll()
-                        // TODO: 인증 이슈(#TBD) 완료 시 authenticated() 로 전환.
-                        // 현재는 X-User-Id 헤더 기반 임시 식별 중.
-                        .requestMatchers("/api/datasources/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(new JWTFilter(jwtProvider), UsernamePasswordAuthenticationFilter.class)
