@@ -3,6 +3,8 @@ import { InfoCard } from './components/InfoCard';
 import { datasets, metrics, testCases } from './data/catalog';
 import type { DatasetDefinition, SavedResults } from './types';
 
+const RESULTS_POLL_INTERVAL_MS = 3000;
+
 // 페이지 전반의 발표용 톤을 맞추는 기본 레이아웃 스타일이다.
 const pageStyle: Record<string, string | number> = {
   minHeight: '100vh',
@@ -147,7 +149,7 @@ export default function App() {
           fetchJsonOrNull<SavedResults>(toBaseUrl('results/latest-results.json') + cacheBuster),
           fetchTextOrFallback(
             toBaseUrl('results/latest-console.txt') + cacheBuster,
-            '아직 저장된 콘솔 로그가 없습니다. 먼저 npm run ai:test 를 실행하세요.',
+            '아직 저장된 콘솔 로그가 없습니다. 먼저 npm run demo 또는 npm run ai:test 를 실행하세요.',
           ),
         ]);
 
@@ -155,7 +157,7 @@ export default function App() {
         setConsoleText(consoleOutput);
 
         if (!resultsJson) {
-          setResultsError('저장된 결과 파일이 없거나 비어 있습니다. 먼저 AI 테스트를 실행해 주세요.');
+          setResultsError('저장된 결과 파일이 없거나 비어 있습니다. 먼저 npm run demo 또는 npm run ai:test 로 결과를 생성해 주세요.');
           return;
         }
 
@@ -168,6 +170,14 @@ export default function App() {
     }
 
     void loadSavedArtifacts();
+
+    const intervalId = window.setInterval(() => {
+      void loadSavedArtifacts();
+    }, RESULTS_POLL_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
   }, []);
 
   const resultMap = getResultMap(savedResults);
@@ -208,7 +218,7 @@ export default function App() {
             }}
           >
             <span style={{ fontWeight: 700 }}>AI 테스트 실행</span>
-            <code style={{ fontSize: 14, color: '#f3f8ef' }}>npm run ai:test</code>
+            <code style={{ fontSize: 14, color: '#f3f8ef' }}>npm run demo</code>
           </div>
         </header>
 
@@ -525,7 +535,7 @@ export default function App() {
           ) : (
             <EmptyState
               title="아직 저장된 실행 결과가 없습니다."
-              description={resultsError ?? '먼저 npm run ai:test 를 실행하면 이 영역에 최신 요약이 표시됩니다.'}
+              description={resultsError ?? '먼저 npm run demo 또는 npm run ai:test 를 실행하면 이 영역에 최신 요약이 표시됩니다.'}
             />
           )}
         </InfoCard>

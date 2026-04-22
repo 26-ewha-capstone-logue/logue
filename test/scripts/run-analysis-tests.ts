@@ -16,6 +16,14 @@ import { compareExpected, createEmptyFieldAccuracy, finalizeFieldAccuracy } from
 import { buildSystemPrompt } from './lib/prompt';
 import type { ComparisonResult, NormalizedCriteria, TokenUsage } from './lib/types';
 
+for (const stream of [process.stdout, process.stderr]) {
+  stream.on('error', (error) => {
+    if ((error as NodeJS.ErrnoException).code !== 'EPIPE') {
+      throw error;
+    }
+  });
+}
+
 function computeHeuristicsDiff(
   raw: NormalizedCriteria,
   corrected: NormalizedCriteria,
