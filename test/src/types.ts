@@ -75,12 +75,18 @@ export interface SavedResultItem {
   question: string;
   status: 'passed' | 'failed';
   expected_partial: AnalysisCriteria;
+  raw_criteria: AnalysisCriteria | null;
   actual_criteria: AnalysisCriteria | null;
   matched_fields: string[];
   mismatched_fields: Array<{
     field: string;
     expected: unknown;
     actual: unknown;
+  }>;
+  heuristics_diff: Array<{
+    field: string;
+    raw: unknown;
+    corrected: unknown;
   }>;
   error: string | null;
 }
