@@ -5,6 +5,19 @@ from schemas.column import (
 
 async def analyze_file(request: FileAnalysisRequest) -> FileAnalysisResponse:
 
+    """
+    CSV 컬럼 메타데이터를 분석하여 Semantic Role 태깅 및 소스 경고를 반환합니다.
+
+    Args:
+        request: 파일 분석 요청 DTO (컬럼 메타데이터, 카탈로그 포함)
+
+    Returns:
+        컬럼별 semantic role 태깅 결과 및 데이터 상태 요약
+
+    Raises:
+        NotImplementedError: LLM 연동 구현 전 (AI 담당자분이 채워넣으면 됩니다)
+    """
+    
     # AI 담당자분이 이 파일에 실제 로직 채워넣으면 됩니다
 
     return FileAnalysisResponse(
