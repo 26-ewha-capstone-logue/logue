@@ -23,6 +23,12 @@ repositories {
 	mavenCentral()
 }
 
+dependencyManagement {
+	imports {
+		mavenBom 'software.amazon.awssdk:bom:2.29.29'
+	}
+}
+
 dependencies {
 	//Web
 	implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -42,7 +48,10 @@ dependencies {
 
 	//actuator
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
-	
+
+	//AWS S3
+	implementation 'software.amazon.awssdk:s3'
+
 	//Lombok
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
