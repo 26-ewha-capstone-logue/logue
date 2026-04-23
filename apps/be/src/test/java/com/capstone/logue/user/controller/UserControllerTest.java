@@ -1,12 +1,10 @@
-package com.capstone.logue;
+package com.capstone.logue.user.controller;
 
 import com.capstone.logue.auth.provider.JWTProvider;
 import com.capstone.logue.global.config.SecurityConfig;
 import com.capstone.logue.global.entity.User;
 import com.capstone.logue.global.exception.ErrorCode;
 import com.capstone.logue.global.exception.LogueException;
-import com.capstone.logue.user.controller.UserController;
-import com.capstone.logue.user.dto.GetUserInfoResponse;
 import com.capstone.logue.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
