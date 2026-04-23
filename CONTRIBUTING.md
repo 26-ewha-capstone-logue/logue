@@ -143,6 +143,24 @@ uv run uvicorn main:app --reload --port 8000         # http://localhost:8000
 
 API 문서: http://localhost:8000/docs
 
+#### 디렉토리 구조 (BE · AI 공동 작업)
+
+`apps/ai`는 FastAPI 위에서 BE 파트와 AI 파트가 함께 작업합니다. 디렉토리별 담당은 아래와 같아요.
+
+| 디렉토리 | 담당 | 역할 |
+|---|---|---|
+| `routers/` | 🟦 BE | 엔드포인트 정의 (`@router.post(...)`), 요청 → 서비스 호출 → 응답 리턴 |
+| `schemas/` | 🟦 BE | 요청/응답 Pydantic 스키마 정의 |
+| `services/` | 🟦 BE 껍데기 → 🟨 AI 로직 | AI 호출 라우팅 레이어. BE가 함수 시그니처와 더미 응답까지 먼저 만들고, AI 파트가 실제 로직으로 교체 |
+| `core/` | 🟨 AI | semantic role 분류, 프롬프트 설계, 모델 호출, 후처리 등 AI 세부 로직 |
+| `tests/` | 🟦 BE · 🟨 AI | 각자 작업한 범위 단위 테스트 |
+
+**협업 흐름**
+
+1. BE가 `routers/` · `schemas/` · `services/` 껍데기(더미 응답) 먼저 머지
+2. AI가 `services/` 내부 로직과 `core/` 구현을 이어받아 머지
+3. 이슈는 `파트: be` / `파트: ai`로 **각각 분리해서** 등록 (템플릿상 단일 파트만 선택 가능)
+
 ---
 
 ### Makefile 단축 명령
