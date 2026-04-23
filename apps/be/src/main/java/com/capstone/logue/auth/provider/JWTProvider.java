@@ -48,12 +48,14 @@ public class JWTProvider {
      * 발급 시간과 만료 시간이 함께 설정됩니다.</p>
      *
      * @param userId 토큰에 포함할 사용자 ID
+     * @param email 토큰에 포함할 사용자 email
      * @param expirationMillis 토큰 만료 시간 (millisecond 단위)
      * @return 생성된 JWT 문자열
      */
-    public String generateToken(Long userId, long expirationMillis) {
+    public String generateToken(Long userId, String email, long expirationMillis) {
         return Jwts.builder()
                 .claim("userId", userId)  // 사용자 ID를 claim에 담는다.
+                .claim("email", email)       // 사용자 email을 claim에 담는다.
                 .setIssuedAt(new Date(System.currentTimeMillis()))  // 토큰 발급 시간 설정
                 .setExpiration(new Date(System.currentTimeMillis() + expirationMillis))  // 토큰 만료 시간 설정
                 .signWith(secretKey, SignatureAlgorithm.HS256)  // 서명을 생성한다.
@@ -104,5 +106,15 @@ public class JWTProvider {
      */
     public Long getUserIdFromToken(String token) {
         return tokenParser(token).get("userId", Long.class);  // 토큰에서 userId를 추출하여 반환한다.
+    }
+
+    /**
+     * JWT 토큰에서 사용자 email을 추출합니다.
+     *
+     * @param token JWT 문자열
+     * @return 토큰에 포함된 email
+     */
+    public String getEmailFromToken(String token) {
+        return tokenParser(token).get("email", String.class);  // 토큰에서 email을 추출하여 반환한다.
     }
 }
