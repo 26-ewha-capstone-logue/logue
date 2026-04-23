@@ -1,5 +1,6 @@
 package com.capstone.logue.data.dto;
 
+import com.capstone.logue.global.entity.DataSource;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 
@@ -27,4 +28,22 @@ public record DataSourceSummary(
         @Schema(description = "업로드 시간 (ISO UTC)", example = "2026-04-10T15:00:00Z")
         Instant uploadedAt
 ) {
+
+    /**
+     * {@link DataSource} 엔티티에서 요약 DTO 로 변환합니다.
+     *
+     * <p>엔티티의 {@code createdAt} 이 누락된 (예: 테스트 환경) 경우 {@code uploadedAt} 은
+     * {@code null} 로 세팅되어 매핑 실패를 회피합니다.</p>
+     *
+     * @param dataSource 변환할 DataSource 엔티티
+     * @return 목록 응답에 포함될 요약 항목
+     */
+    public static DataSourceSummary from(DataSource dataSource) {
+        return new DataSourceSummary(
+                dataSource.getId(),
+                dataSource.getFileName(),
+                dataSource.getFileSize(),
+                dataSource.getCreatedAt() == null ? null : dataSource.getCreatedAt().toInstant()
+        );
+    }
 }
