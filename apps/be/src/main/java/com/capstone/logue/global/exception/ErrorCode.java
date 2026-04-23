@@ -23,6 +23,12 @@ public enum ErrorCode {
 
     // User
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "사용자를 찾을 수 없습니다."),
+
+    // DataSource
+    DATASOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "D001", "데이터 소스를 찾을 수 없습니다."),
+    DATASOURCE_FORBIDDEN(HttpStatus.FORBIDDEN, "D002", "해당 데이터 소스에 대한 접근 권한이 없습니다."),
+    DATASOURCE_INVALID_FILE(HttpStatus.BAD_REQUEST, "D003", "올바르지 않은 CSV 파일입니다."),
+    DATASOURCE_STORAGE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "D004", "데이터 소스 파일 저장/읽기에 실패했습니다."),
     ;
 
     private final HttpStatus httpStatus;
