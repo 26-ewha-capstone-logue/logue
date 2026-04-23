@@ -2,6 +2,7 @@ package com.capstone.logue.auth.filter;
 
 import com.capstone.logue.auth.provider.JWTProvider;
 import com.capstone.logue.auth.security.UserAuthentication;
+import com.capstone.logue.auth.security.UserPrincipal;
 import com.capstone.logue.global.exception.LogueException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -63,8 +64,7 @@ public class JWTFilter extends OncePerRequestFilter {
             }
 
             jwtProvider.validateToken(accessToken);  // JWT 유효성 검증
-            Long userId = jwtProvider.getUserIdFromToken(accessToken);  // JWT에서 사용자 ID 추출
-            setAuthentication(userId);  // 인증 정보 설정
+            setAuthentication(accessToken);
             filterChain.doFilter(request, response);  // 필터 체인 통과
 
         } catch (LogueException e) {
@@ -111,10 +111,13 @@ public class JWTFilter extends OncePerRequestFilter {
     /**
      * 사용자 ID를 기반으로 인증 객체를 생성하고 SecurityContext에 저장합니다.
      *
-     * @param userId 인증된 사용자 ID
+     * @param accessToken 인증된 사용자 토큰
      */
-    private void setAuthentication(Long userId) {
-        UserAuthentication authentication = new UserAuthentication(userId, null, null);
+    private void setAuthentication(String accessToken) {
+        Long userId = jwtProvider.getUserIdFromToken(accessToken);
+        String email = jwtProvider.getEmailFromToken(accessToken);
+        UserPrincipal principal = new UserPrincipal(userId, email);
+        UserAuthentication authentication = new UserAuthentication(principal, null, null);
         SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 
