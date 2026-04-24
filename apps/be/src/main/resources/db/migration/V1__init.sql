@@ -208,7 +208,8 @@ CREATE TABLE ai_tagging_jobs
     created_at      TIMESTAMPTZ NOT NULL,
     updated_at      TIMESTAMPTZ NOT NULL,
     conversation_id BIGINT      NOT NULL REFERENCES conversations (id),
-    message_id      BIGINT      NOT NULL REFERENCES messages (id),
+    analysis_flow_id BIGINT     NOT NULL REFERENCES analysis_flows (id),
+    message_id      BIGINT      REFERENCES messages (id),
     stage           VARCHAR(30) NOT NULL,
     status          VARCHAR(20) NOT NULL,
     error_message   TEXT,
@@ -219,6 +220,8 @@ CREATE TABLE ai_tagging_jobs
 
 CREATE INDEX idx_ai_tagging_jobs_conversation_id
     ON ai_tagging_jobs (conversation_id);
+CREATE INDEX idx_ai_tagging_jobs_analysis_flow_id
+    ON ai_tagging_jobs (analysis_flow_id);
 CREATE INDEX idx_ai_tagging_jobs_message_id
     ON ai_tagging_jobs (message_id);
 CREATE INDEX idx_ai_tagging_jobs_conversation_id_stage
