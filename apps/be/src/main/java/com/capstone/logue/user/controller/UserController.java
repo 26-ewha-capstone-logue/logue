@@ -1,6 +1,8 @@
 package com.capstone.logue.user.controller;
 
+import com.capstone.logue.auth.annotation.CurrentUser;
 import com.capstone.logue.auth.provider.SecurityContextProvider;
+import com.capstone.logue.auth.security.UserPrincipal;
 import com.capstone.logue.global.entity.User;
 import com.capstone.logue.global.exception.ErrorCode;
 import com.capstone.logue.global.exception.LogueException;
@@ -24,9 +26,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 public class UserController {
-    /** 현재 인증된 사용자 정보를 조회하기 위한 provider */
-    private final SecurityContextProvider securityContextProvider;
-
     /** 사용자 조회를 위한 repository */
     private final UserRepository userRepository;
 
@@ -50,10 +49,9 @@ public class UserController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음"),
     })
     @GetMapping("/api/user/me")
-    public ResponseEntity<ApiResponse<GetUserInfoResponse>> getMyInfo() {
-        Long userId = securityContextProvider.getAuthenticatedUserId();
+    public ResponseEntity<ApiResponse<GetUserInfoResponse>> getMyInfo(@CurrentUser UserPrincipal currentUser) {
 
-        User user = userRepository.findById(userId)
+        User user = userRepository.findById(currentUser.userId())
                 .orElseThrow(() -> new LogueException(ErrorCode.USER_NOT_FOUND));
 
         GetUserInfoResponse response = GetUserInfoResponse.from(user);

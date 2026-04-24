@@ -1,6 +1,7 @@
 package com.capstone.logue.auth.provider;
 
 import com.capstone.logue.auth.security.UserAuthentication;
+import com.capstone.logue.auth.security.UserPrincipal;
 import com.capstone.logue.global.exception.ErrorCode;
 import com.capstone.logue.global.exception.LogueException;
 import lombok.extern.slf4j.Slf4j;
@@ -33,12 +34,12 @@ public class SecurityContextProvider {
      * @return 현재 인증된 사용자 ID
      * @throws LogueException 인증되지 않은 요청인 경우
      */
-    public Long getAuthenticatedUserId() {
+    public UserPrincipal getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || authentication.getPrincipal() == null) {
             throw new LogueException(ErrorCode.UNAUTHORIZED); // 인증되지 않은 경우 예외 발생
         }
-        return (Long) authentication.getPrincipal();  // 사용자 ID 반환
+        return (UserPrincipal) authentication.getPrincipal();
     }
 
     /**
