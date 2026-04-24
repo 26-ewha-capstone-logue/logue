@@ -16,7 +16,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class FastApiClient {
 
-    private final RestTemplate restTemplate;
+    private final RestTemplate fastApiRestTemplate;
 
     @Value("${ai.base-url}")
     private String fastApiBaseUrl;
@@ -25,7 +25,7 @@ public class FastApiClient {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        ResponseEntity<FileAnalysisResponse> response = restTemplate.exchange(
+        ResponseEntity<FileAnalysisResponse> response = fastApiRestTemplate.exchange(
                 fastApiBaseUrl + "/v1/llm/data-sources/analyze",
                 HttpMethod.POST,
                 new HttpEntity<>(request, headers),
@@ -43,7 +43,7 @@ public class FastApiClient {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        restTemplate.postForEntity(
+        fastApiRestTemplate.postForEntity(
                 fastApiBaseUrl + "/v1/llm/data-sources/analyze/cancel",
                 new HttpEntity<>(Map.of("jobId", jobId), headers),
                 Void.class
