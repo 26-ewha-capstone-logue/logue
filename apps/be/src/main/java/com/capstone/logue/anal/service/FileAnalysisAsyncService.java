@@ -1,5 +1,6 @@
 package com.capstone.logue.anal.service;
 
+import com.capstone.logue.anal.client.FastApiClient;
 import com.capstone.logue.anal.dto.fastapi.ColumnRole;
 import com.capstone.logue.anal.dto.fastapi.FileAnalysisResponse;
 import com.capstone.logue.anal.dto.fastapi.Warning;
@@ -53,7 +54,7 @@ public class FileAnalysisAsyncService {
 
     private final JobStateService jobStateService;
     private final FileAnalysisRequestBuilder fileAnalysisRequestBuilder;
-    private final RestTemplate restTemplate;
+    private final FastApiClient fastApiClient;
 
     @Value("${ai.base-url}")
     private String fastApiBaseUrl;
@@ -67,7 +68,6 @@ public class FileAnalysisAsyncService {
      * @param dataSourceId 분석 대상 데이터 소스 ID
      */
     @Async
-    @Transactional
     public void analyzeFileAsync(Long jobId, Long dataSourceId) {
         try {
 
@@ -76,7 +76,7 @@ public class FileAnalysisAsyncService {
 
             // 트랜잭션 없음 - FastAPI 호출 (수십 초 소요 가능)
             FileAnalysisRequest fileAnalysisRequest = buildRequest(jobId, dataSource);
-            FileAnalysisResponse fileAnalysisResponse = callFastApi(fileAnalysisRequest);
+            FileAnalysisResponse fileAnalysisResponse = fastApiClient.analyzeFile(fileAnalysisRequest);
 
             List<ColumnRole> columnRoles = (fileAnalysisResponse.getColumnRoles() == null)
                     ? List.of() : fileAnalysisResponse.getColumnRoles();
@@ -107,23 +107,5 @@ public class FileAnalysisAsyncService {
                 dataSource.getColumnCount(),
                 dataSource.getSchemaJson()
         );
-    }
-
-    private FileAnalysisResponse callFastApi(FileAnalysisRequest request) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        ResponseEntity<FileAnalysisResponse> response = restTemplate.exchange(
-                fastApiBaseUrl + "/v1/llm/data-sources/analyze",
-                HttpMethod.POST,
-                new HttpEntity<>(request, headers),
-                FileAnalysisResponse.class
-        );
-
-        FileAnalysisResponse body = response.getBody();
-        if (body == null) {
-            throw new IllegalStateException("FastAPI 응답 body가 null입니다.");
-        }
-        return body;
     }
 }

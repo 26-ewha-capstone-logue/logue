@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.capstone.logue.anal.client.FastApiClient;
 import com.capstone.logue.anal.dto.request.CreateAnalysisFlowRequest;
 import com.capstone.logue.anal.dto.response.CreateAnalysisFlowResponse;
 import com.capstone.logue.anal.dto.response.CreateConversationResponse;
@@ -81,6 +82,7 @@ class AnalServiceTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private AnalService analService;
+    private FastApiClient fastApiClient;
 
     @BeforeEach
     void setUp() {
@@ -93,7 +95,7 @@ class AnalServiceTest {
                 aiTaggingJobRepository,
                 userRepository,
                 fileAnalysisAsyncService,
-                restTemplate,
+                fastApiClient,
                 objectMapper
         );
 

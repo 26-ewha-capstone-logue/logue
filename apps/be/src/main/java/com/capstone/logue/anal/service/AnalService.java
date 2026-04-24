@@ -1,5 +1,6 @@
 package com.capstone.logue.anal.service;
 
+import com.capstone.logue.anal.client.FastApiClient;
 import com.capstone.logue.anal.dto.request.CreateAnalysisFlowRequest;
 import com.capstone.logue.anal.dto.response.*;
 import com.capstone.logue.anal.repository.*;
@@ -52,7 +53,7 @@ public class AnalService {
     private final AiTaggingJobRepository aiTaggingJobRepository;
     private final UserRepository userRepository;
     private final FileAnalysisAsyncService fileAnalysisAsyncService;
-    private final RestTemplate restTemplate;
+    private final FastApiClient fastApiClient;
     private final ObjectMapper objectMapper;
 
     @Value("${ai.base-url}")
@@ -273,11 +274,7 @@ public class AnalService {
 
         // FastAPI 취소 요청
         try {
-            restTemplate.postForEntity(
-                    fastApiBaseUrl + "/v1/llm/data-sources/analyze/cancel",
-                    Map.of("requestId", job.getRequestPayload().get("requestId")),
-                    Void.class
-            );
+            fastApiClient.cancelAnalysis(job.getId());
         } catch (Exception e) {
             log.warn("[AnalService] FastAPI 취소 요청 실패 (무시): conversationId={}", conversationId, e);
         }
