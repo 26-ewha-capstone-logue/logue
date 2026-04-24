@@ -54,6 +54,7 @@ public class AnalService {
     private final UserRepository userRepository;
     private final FileAnalysisAsyncService fileAnalysisAsyncService;
     private final FastApiClient fastApiClient;
+    private final SecurityContextProvider securityContextProvider;
     private final ObjectMapper objectMapper;
 
     @Value("${ai.base-url}")
@@ -177,8 +178,23 @@ public class AnalService {
      *                        요약이 아직 완료되지 않은 경우 (D101)
      */
     public GetSummaryResponse getSummary(Long conversationId, Long analysisFlowId) {
+
+        // 1. conversation이 현재 유저 소유인지 검증
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new LogueException(ErrorCode.CONVERSATION_NOT_FOUND));
+
+        Long currentUserId = securityContextProvider.getAuthenticatedUser().userId();
+        if (!conversation.getUser().getId().equals(currentUserId)) {
+            throw new LogueException(ErrorCode.FORBIDDEN);
+        }
+
+        // 2. analysisFlow가 해당 conversation 소유인지 검증
         AnalysisFlow analysisFlow = analysisFlowRepository.findById(analysisFlowId)
                 .orElseThrow(() -> new LogueException(ErrorCode.DATASOURCE_NOT_FOUND));
+
+        if (!analysisFlow.getConversation().getId().equals(conversationId)) {
+            throw new LogueException(ErrorCode.FORBIDDEN);
+        }
 
         AiTaggingJob job = aiTaggingJobRepository
                 .findTopByConversationIdAndStageOrderByCreatedAtDesc(analysisFlowId, JobStage.DATA_STATUS)
