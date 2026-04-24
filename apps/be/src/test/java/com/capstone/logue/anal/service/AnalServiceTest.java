@@ -131,7 +131,7 @@ class AnalServiceTest {
 
         CreateConversationResponse response = analService.createConversation(USER_ID);
 
-        assertThat(response.getConversationId()).isEqualTo(CONVERSATION_ID);
+        assertThat(response.conversationId()).isEqualTo(CONVERSATION_ID);
         verify(conversationRepository).save(any());
     }
 
@@ -199,14 +199,12 @@ class AnalServiceTest {
         when(analysisFlowRepository.save(any(AnalysisFlow.class))).thenReturn(savedFlow);
         when(aiTaggingJobRepository.save(any(AiTaggingJob.class))).thenReturn(savedJob);
 
-        CreateAnalysisFlowRequest request = CreateAnalysisFlowRequest.builder()
-                .dataSourceId(DATASOURCE_ID)
-                .build();
+        CreateAnalysisFlowRequest request = new CreateAnalysisFlowRequest(DATASOURCE_ID);
 
         CreateAnalysisFlowResponse response = analService.createAnalysisFlow(CONVERSATION_ID, request);
 
-        assertThat(response.getAnalysisFlowId()).isEqualTo(ANALYSIS_FLOW_ID);
-        assertThat(response.getDataSourceId()).isEqualTo(DATASOURCE_ID);
+        assertThat(response.analysisFlowId()).isEqualTo(ANALYSIS_FLOW_ID);
+        assertThat(response.dataSourceId()).isEqualTo(DATASOURCE_ID);
         verify(analysisFlowRepository).save(any(AnalysisFlow.class));
         verify(aiTaggingJobRepository).save(any(AiTaggingJob.class));
         verify(fileAnalysisAsyncService).analyzeFileAsync(eq(1L), eq(DATASOURCE_ID));
@@ -227,9 +225,7 @@ class AnalServiceTest {
     void createAnalysisFlow_conversationNotFound_throwsException() {
         when(conversationRepository.findById(999L)).thenReturn(Optional.empty());
 
-        CreateAnalysisFlowRequest request = CreateAnalysisFlowRequest.builder()
-                .dataSourceId(DATASOURCE_ID)
-                .build();
+        CreateAnalysisFlowRequest request = new CreateAnalysisFlowRequest(DATASOURCE_ID);
 
         assertThatThrownBy(() -> analService.createAnalysisFlow(999L, request))
                 .isInstanceOf(LogueException.class)
@@ -260,9 +256,7 @@ class AnalServiceTest {
         when(conversationRepository.findById(CONVERSATION_ID)).thenReturn(Optional.of(conversation));
         when(dataSourceRepository.findById(999L)).thenReturn(Optional.empty());
 
-        CreateAnalysisFlowRequest request = CreateAnalysisFlowRequest.builder()
-                .dataSourceId(999L)
-                .build();
+        CreateAnalysisFlowRequest request = new CreateAnalysisFlowRequest(999L);
 
         assertThatThrownBy(() -> analService.createAnalysisFlow(CONVERSATION_ID, request))
                 .isInstanceOf(LogueException.class)
