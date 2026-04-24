@@ -1,9 +1,8 @@
 package com.capstone.logue.anal.dto.fastapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Getter;
 
-public record ColumnRole(
+public record ColumnRoleInfo(
     @JsonProperty("column_name")
     String columnName,
 

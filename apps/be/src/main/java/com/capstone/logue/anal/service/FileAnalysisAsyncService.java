@@ -1,32 +1,18 @@
 package com.capstone.logue.anal.service;
 
 import com.capstone.logue.anal.client.FastApiClient;
-import com.capstone.logue.anal.dto.fastapi.ColumnRole;
+import com.capstone.logue.anal.dto.fastapi.ColumnRoleInfo;
 import com.capstone.logue.anal.dto.fastapi.FileAnalysisResponse;
 import com.capstone.logue.anal.dto.fastapi.Warning;
-import com.capstone.logue.anal.dto.request.ColumnMeta;
 import com.capstone.logue.anal.dto.request.FileAnalysisRequest;
-import com.capstone.logue.anal.repository.AiTaggingJobRepository;
-import com.capstone.logue.anal.repository.DataSourceColumnRepository;
-import com.capstone.logue.anal.repository.SourceDataWarningRepository;
-import com.capstone.logue.data.repository.DataSourceRepository;
-import com.capstone.logue.global.entity.AiTaggingJob;
 import com.capstone.logue.global.entity.DataSource;
-import com.capstone.logue.global.entity.DataSourceColumn;
-import com.capstone.logue.global.entity.SourceDataWarning;
-import com.capstone.logue.global.entity.enums.SourceWarningKey;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 파일 분석 비동기 작업을 처리하는 서비스입니다.
@@ -78,7 +64,7 @@ public class FileAnalysisAsyncService {
             FileAnalysisRequest fileAnalysisRequest = buildRequest(jobId, dataSource);
             FileAnalysisResponse fileAnalysisResponse = fastApiClient.analyzeFile(fileAnalysisRequest);
 
-            List<ColumnRole> columnRoles = (fileAnalysisResponse.columnRoles() == null)
+            List<ColumnRoleInfo> columnRoles = (fileAnalysisResponse.columnRoles() == null)
                     ? List.of() : fileAnalysisResponse.columnRoles();
             List<Warning> responseWarnings = (fileAnalysisResponse.warnings() == null)
                     ? List.of() : fileAnalysisResponse.warnings();

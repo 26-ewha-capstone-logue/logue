@@ -1,7 +1,6 @@
 package com.capstone.logue.anal.dto.fastapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Getter;
 
 import java.util.List;
 
@@ -13,7 +12,7 @@ public record FileAnalysisResponse (
     String requestId,
 
     @JsonProperty("column_roles")
-    List<ColumnRole> columnRoles,
+    List<ColumnRoleInfo> columnRoles,
 
     @JsonProperty("data_status_summary")
     DataStatusSummary dataStatusSummary,

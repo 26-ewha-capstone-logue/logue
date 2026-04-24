@@ -1,6 +1,6 @@
 package com.capstone.logue.anal.service;
 
-import com.capstone.logue.anal.dto.fastapi.ColumnRole;
+import com.capstone.logue.anal.dto.fastapi.ColumnRoleInfo;
 import com.capstone.logue.anal.dto.fastapi.Warning;
 import com.capstone.logue.anal.dto.request.ColumnMeta;
 import com.capstone.logue.anal.dto.request.FileAnalysisRequest;
@@ -63,7 +63,7 @@ public class JobStateService {
     public void saveResultAndMarkSuccess(
             Long jobId,
             Long dataSourceId,
-            List<ColumnRole> columnRoles,
+            List<ColumnRoleInfo> columnRoles,
             List<Warning> responseWarnings,
             FileAnalysisRequest fileAnalysisRequest
     ) {
