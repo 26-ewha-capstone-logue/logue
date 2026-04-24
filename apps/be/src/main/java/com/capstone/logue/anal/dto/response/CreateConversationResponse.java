@@ -5,11 +5,9 @@ import lombok.Getter;
 
 import java.time.OffsetDateTime;
 
-@Getter
-@Builder
-public class CreateConversationResponse {
+public record CreateConversationResponse (
 
-    private Long conversationId;
+    Long conversationId,
 
-    private OffsetDateTime createdAt;
-}
+    OffsetDateTime createdAt
+) {}

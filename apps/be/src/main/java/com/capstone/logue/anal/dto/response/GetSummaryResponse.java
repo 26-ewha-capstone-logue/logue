@@ -6,26 +6,24 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Getter
-@Builder
-public class GetSummaryResponse {
-    private int rowCount;
+public record GetSummaryResponse (
+    int rowCount,
 
-    private int columnCount;
+    int columnCount,
 
-    private List<String> dataCriteria;
+    List<String> dataCriteria,
 
-    private List<String> measure;
+    List<String> measure,
 
-    private List<String> dimension;
+    List<String> dimension,
 
-    private List<String> statusCondition;
+    List<String> statusCondition,
 
-    private List<String> flag;
+    List<String> flag,
 
-    private List<String> idCriteria;
+    List<String> idCriteria,
 
-    private String sourceDataWarning;
+    String sourceDataWarning,
 
-    private LocalDateTime createdAt;
-}
+    LocalDateTime createdAt
+) {}

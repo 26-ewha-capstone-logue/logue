@@ -3,9 +3,7 @@ package com.capstone.logue.anal.dto.response;
 import lombok.Builder;
 import lombok.Getter;
 
-@Getter
-@Builder
-public class GetSummaryStatusResponse {
+public record GetSummaryStatusResponse (
 
-    private String status;  // QUEUED / RUNNING / SUCCESS / FAILED
-}
+    String status  // QUEUED / RUNNING / SUCCESS / FAILED
+) {}

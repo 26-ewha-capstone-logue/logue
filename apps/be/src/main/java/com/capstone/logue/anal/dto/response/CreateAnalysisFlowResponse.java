@@ -5,10 +5,8 @@ import lombok.Getter;
 
 import java.time.OffsetDateTime;
 
-@Getter
-@Builder
-public class CreateAnalysisFlowResponse {
-    private Long analysisFlowId;
-    private Long dataSourceId;
-    private OffsetDateTime createdAt;
-}
+public record CreateAnalysisFlowResponse (
+    Long analysisFlowId,
+    Long dataSourceId,
+    OffsetDateTime createdAt
+) {}
