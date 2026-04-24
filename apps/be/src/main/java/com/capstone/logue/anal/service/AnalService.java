@@ -179,22 +179,9 @@ public class AnalService {
      */
     public GetSummaryResponse getSummary(Long conversationId, Long analysisFlowId) {
 
-        // 1. conversation이 현재 유저 소유인지 검증
-        Conversation conversation = conversationRepository.findById(conversationId)
-                .orElseThrow(() -> new LogueException(ErrorCode.CONVERSATION_NOT_FOUND));
-
-        Long currentUserId = securityContextProvider.getAuthenticatedUser().userId();
-        if (!conversation.getUser().getId().equals(currentUserId)) {
-            throw new LogueException(ErrorCode.FORBIDDEN);
-        }
-
-        // 2. analysisFlow가 해당 conversation 소유인지 검증
+        validateConversationAccess(conversationId, analysisFlowId);
         AnalysisFlow analysisFlow = analysisFlowRepository.findById(analysisFlowId)
                 .orElseThrow(() -> new LogueException(ErrorCode.DATASOURCE_NOT_FOUND));
-
-        if (!analysisFlow.getConversation().getId().equals(conversationId)) {
-            throw new LogueException(ErrorCode.FORBIDDEN);
-        }
 
         AiTaggingJob job = aiTaggingJobRepository
                 .findTopByConversationIdAndStageOrderByCreatedAtDesc(analysisFlowId, JobStage.DATA_STATUS)
@@ -251,8 +238,8 @@ public class AnalService {
      * @throws LogueException 분석 흐름을 찾을 수 없는 경우
      */
     public GetSummaryStatusResponse getSummaryStatus(Long conversationId, Long analysisFlowId) {
-        analysisFlowRepository.findById(analysisFlowId)
-                .orElseThrow(() -> new LogueException(ErrorCode.DATASOURCE_NOT_FOUND));
+
+        validateConversationAccess(conversationId, analysisFlowId);
 
         AiTaggingJob job = aiTaggingJobRepository
                 .findTopByConversationIdAndStageOrderByCreatedAtDesc(analysisFlowId, JobStage.DATA_STATUS)
@@ -274,8 +261,7 @@ public class AnalService {
      * @throws LogueException 파일을 찾을 수 없는 경우 (D001), 요약이 시작되지 않은 경우 (D102)
      */
     public CancelSummaryResponse cancelSummary(Long conversationId, Long analysisFlowId) {
-        analysisFlowRepository.findById(analysisFlowId)
-                .orElseThrow(() -> new LogueException(ErrorCode.DATASOURCE_NOT_FOUND));
+        validateConversationAccess(conversationId, analysisFlowId);
 
         AiTaggingJob job = aiTaggingJobRepository
                 .findTopByConversationIdAndStageOrderByCreatedAtDesc(analysisFlowId, JobStage.DATA_STATUS)
@@ -298,5 +284,39 @@ public class AnalService {
         return CancelSummaryResponse.builder()
                 .status("CANCELLED")
                 .build();
+    }
+
+
+    /**
+     * conversationId와 analysisFlowId의 소유권을 검증합니다.
+     *
+     * <p>다음 두 가지를 순서대로 검증합니다:</p>
+     * <ol>
+     *   <li>conversation이 현재 인증된 사용자 소유인지 확인</li>
+     *   <li>analysisFlow가 해당 conversation에 속하는지 확인</li>
+     * </ol>
+     *
+     * @param conversationId 대화 ID
+     * @param analysisFlowId 분석 흐름 ID
+     * @throws LogueException 대화를 찾을 수 없는 경우 (CV001),
+     *                        현재 사용자가 대화 소유자가 아닌 경우 (A002),
+     *                        분석 흐름을 찾을 수 없는 경우 (D001),
+     *                        분석 흐름이 해당 대화에 속하지 않는 경우 (A002)
+     */
+    private void validateConversationAccess(Long conversationId, Long analysisFlowId) {
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new LogueException(ErrorCode.CONVERSATION_NOT_FOUND));
+
+        Long currentUserId = securityContextProvider.getAuthenticatedUser().userId();
+        if (!conversation.getUser().getId().equals(currentUserId)) {
+            throw new LogueException(ErrorCode.FORBIDDEN);
+        }
+
+        AnalysisFlow analysisFlow = analysisFlowRepository.findById(analysisFlowId)
+                .orElseThrow(() -> new LogueException(ErrorCode.DATASOURCE_NOT_FOUND));
+
+        if (!analysisFlow.getConversation().getId().equals(conversationId)) {
+            throw new LogueException(ErrorCode.FORBIDDEN);
+        }
     }
 }
