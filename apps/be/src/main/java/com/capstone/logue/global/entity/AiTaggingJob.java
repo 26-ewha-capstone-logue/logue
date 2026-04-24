@@ -54,9 +54,10 @@ public class AiTaggingJob extends BaseTimeEntity {
     /**
      * 이 작업을 트리거한 사용자 메시지.
      * 어떤 사용자 발화로부터 작업이 생성되었는지 추적합니다.
+     * 파일 분석 단계에서의 사용을 위해 {@code nullable=true}로 설정.
      */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "message_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "message_id", nullable = true)
     private Message message;
 
     /** 이 작업이 처리하는 파이프라인 단계. */
