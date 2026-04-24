@@ -1,5 +1,7 @@
 package com.capstone.logue.auth.security;
 
+import lombok.Getter;
+
 /**
  * JWT 인증 후 SecurityContext에 저장되는 사용자 정보 객체입니다.
  *
@@ -9,5 +11,6 @@ package com.capstone.logue.auth.security;
  * @param userId 사용자 ID
  * @param email  사용자 이메일
  */
+
 public record UserPrincipal(Long userId, String email) {
 }

@@ -70,8 +70,8 @@ public class JWTProvider {
      * @param token 검증할 JWT 문자열
      * @throws LogueException 토큰이 만료되었거나 유효하지 않은 경우
      */
-    public void validateToken(String token) {
-        tokenParser(token);  // 토큰을 파싱하고, 유효하지 않으면 예외를 발생시킨다.
+    public Claims validateToken(String token) {
+        return tokenParser(token);  // 토큰을 파싱하고, 유효하지 않으면 예외를 발생시킨다.
     }
 
     /**
@@ -101,20 +101,20 @@ public class JWTProvider {
     /**
      * JWT 토큰에서 사용자 ID를 추출합니다.
      *
-     * @param token JWT 문자열
+     * @param claims 검증된 JWT에서 추출한 클레임 정보
      * @return 토큰에 포함된 userId
      */
-    public Long getUserIdFromToken(String token) {
-        return tokenParser(token).get("userId", Long.class);  // 토큰에서 userId를 추출하여 반환한다.
+    public Long getUserIdFromToken(Claims claims) {
+        return claims.get("userId", Long.class);  // 토큰에서 userId를 추출하여 반환한다.
     }
 
     /**
      * JWT 토큰에서 사용자 email을 추출합니다.
      *
-     * @param token JWT 문자열
+     * @param claims 검증된 JWT에서 추출한 클레임 정보
      * @return 토큰에 포함된 email
      */
-    public String getEmailFromToken(String token) {
-        return tokenParser(token).get("email", String.class);  // 토큰에서 email을 추출하여 반환한다.
+    public String getEmailFromToken(Claims claims) {
+        return claims.get("email", String.class);  // 토큰에서 email을 추출하여 반환한다.
     }
 }

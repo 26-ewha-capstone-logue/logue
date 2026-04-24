@@ -22,6 +22,8 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 
 
 /**
@@ -63,6 +65,13 @@ class UserControllerTest {
     private static final Long USER_ID = 1L;
     private static final String VALID_TOKEN = "valid-token";
 
+    // 성공 케이스 공통으로 쓸 Claims mock 생성 헬퍼
+    private Claims mockClaims(Long userId, String email) {
+        Claims claims = mock(Claims.class);
+        when(claims.get("userId", Long.class)).thenReturn(userId);
+        when(claims.get("email", String.class)).thenReturn(email);
+        return claims;
+    }
 
     /**
      * 유효한 JWT 토큰으로 요청 시 사용자 정보를 정상 반환하는지 검증합니다.
@@ -75,6 +84,8 @@ class UserControllerTest {
     @DisplayName("유효한 토큰으로 요청 시 사용자 정보를 반환한다")
     void getMyInfo_validToken_returns200() throws Exception {
         // given
+        Claims claims = mockClaims(USER_ID, "test@test.com");
+
         User user = User.builder()
                 .id(USER_ID)
                 .email("test@test.com")
@@ -83,9 +94,9 @@ class UserControllerTest {
                 .profileImageUrl(null)      // ← null이면 생략해도 되지만 명시하는 게 안전
                 .build();
 
-        doNothing().when(jwtProvider).validateToken(VALID_TOKEN);
-        when(jwtProvider.getUserIdFromToken(VALID_TOKEN)).thenReturn(USER_ID);
-        when(jwtProvider.getEmailFromToken(VALID_TOKEN)).thenReturn("test@test.com");
+        when(jwtProvider.validateToken(VALID_TOKEN)).thenReturn(claims); // ✅ Claims 반환
+        when(jwtProvider.getUserIdFromToken(claims)).thenReturn(USER_ID);
+        when(jwtProvider.getEmailFromToken(claims)).thenReturn("test@test.com");
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
 
         // when & then
@@ -106,9 +117,9 @@ class UserControllerTest {
     @DisplayName("유효한 토큰이지만 DB에 유저가 없으면 404를 반환한다")
     void getMyInfo_userNotFound_returns404() throws Exception {
         // given
-        doNothing().when(jwtProvider).validateToken(VALID_TOKEN);
-        when(jwtProvider.getUserIdFromToken(VALID_TOKEN)).thenReturn(USER_ID);
-        when(jwtProvider.getEmailFromToken(VALID_TOKEN)).thenReturn("test@test.com");
+        Claims claims = mockClaims(USER_ID, "test@test.com");
+
+        when(jwtProvider.validateToken(VALID_TOKEN)).thenReturn(claims);
         when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
 
         // when & then
@@ -143,8 +154,8 @@ class UserControllerTest {
     @DisplayName("만료된 토큰으로 요청 시 401을 반환한다")
     void getMyInfo_expiredToken_returns401() throws Exception {
         // given
-        doThrow(new LogueException(ErrorCode.EXPIRED_TOKEN))
-                .when(jwtProvider).validateToken("expired-token");
+        when(jwtProvider.validateToken("expired-token"))
+                .thenThrow(new LogueException(ErrorCode.EXPIRED_TOKEN));
 
         // when & then
         mockMvc.perform(get("/api/user/me")
