@@ -9,17 +9,15 @@ import java.util.List;
 /**
  * FastAPI 파일 분석 요청 시 전달하는 데이터 소스 메타데이터입니다.
  */
-@Getter
-@Builder
-public class DataSourceMeta {
+public record DataSourceMeta (
     @JsonProperty("file_name")
-    private String fileName;
+    String fileName,
 
     @JsonProperty("row_count")
-    private int rowCount;
+    int rowCount,
 
     @JsonProperty("column_count")
-    private int columnCount;
+    int columnCount,
 
-    private List<ColumnMeta> columns;
-}
+    List<ColumnMeta> columns
+) {}

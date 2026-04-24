@@ -6,12 +6,10 @@ import lombok.Getter;
 
 import java.util.List;
 
-@Getter
-@Builder
-public class Catalog {
+public record Catalog (
     @JsonProperty("semantic_roles")
-    private List<String> semanticRoles;
+    List<String> semanticRoles,
 
     @JsonProperty("source_warning_keys")
-    private List<SourceWarningKeyDto> sourceWarningKeys;
-}
+    List<SourceWarningKeyDto> sourceWarningKeys
+) {}

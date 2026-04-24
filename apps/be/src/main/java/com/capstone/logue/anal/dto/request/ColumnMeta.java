@@ -9,21 +9,19 @@ import java.util.List;
 /**
  * FastAPI 파일 분석 요청 시 전달하는 단일 컬럼 메타데이터입니다.
  */
-@Getter
-@Builder
-public class ColumnMeta {
+public record ColumnMeta (
     @JsonProperty("column_name")
-    private String columnName;
+    String columnName,
 
     @JsonProperty("data_type")
-    private String dataType;
+    String dataType,
 
     @JsonProperty("null_ratio")
-    private double nullRatio;
+    double nullRatio,
 
     @JsonProperty("unique_ratio")
-    private double uniqueRatio;
+    double uniqueRatio,
 
     @JsonProperty("sample_values")
-    private List<String> sampleValues;
-}
+    List<String> sampleValues
+) {}

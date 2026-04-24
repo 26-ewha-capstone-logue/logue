@@ -7,14 +7,12 @@ import lombok.Getter;
 /**
  * FastAPI POST /v1/llm/data-sources/analyze 요청 DTO입니다.
  */
-@Getter
-@Builder
-public class FileAnalysisRequest {
+public record FileAnalysisRequest (
     @JsonProperty("request_id")
-    private Long requestId;
+    Long requestId,
 
     @JsonProperty("data_source")
-    private DataSourceMeta dataSource;
+    DataSourceMeta dataSource,
 
-    private Catalog catalog;
-}
+    Catalog catalog
+) {}
