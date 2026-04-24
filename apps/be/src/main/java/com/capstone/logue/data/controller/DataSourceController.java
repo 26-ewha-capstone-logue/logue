@@ -1,6 +1,8 @@
 package com.capstone.logue.data.controller;
 
+import com.capstone.logue.auth.annotation.CurrentUser;
 import com.capstone.logue.auth.provider.SecurityContextProvider;
+import com.capstone.logue.auth.security.UserPrincipal;
 import com.capstone.logue.data.dto.GetDataSourceListResponse;
 import com.capstone.logue.data.dto.GetFileResponse;
 import com.capstone.logue.data.dto.SortType;
@@ -36,7 +38,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class DataSourceController {
 
     private final DataSourceService dataSourceService;
-    private final SecurityContextProvider securityContextProvider;
 
     /**
      * CSV 파일을 업로드하여 DataSource 를 생성합니다.
@@ -50,10 +51,10 @@ public class DataSourceController {
     )
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<UploadFileResponse> upload(
+            @CurrentUser UserPrincipal userPrincipal,
             @RequestPart("file") MultipartFile file
     ) {
-        Long userId = securityContextProvider.getAuthenticatedUserId();
-        UploadFileResponse response = dataSourceService.upload(userId, file);
+        UploadFileResponse response = dataSourceService.upload(userPrincipal.userId(), file);
         return ApiResponse.success("CSV 파일이 업로드되었습니다.", response);
     }
 
@@ -74,6 +75,7 @@ public class DataSourceController {
     )
     @GetMapping
     public ApiResponse<GetDataSourceListResponse> getList(
+            @CurrentUser UserPrincipal userPrincipal,
             @Parameter(description = "정렬 기준. 생략 시 LATEST 로 처리", example = "LATEST")
             @RequestParam(value = "sort", required = false) SortType sort,
 
@@ -83,8 +85,7 @@ public class DataSourceController {
             @Parameter(description = "페이지당 항목 수", example = "20")
             @RequestParam("size") int size
     ) {
-        Long userId = securityContextProvider.getAuthenticatedUserId();
-        GetDataSourceListResponse response = dataSourceService.getList(userId, sort, page, size);
+        GetDataSourceListResponse response = dataSourceService.getList(userPrincipal.userId(), sort, page, size);
         return ApiResponse.success("데이터 소스 목록 조회 성공", response);
     }
 
@@ -97,11 +98,11 @@ public class DataSourceController {
     @Operation(summary = "데이터 소스 단건 조회", description = "DataSource 메타데이터와 CSV 미리보기(헤더+행)를 반환합니다.")
     @GetMapping("/{dataSourceId}")
     public ApiResponse<GetFileResponse> getOne(
+            @CurrentUser UserPrincipal userPrincipal,
             @Parameter(description = "조회할 DataSource id", example = "1")
             @PathVariable Long dataSourceId
     ) {
-        Long userId = securityContextProvider.getAuthenticatedUserId();
-        GetFileResponse response = dataSourceService.getOne(userId, dataSourceId);
+        GetFileResponse response = dataSourceService.getOne(userPrincipal.userId(), dataSourceId);
         return ApiResponse.success("데이터 소스 조회에 성공했습니다.", response);
     }
 
@@ -111,11 +112,11 @@ public class DataSourceController {
     @Operation(summary = "데이터 소스 단건 삭제")
     @DeleteMapping("/{dataSourceId}")
     public ApiResponse<Void> deleteOne(
+            @CurrentUser UserPrincipal userPrincipal,
             @Parameter(description = "삭제할 DataSource id", example = "1")
             @PathVariable Long dataSourceId
     ) {
-        Long userId = securityContextProvider.getAuthenticatedUserId();
-        dataSourceService.deleteOne(userId, dataSourceId);
+        dataSourceService.deleteOne(userPrincipal.userId(), dataSourceId);
         return ApiResponse.success("데이터 소스를 삭제했습니다.");
     }
 
@@ -128,11 +129,11 @@ public class DataSourceController {
     @Operation(summary = "데이터 소스 다건 삭제")
     @DeleteMapping
     public ApiResponse<Void> deleteMany(
+            @CurrentUser UserPrincipal userPrincipal,
             @Parameter(description = "삭제할 DataSource id 리스트", example = "1,2,3")
             @RequestParam("id") List<Long> ids
     ) {
-        Long userId = securityContextProvider.getAuthenticatedUserId();
-        dataSourceService.deleteMany(userId, ids);
+        dataSourceService.deleteMany(userPrincipal.userId(), ids);
         return ApiResponse.success("선택한 데이터 소스들을 삭제했습니다.");
     }
 }
