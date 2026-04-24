@@ -98,12 +98,15 @@ public class JobStateService {
         dataSourceColumnRepository.saveAll(columns);
 
         List<SourceDataWarning> warnings = responseWarnings.stream()
-                .map(w -> SourceDataWarning.builder()
-                        .dataSource(dataSource)
-                        .code(SourceWarningKey.valueOf(w.getCode()))
-                        .name(SourceWarningKey.valueOf(w.getCode()).getName())
-                        .comment(SourceWarningKey.valueOf(w.getCode()).getComment())
-                        .build())
+                .map(w -> {
+                    SourceWarningKey key = SourceWarningKey.valueOf(w.getCode());
+                    return SourceDataWarning.builder()
+                            .dataSource(dataSource)
+                            .code(key)
+                            .name(key.getName())
+                            .comment(key.getComment())
+                            .build();
+                })
                 .collect(Collectors.toList());
 
         sourceDataWarningRepository.saveAll(warnings);
