@@ -26,3 +26,13 @@ async def analyze_data_source(request: FileAnalysisRequest) -> FileAnalysisRespo
     """
     
     return await analyze_file(request)
+
+
+@router.post(
+    "/data-sources/analyze/cancel",
+    summary="파일 분석 취소",
+    description="진행 중인 파일 분석 작업을 취소합니다."
+)
+async def cancel_data_source_analysis() -> dict:
+    # TODO: AI 담당자분이 실제 취소 로직 구현
+    return {"status": "CANCELLED"}
