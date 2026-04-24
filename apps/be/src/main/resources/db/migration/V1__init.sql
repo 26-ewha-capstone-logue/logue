@@ -214,7 +214,7 @@ CREATE TABLE ai_tagging_jobs
     status          VARCHAR(20) NOT NULL,
     error_message   TEXT,
     request_payload JSONB,
-    started_at      TIMESTAMPTZ NOT NULL,
+    started_at      TIMESTAMPTZ
     finished_at     TIMESTAMPTZ
 );
 
