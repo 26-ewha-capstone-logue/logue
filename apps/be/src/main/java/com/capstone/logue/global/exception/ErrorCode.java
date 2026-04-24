@@ -29,6 +29,7 @@ public enum ErrorCode {
     DATASOURCE_FORBIDDEN(HttpStatus.FORBIDDEN, "D002", "해당 데이터 소스에 대한 접근 권한이 없습니다."),
     DATASOURCE_INVALID_FILE(HttpStatus.BAD_REQUEST, "D003", "올바르지 않은 CSV 파일입니다."),
     DATASOURCE_STORAGE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "D004", "데이터 소스 파일 저장/읽기에 실패했습니다."),
+    DATASOURCE_INVALID_PAGE_PARAM(HttpStatus.BAD_REQUEST, "D005", "잘못된 페이지 요청 파라미터입니다."),
     SUMMARY_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "D101", "데이터 요약이 완료되지 않았습니다."),
     SUMMARY_NOT_STARTED(HttpStatus.BAD_REQUEST, "D102", "데이터 요약이 시작되지 않았습니다."),
 
