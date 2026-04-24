@@ -99,4 +99,53 @@ public class AiTaggingJob extends BaseTimeEntity {
      */
     @Column(name = "finished_at")
     private OffsetDateTime finishedAt;
+
+
+    /**
+     * 작업 상태를 RUNNING으로 변경합니다.
+     *
+     * <p>
+     * 비동기 작업이 실제 실행되기 시작할 때 호출되며,
+     * 실행 시작 시각(startedAt)을 현재 시각으로 갱신합니다.
+     * </p>
+     */
+    public void markRunning() {
+        this.status = JobStatus.RUNNING;
+        this.startedAt = OffsetDateTime.now();
+    }
+
+    /**
+     * 작업 상태를 SUCCESS로 변경합니다.
+     *
+     * <p>
+     * FastAPI 호출 및 결과 저장이 정상적으로 완료된 경우 호출되며,
+     * 종료 시각(finishedAt)을 기록합니다.
+     * </p>
+     */
+    public void markSuccess() {
+        this.status = JobStatus.SUCCESS;
+        this.finishedAt = OffsetDateTime.now();
+    }
+
+    /**
+     * 작업 상태를 FAILED로 변경합니다.
+     *
+     * <p>
+     * 비동기 작업 수행 중 예외가 발생한 경우 호출되며,
+     * 에러 메시지와 함께 종료 시각을 기록합니다.
+     * </p>
+     *
+     * @param errorMessage 실패 원인 메시지
+     */
+    public void markFailed(String errorMessage) {
+        this.status = JobStatus.FAILED;
+        this.errorMessage = errorMessage;
+        this.finishedAt = OffsetDateTime.now();
+    }
+
+
+    public void markCanceled() {
+        this.status = JobStatus.CANCELED;
+        this.finishedAt = OffsetDateTime.now();
+    }
 }
