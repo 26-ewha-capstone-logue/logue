@@ -14,6 +14,8 @@ import com.capstone.logue.global.entity.DataSourceColumn;
 import com.capstone.logue.global.entity.SourceDataWarning;
 import com.capstone.logue.global.entity.enums.JobStatus;
 import com.capstone.logue.global.entity.enums.SourceWarningKey;
+import com.capstone.logue.global.exception.ErrorCode;
+import com.capstone.logue.global.exception.LogueException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -80,7 +82,7 @@ public class JobStateService {
                     ColumnMeta meta = fileAnalysisRequest.getDataSource().getColumns().stream()
                             .filter(c -> c.getColumnName().equals(role.getColumnName()))
                             .findFirst()
-                            .orElseThrow();
+                            .orElseThrow(() -> new LogueException(ErrorCode.COLUMN_NOT_FOUND));
 
                     return DataSourceColumn.builder()
                             .dataSource(dataSource)
