@@ -1,6 +1,6 @@
 package com.capstone.logue.anal.service;
 
-import com.capstone.logue.anal.dto.request.*;
+import com.capstone.logue.anal.dto.fastapi.request.*;
 import com.capstone.logue.global.entity.enums.SemanticRoleType;
 import com.capstone.logue.global.entity.enums.SourceWarningKey;
 import com.fasterxml.jackson.databind.JsonNode;

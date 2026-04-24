@@ -1,7 +1,7 @@
 package com.capstone.logue.anal.client;
 
-import com.capstone.logue.anal.dto.fastapi.FileAnalysisResponse;
-import com.capstone.logue.anal.dto.request.FileAnalysisRequest;
+import com.capstone.logue.anal.dto.fastapi.response.FileAnalysisResponse;
+import com.capstone.logue.anal.dto.fastapi.request.FileAnalysisRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

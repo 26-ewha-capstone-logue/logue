@@ -1,7 +1,7 @@
 package com.capstone.logue.anal.controller;
 
-import com.capstone.logue.anal.dto.request.CreateAnalysisFlowRequest;
-import com.capstone.logue.anal.dto.response.*;
+import com.capstone.logue.anal.dto.spring.request.CreateAnalysisFlowRequest;
+import com.capstone.logue.anal.dto.spring.response.*;
 import com.capstone.logue.anal.service.AnalService;
 import com.capstone.logue.auth.annotation.CurrentUser;
 import com.capstone.logue.auth.security.UserPrincipal;

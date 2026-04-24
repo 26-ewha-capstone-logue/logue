@@ -1,9 +1,9 @@
 package com.capstone.logue.anal.service;
 
-import com.capstone.logue.anal.dto.fastapi.ColumnRoleInfo;
-import com.capstone.logue.anal.dto.fastapi.WarningInfo;
-import com.capstone.logue.anal.dto.request.ColumnMeta;
-import com.capstone.logue.anal.dto.request.FileAnalysisRequest;
+import com.capstone.logue.anal.dto.fastapi.response.ColumnRoleInfo;
+import com.capstone.logue.anal.dto.fastapi.response.WarningInfo;
+import com.capstone.logue.anal.dto.fastapi.request.ColumnMeta;
+import com.capstone.logue.anal.dto.fastapi.request.FileAnalysisRequest;
 import com.capstone.logue.anal.repository.AiTaggingJobRepository;
 import com.capstone.logue.anal.repository.DataSourceColumnRepository;
 import com.capstone.logue.anal.repository.SourceDataWarningRepository;

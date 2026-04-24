@@ -1,7 +1,4 @@
-package com.capstone.logue.anal.dto.request;
-
-import lombok.Builder;
-import lombok.Getter;
+package com.capstone.logue.anal.dto.fastapi.request;
 
 public record SourceWarningKeyDto (
     String code,

@@ -1,10 +1,10 @@
 package com.capstone.logue.anal.service;
 
 import com.capstone.logue.anal.client.FastApiClient;
-import com.capstone.logue.anal.dto.fastapi.ColumnRoleInfo;
-import com.capstone.logue.anal.dto.fastapi.FileAnalysisResponse;
-import com.capstone.logue.anal.dto.fastapi.WarningInfo;
-import com.capstone.logue.anal.dto.request.FileAnalysisRequest;
+import com.capstone.logue.anal.dto.fastapi.response.ColumnRoleInfo;
+import com.capstone.logue.anal.dto.fastapi.response.FileAnalysisResponse;
+import com.capstone.logue.anal.dto.fastapi.response.WarningInfo;
+import com.capstone.logue.anal.dto.fastapi.request.FileAnalysisRequest;
 import com.capstone.logue.global.entity.DataSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

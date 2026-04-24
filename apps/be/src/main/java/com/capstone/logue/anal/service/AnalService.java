@@ -1,8 +1,8 @@
 package com.capstone.logue.anal.service;
 
 import com.capstone.logue.anal.client.FastApiClient;
-import com.capstone.logue.anal.dto.request.CreateAnalysisFlowRequest;
-import com.capstone.logue.anal.dto.response.*;
+import com.capstone.logue.anal.dto.spring.request.CreateAnalysisFlowRequest;
+import com.capstone.logue.anal.dto.spring.response.*;
 import com.capstone.logue.anal.repository.*;
 import com.capstone.logue.data.repository.DataSourceRepository;
 import com.capstone.logue.auth.provider.SecurityContextProvider;
@@ -18,9 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;

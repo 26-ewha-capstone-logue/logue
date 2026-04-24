@@ -1,8 +1,6 @@
-package com.capstone.logue.anal.dto.request;
+package com.capstone.logue.anal.dto.fastapi.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Builder;
-import lombok.Getter;
 
 /**
  * FastAPI POST /v1/llm/data-sources/analyze 요청 DTO입니다.
