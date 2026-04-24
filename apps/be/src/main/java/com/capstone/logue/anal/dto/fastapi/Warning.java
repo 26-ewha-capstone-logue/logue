@@ -5,10 +5,9 @@ import lombok.Getter;
 
 import java.util.List;
 
-@Getter
-public class Warning {
-    private String code;
+public record Warning (
+    String code,
 
     @JsonProperty("related_columns")
-    private List<String> relatedColumns;
-}
+    List<String> relatedColumns
+) {}

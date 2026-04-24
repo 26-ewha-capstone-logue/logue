@@ -8,16 +8,15 @@ import java.util.List;
 /**
  * FastAPI POST /v1/llm/data-sources/analyze 응답 DTO입니다.
  */
-@Getter
-public class FileAnalysisResponse {
+public record FileAnalysisResponse (
     @JsonProperty("request_id")
-    private String requestId;
+    String requestId,
 
     @JsonProperty("column_roles")
-    private List<ColumnRole> columnRoles;
+    List<ColumnRole> columnRoles,
 
     @JsonProperty("data_status_summary")
-    private DataStatusSummary dataStatusSummary;
+    DataStatusSummary dataStatusSummary,
 
-    private List<Warning> warnings;
-}
+    List<Warning> warnings
+) {}

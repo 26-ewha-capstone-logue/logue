@@ -5,17 +5,16 @@ import lombok.Getter;
 
 import java.util.List;
 
-@Getter
-public class PrimaryCandidates {
+public record PrimaryCandidates (
     @JsonProperty("date_fields")
-    private List<String> dateFields;
+    List<String> dateFields,
 
-    private List<String> measures;
-    private List<String> dimensions;
+    List<String> measures,
+    List<String> dimensions,
 
     @JsonProperty("status_conditions")
-    private List<String> statusConditions;
+    List<String> statusConditions,
 
-    private List<String> flags;
-    private List<String> ids;
-}
+    List<String> flags,
+    List<String> ids
+) {}
