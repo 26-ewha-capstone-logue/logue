@@ -10,5 +10,5 @@ public record DataStatusSummaryInfo(
     int totalColumns,
 
     @JsonProperty("primary_candidates")
-    PrimaryCandidates primaryCandidates
+    PrimaryCandidatesInfo primaryCandidates
 ) {}
