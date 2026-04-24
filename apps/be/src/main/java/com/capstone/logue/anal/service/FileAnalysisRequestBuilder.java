@@ -49,14 +49,14 @@ public class FileAnalysisRequestBuilder {
                 .map(header -> buildColumnMeta(header, headers, rows))
                 .collect(Collectors.toList());
 
-        DataSourceMeta dataSourceMeta = new DataSourceMeta(fileName, rowCount, columnCount, columns);
+        DataSourceMetaInfo dataSourceMeta = new DataSourceMetaInfo(fileName, rowCount, columnCount, columns);
 
         List<String> semanticRoles = Arrays.stream(SemanticRoleType.values())
                 .map(Enum::name)
                 .collect(Collectors.toList());
 
-        List<SourceWarningKeyDto> warningKeys = Arrays.stream(SourceWarningKey.values())
-                .map(w -> new SourceWarningKeyDto(w.name(), w.getName(), w.getComment()))
+        List<SourceWarningKeyInfo> warningKeys = Arrays.stream(SourceWarningKey.values())
+                .map(w -> new SourceWarningKeyInfo(w.name(), w.getName(), w.getComment()))
                 .collect(Collectors.toList());
 
         Catalog catalog = new Catalog(semanticRoles, warningKeys);

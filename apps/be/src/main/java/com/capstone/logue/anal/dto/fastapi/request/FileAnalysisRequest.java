@@ -10,7 +10,7 @@ public record FileAnalysisRequest (
     Long requestId,
 
     @JsonProperty("data_source")
-    DataSourceMeta dataSource,
+    DataSourceMetaInfo dataSource,
 
     Catalog catalog
 ) {}
