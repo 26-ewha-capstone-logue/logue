@@ -7,6 +7,5 @@ import java.util.List;
 public record WarningInfo(
     String code,
 
-    @JsonProperty("related_columns")
     List<String> relatedColumns
 ) {}
