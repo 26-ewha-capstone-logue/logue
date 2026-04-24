@@ -203,7 +203,7 @@ public class AnalService {
 
         String warningMessage = warnings.isEmpty()
                 ? null
-                : warnings.get(0).getComment(); // 일단 하나만
+                : warnings.get(0).getComment(); // TODO: 경고 메시지가 여러 개일 경우 처리 정책 필요 (현재 첫 번째만 반환)
 
         return GetSummaryResponse.builder()
                 .rowCount(dataSource.getRowCount())
