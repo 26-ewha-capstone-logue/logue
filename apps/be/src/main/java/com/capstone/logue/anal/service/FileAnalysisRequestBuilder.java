@@ -49,48 +49,26 @@ public class FileAnalysisRequestBuilder {
                 .map(header -> buildColumnMeta(header, headers, rows))
                 .collect(Collectors.toList());
 
-        DataSourceMeta dataSourceMeta = DataSourceMeta.builder()
-                .fileName(fileName)
-                .rowCount(rowCount)
-                .columnCount(columnCount)
-                .columns(columns)
-                .build();
+        DataSourceMeta dataSourceMeta = new DataSourceMeta(fileName, rowCount, columnCount, columns);
 
         List<String> semanticRoles = Arrays.stream(SemanticRoleType.values())
                 .map(Enum::name)
                 .collect(Collectors.toList());
 
         List<SourceWarningKeyDto> warningKeys = Arrays.stream(SourceWarningKey.values())
-                .map(w -> SourceWarningKeyDto.builder()
-                        .code(w.name())
-                        .name(w.getName())
-                        .comment(w.getComment())
-                        .build())
+                .map(w -> new SourceWarningKeyDto(w.name(), w.getName(), w.getComment()))
                 .collect(Collectors.toList());
 
-        Catalog catalog = Catalog.builder()
-                .semanticRoles(semanticRoles)
-                .sourceWarningKeys(warningKeys)
-                .build();
+        Catalog catalog = new Catalog(semanticRoles, warningKeys);
 
-        return FileAnalysisRequest.builder()
-                .requestId(requestId)
-                .dataSource(dataSourceMeta)
-                .catalog(catalog)
-                .build();
+        return new FileAnalysisRequest(requestId, dataSourceMeta, catalog);
     }
 
     private ColumnMeta buildColumnMeta(String header, List<String> headers, List<List<String>> rows) {
         int colIndex = headers.indexOf(header);
         List<String> values = extractColumnValues(rows, colIndex);
 
-        return ColumnMeta.builder()
-                .columnName(header)
-                .dataType(inferDataType(values))
-                .nullRatio(calcNullRatio(values))
-                .uniqueRatio(calcUniqueRatio(values))
-                .sampleValues(extractSampleValues(values))
-                .build();
+        return new ColumnMeta(header, inferDataType(values), calcNullRatio(values), calcUniqueRatio(values), extractSampleValues(values));
     }
 
     /** 각 컬럼의 값 목록을 추출합니다. */
