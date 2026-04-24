@@ -124,6 +124,7 @@ public class AnalService {
 
         AiTaggingJob job = AiTaggingJob.builder()
                 .conversation(conversation)
+                .analysisFlow(saved)
                 .stage(JobStage.DATA_STATUS)
                 .status(JobStatus.QUEUED)
                 .startedAt(OffsetDateTime.now())
@@ -181,7 +182,7 @@ public class AnalService {
                 .orElseThrow(() -> new LogueException(ErrorCode.DATASOURCE_NOT_FOUND));
 
         AiTaggingJob job = aiTaggingJobRepository
-                .findTopByConversationIdAndStageOrderByCreatedAtDesc(conversationId, JobStage.DATA_STATUS)
+                .findTopByConversationIdAndStageOrderByCreatedAtDesc(analysisFlowId, JobStage.DATA_STATUS)
                 .orElseThrow(() -> new LogueException(ErrorCode.JOB_NOT_FOUND));
 
         if (job.getStatus() != JobStatus.SUCCESS) {
@@ -239,7 +240,7 @@ public class AnalService {
                 .orElseThrow(() -> new LogueException(ErrorCode.DATASOURCE_NOT_FOUND));
 
         AiTaggingJob job = aiTaggingJobRepository
-                .findTopByConversationIdAndStageOrderByCreatedAtDesc(conversationId, JobStage.DATA_STATUS)
+                .findTopByConversationIdAndStageOrderByCreatedAtDesc(analysisFlowId, JobStage.DATA_STATUS)
                 .orElseThrow(() -> new LogueException(ErrorCode.INTERNAL_SERVER_ERROR));
 
         return GetSummaryStatusResponse.builder()
@@ -262,7 +263,7 @@ public class AnalService {
                 .orElseThrow(() -> new LogueException(ErrorCode.DATASOURCE_NOT_FOUND));
 
         AiTaggingJob job = aiTaggingJobRepository
-                .findTopByConversationIdAndStageOrderByCreatedAtDesc(conversationId, JobStage.DATA_STATUS)
+                .findTopByConversationIdAndStageOrderByCreatedAtDesc(analysisFlowId, JobStage.DATA_STATUS)
                 .orElseThrow(() -> new LogueException(ErrorCode.INTERNAL_SERVER_ERROR));
 
         if (job.getStatus() != JobStatus.QUEUED && job.getStatus() != JobStatus.RUNNING) {

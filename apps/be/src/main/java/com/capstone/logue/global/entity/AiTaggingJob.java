@@ -99,6 +99,11 @@ public class AiTaggingJob extends BaseTimeEntity {
     private OffsetDateTime finishedAt;
 
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "analysis_flow_id", nullable = false)
+    private AnalysisFlow analysisFlow;
+
+
     /**
      * 작업 상태를 RUNNING으로 변경합니다.
      *
