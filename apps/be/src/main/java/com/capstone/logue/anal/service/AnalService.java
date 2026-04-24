@@ -182,7 +182,7 @@ public class AnalService {
 
         AiTaggingJob job = aiTaggingJobRepository
                 .findTopByConversationIdAndStageOrderByCreatedAtDesc(conversationId, JobStage.DATA_STATUS)
-                .orElseThrow(() -> new LogueException(ErrorCode.INTERNAL_SERVER_ERROR));
+                .orElseThrow(() -> new LogueException(ErrorCode.JOB_NOT_FOUND));
 
         if (job.getStatus() != JobStatus.SUCCESS) {
             throw new LogueException(ErrorCode.SUMMARY_NOT_COMPLETED);

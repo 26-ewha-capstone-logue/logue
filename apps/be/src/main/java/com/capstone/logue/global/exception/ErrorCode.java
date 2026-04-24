@@ -34,7 +34,10 @@ public enum ErrorCode {
     SUMMARY_NOT_STARTED(HttpStatus.BAD_REQUEST, "D102", "데이터 요약이 시작되지 않았습니다."),
 
     // Conversation
-    CONVERSATION_NOT_FOUND(HttpStatus.NOT_FOUND, "CV001", "해당 대화를 찾을 수 없습니다.")
+    CONVERSATION_NOT_FOUND(HttpStatus.NOT_FOUND, "CV001", "해당 대화를 찾을 수 없습니다."),
+
+    // Analysis
+    JOB_NOT_FOUND(HttpStatus.NOT_FOUND, "AN001", "분석 작업을 찾을 수 없습니다.")
     ;
 
     private final HttpStatus httpStatus;
