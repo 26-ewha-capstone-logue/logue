@@ -12,6 +12,7 @@ import com.capstone.logue.global.entity.AiTaggingJob;
 import com.capstone.logue.global.entity.DataSource;
 import com.capstone.logue.global.entity.DataSourceColumn;
 import com.capstone.logue.global.entity.SourceDataWarning;
+import com.capstone.logue.global.entity.enums.JobStatus;
 import com.capstone.logue.global.entity.enums.SourceWarningKey;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -64,6 +65,14 @@ public class JobStateService {
             List<Warning> responseWarnings,
             FileAnalysisRequest fileAnalysisRequest
     ) {
+        AiTaggingJob job = aiTaggingJobRepository.findById(jobId).orElseThrow();
+
+        // CANCELED 상태면 저장 skip
+        if (job.getStatus() == JobStatus.CANCELED) {
+            log.info("[JobStateService] 이미 취소된 작업 - 결과 저장 skip: jobId={}", jobId);
+            return;
+        }
+
         DataSource dataSource = dataSourceRepository.findById(dataSourceId).orElseThrow();
 
         List<DataSourceColumn> columns = columnRoles.stream()
@@ -97,7 +106,6 @@ public class JobStateService {
 
         sourceDataWarningRepository.saveAll(warnings);
 
-        AiTaggingJob job = aiTaggingJobRepository.findById(jobId).orElseThrow();
         job.markSuccess();
     }
 
@@ -107,6 +115,12 @@ public class JobStateService {
     @Transactional
     public void markFailed(Long jobId, String errorMessage) {
         AiTaggingJob job = aiTaggingJobRepository.findById(jobId).orElseThrow();
+
+        if (job.getStatus() == JobStatus.CANCELED) {
+            log.info("[JobStateService] 이미 취소된 작업 - FAILED 처리 skip: jobId={}", jobId);
+            return;
+        }
+
         job.markFailed(errorMessage);
     }
 }
