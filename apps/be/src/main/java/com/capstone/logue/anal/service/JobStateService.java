@@ -79,18 +79,18 @@ public class JobStateService {
 
         List<DataSourceColumn> columns = columnRoles.stream()
                 .map(role -> {
-                    ColumnMeta meta = fileAnalysisRequest.getDataSource().getColumns().stream()
-                            .filter(c -> c.getColumnName().equals(role.getColumnName()))
+                    ColumnMeta meta = fileAnalysisRequest.dataSource().columns().stream()
+                            .filter(c -> c.columnName().equals(role.columnName()))
                             .findFirst()
                             .orElseThrow(() -> new LogueException(ErrorCode.COLUMN_NOT_FOUND));
 
                     return DataSourceColumn.builder()
                             .dataSource(dataSource)
-                            .columnName(role.getColumnName())
-                            .dataType(meta.getDataType())
-                            .nullRatio(meta.getNullRatio())
-                            .uniqueRatio(meta.getUniqueRatio())
-                            .sampleValues(objectMapper.valueToTree(meta.getSampleValues()))
+                            .columnName(role.columnName())
+                            .dataType(meta.dataType())
+                            .nullRatio(meta.nullRatio())
+                            .uniqueRatio(meta.uniqueRatio())
+                            .sampleValues(objectMapper.valueToTree(meta.sampleValues()))
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -99,7 +99,7 @@ public class JobStateService {
 
         List<SourceDataWarning> warnings = responseWarnings.stream()
                 .map(w -> {
-                    SourceWarningKey key = SourceWarningKey.valueOf(w.getCode());
+                    SourceWarningKey key = SourceWarningKey.valueOf(w.code());
                     return SourceDataWarning.builder()
                             .dataSource(dataSource)
                             .code(key)

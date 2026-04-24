@@ -78,10 +78,10 @@ public class FileAnalysisAsyncService {
             FileAnalysisRequest fileAnalysisRequest = buildRequest(jobId, dataSource);
             FileAnalysisResponse fileAnalysisResponse = fastApiClient.analyzeFile(fileAnalysisRequest);
 
-            List<ColumnRole> columnRoles = (fileAnalysisResponse.getColumnRoles() == null)
-                    ? List.of() : fileAnalysisResponse.getColumnRoles();
-            List<Warning> responseWarnings = (fileAnalysisResponse.getWarnings() == null)
-                    ? List.of() : fileAnalysisResponse.getWarnings();
+            List<ColumnRole> columnRoles = (fileAnalysisResponse.columnRoles() == null)
+                    ? List.of() : fileAnalysisResponse.columnRoles();
+            List<Warning> responseWarnings = (fileAnalysisResponse.warnings() == null)
+                    ? List.of() : fileAnalysisResponse.warnings();
 
             // 트랜잭션 2 - 결과 저장 + SUCCESS 상태 변경
             jobStateService.saveResultAndMarkSuccess(

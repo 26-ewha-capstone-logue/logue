@@ -111,7 +111,7 @@ public class AnalService {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new LogueException(ErrorCode.CONVERSATION_NOT_FOUND));
 
-        DataSource dataSource = dataSourceRepository.findById(request.getDataSourceId())
+        DataSource dataSource = dataSourceRepository.findById(request.dataSourceId())
                 .orElseThrow(() -> new LogueException(ErrorCode.DATASOURCE_NOT_FOUND));
 
         AnalysisFlow analysisFlow = AnalysisFlow.builder()
@@ -147,7 +147,7 @@ public class AnalService {
 
         return CreateAnalysisFlowResponse.builder()
                 .analysisFlowId(saved.getId())
-                .dataSourceId(request.getDataSourceId())
+                .dataSourceId(request.dataSourceId())
                 .createdAt(saved.getCreatedAt())
                 .build();
     }
