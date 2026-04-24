@@ -83,6 +83,7 @@ class AnalServiceTest {
 
     private AnalService analService;
     private FastApiClient fastApiClient;
+    private SecurityContextProvider securityContextProvider;
 
     @BeforeEach
     void setUp() {
@@ -96,6 +97,7 @@ class AnalServiceTest {
                 userRepository,
                 fileAnalysisAsyncService,
                 fastApiClient,
+                securityContextProvider,
                 objectMapper
         );
 
