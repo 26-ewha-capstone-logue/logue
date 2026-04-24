@@ -117,7 +117,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             User existUser = optionalUser.get();
             log.info("기존 유저입니다. userId={}", existUser.getId());
 
-            String accessToken = jwtProvider.generateToken(existUser.getId(), ACCESS_TOKEN_EXPIRATION_TIME);
+            String accessToken = jwtProvider.generateToken(existUser.getId(), existUser.getEmail(), ACCESS_TOKEN_EXPIRATION_TIME);
 
             String redirectUrl = UriComponentsBuilder
                     .fromUriString(REDIRECT_URI_BASE)

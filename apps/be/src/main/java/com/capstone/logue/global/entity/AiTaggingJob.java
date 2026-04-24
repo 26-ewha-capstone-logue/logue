@@ -16,11 +16,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -54,9 +51,10 @@ public class AiTaggingJob extends BaseTimeEntity {
     /**
      * 이 작업을 트리거한 사용자 메시지.
      * 어떤 사용자 발화로부터 작업이 생성되었는지 추적합니다.
+     * 파일 분석 단계에서의 사용을 위해 {@code nullable=true}로 설정.
      */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "message_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "message_id", nullable = true)
     private Message message;
 
     /** 이 작업이 처리하는 파이프라인 단계. */
@@ -83,12 +81,13 @@ public class AiTaggingJob extends BaseTimeEntity {
      * 작업 요청 당시의 입력값 스냅샷.
      * 디버깅 및 재실행 시 당시 컨텍스트를 복원하기 위해 사용됩니다.
      */
+    @Setter
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "request_payload", columnDefinition = "jsonb")
     private JsonNode requestPayload;
 
     /** 작업 실행 시작 시각. */
-    @Column(name = "started_at", nullable = false)
+    @Column(name = "started_at")
     private OffsetDateTime startedAt;
 
     /**
@@ -98,4 +97,58 @@ public class AiTaggingJob extends BaseTimeEntity {
      */
     @Column(name = "finished_at")
     private OffsetDateTime finishedAt;
+
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "analysis_flow_id", nullable = false)
+    private AnalysisFlow analysisFlow;
+
+
+    /**
+     * 작업 상태를 RUNNING으로 변경합니다.
+     *
+     * <p>
+     * 비동기 작업이 실제 실행되기 시작할 때 호출되며,
+     * 실행 시작 시각(startedAt)을 현재 시각으로 갱신합니다.
+     * </p>
+     */
+    public void markRunning() {
+        this.status = JobStatus.RUNNING;
+        this.startedAt = OffsetDateTime.now();
+    }
+
+    /**
+     * 작업 상태를 SUCCESS로 변경합니다.
+     *
+     * <p>
+     * FastAPI 호출 및 결과 저장이 정상적으로 완료된 경우 호출되며,
+     * 종료 시각(finishedAt)을 기록합니다.
+     * </p>
+     */
+    public void markSuccess() {
+        this.status = JobStatus.SUCCESS;
+        this.finishedAt = OffsetDateTime.now();
+    }
+
+    /**
+     * 작업 상태를 FAILED로 변경합니다.
+     *
+     * <p>
+     * 비동기 작업 수행 중 예외가 발생한 경우 호출되며,
+     * 에러 메시지와 함께 종료 시각을 기록합니다.
+     * </p>
+     *
+     * @param errorMessage 실패 원인 메시지
+     */
+    public void markFailed(String errorMessage) {
+        this.status = JobStatus.FAILED;
+        this.errorMessage = errorMessage;
+        this.finishedAt = OffsetDateTime.now();
+    }
+
+
+    public void markCanceled() {
+        this.status = JobStatus.CANCELED;
+        this.finishedAt = OffsetDateTime.now();
+    }
 }
