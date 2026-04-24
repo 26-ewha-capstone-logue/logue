@@ -87,7 +87,7 @@ public class AiTaggingJob extends BaseTimeEntity {
     private JsonNode requestPayload;
 
     /** 작업 실행 시작 시각. */
-    @Column(name = "started_at", nullable = false)
+    @Column(name = "started_at")
     private OffsetDateTime startedAt;
 
     /**

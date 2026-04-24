@@ -127,7 +127,6 @@ public class AnalService {
                 .analysisFlow(saved)
                 .stage(JobStage.DATA_STATUS)
                 .status(JobStatus.QUEUED)
-                .startedAt(OffsetDateTime.now())
                 .build();
 
         AiTaggingJob savedJob = aiTaggingJobRepository.save(job);
