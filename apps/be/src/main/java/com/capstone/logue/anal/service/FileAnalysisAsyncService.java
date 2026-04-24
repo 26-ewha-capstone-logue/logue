@@ -69,40 +69,19 @@ public class FileAnalysisAsyncService {
     @Async
     @Transactional
     public void analyzeFileAsync(Long jobId, Long dataSourceId) {
-
-        // 트랜잭션 1 - RUNNING 상태 변경 + DataSource 조회
-        DataSource dataSource = jobStateService.markRunningAndGetDataSource(jobId, dataSourceId);
-
         try {
+
+            // 트랜잭션 1 - RUNNING 상태 변경 + DataSource 조회
+            DataSource dataSource = jobStateService.markRunningAndGetDataSource(jobId, dataSourceId);
+
             // 트랜잭션 없음 - FastAPI 호출 (수십 초 소요 가능)
-            FileAnalysisRequest fileAnalysisRequest = fileAnalysisRequestBuilder.build(
-                    jobId,
-                    dataSource.getId(),
-                    dataSource.getFileName(),
-                    dataSource.getRowCount(),
-                    dataSource.getColumnCount(),
-                    dataSource.getSchemaJson()
-            );
+            FileAnalysisRequest fileAnalysisRequest = buildRequest(jobId, dataSource);
+            FileAnalysisResponse fileAnalysisResponse = callFastApi(fileAnalysisRequest);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            HttpEntity<FileAnalysisRequest> entity =
-                    new HttpEntity<>(fileAnalysisRequest, headers);
-
-            ResponseEntity<FileAnalysisResponse> response = restTemplate.exchange(
-                    fastApiBaseUrl + "/v1/llm/data-sources/analyze",
-                    HttpMethod.POST,
-                    entity,
-                    FileAnalysisResponse.class
-            );
-
-            FileAnalysisResponse body = response.getBody();
-
-            List<ColumnRole> columnRoles = (body == null || body.getColumnRoles() == null)
-                    ? List.of() : body.getColumnRoles();
-            List<Warning> responseWarnings = (body == null || body.getWarnings() == null)
-                    ? List.of() : body.getWarnings();
+            List<ColumnRole> columnRoles = (fileAnalysisResponse.getColumnRoles() == null)
+                    ? List.of() : fileAnalysisResponse.getColumnRoles();
+            List<Warning> responseWarnings = (fileAnalysisResponse.getWarnings() == null)
+                    ? List.of() : fileAnalysisResponse.getWarnings();
 
             // 트랜잭션 2 - 결과 저장 + SUCCESS 상태 변경
             jobStateService.saveResultAndMarkSuccess(
@@ -112,10 +91,39 @@ public class FileAnalysisAsyncService {
 
         } catch (Exception e) {
             log.error("[FileAnalysisAsyncService] 파일 분석 실패: jobId={}, dataSourceId={}",
-                    jobId, dataSource.getId(), e);
+                    jobId, dataSourceId, e);
 
             // 트랜잭션 3 - FAILED 상태 변경
             jobStateService.markFailed(jobId, e.getMessage());
         }
+    }
+
+    private FileAnalysisRequest buildRequest(Long jobId, DataSource dataSource) {
+        return fileAnalysisRequestBuilder.build(
+                jobId,
+                dataSource.getId(),
+                dataSource.getFileName(),
+                dataSource.getRowCount(),
+                dataSource.getColumnCount(),
+                dataSource.getSchemaJson()
+        );
+    }
+
+    private FileAnalysisResponse callFastApi(FileAnalysisRequest request) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        ResponseEntity<FileAnalysisResponse> response = restTemplate.exchange(
+                fastApiBaseUrl + "/v1/llm/data-sources/analyze",
+                HttpMethod.POST,
+                new HttpEntity<>(request, headers),
+                FileAnalysisResponse.class
+        );
+
+        FileAnalysisResponse body = response.getBody();
+        if (body == null) {
+            throw new IllegalStateException("FastAPI 응답 body가 null입니다.");
+        }
+        return body;
     }
 }
