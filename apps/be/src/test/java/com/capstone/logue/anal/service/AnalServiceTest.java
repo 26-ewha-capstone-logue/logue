@@ -19,8 +19,6 @@ import com.capstone.logue.global.exception.LogueException;
 import com.capstone.logue.user.repository.UserRepository;
 import com.capstone.logue.anal.dto.fastapi.FileAnalysisResponse;
 import com.capstone.logue.anal.dto.request.FileAnalysisRequest;
-import com.capstone.logue.global.entity.enums.JobStage;
-import com.capstone.logue.global.entity.enums.JobStatus;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,6 +73,7 @@ class AnalServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private FileAnalysisRequestBuilder fileAnalysisRequestBuilder;
     @Mock private RestTemplate restTemplate;
+    @Mock private FileAnalysisAsyncService fileAnalysisAsyncService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -91,9 +90,7 @@ class AnalServiceTest {
                 aiTaggingJobRepository,
                 securityContextProvider,
                 userRepository,
-                fileAnalysisRequestBuilder,
-                restTemplate,
-                objectMapper
+                fileAnalysisAsyncService
         );
 
         ReflectionTestUtils.setField(
@@ -156,7 +153,7 @@ class AnalServiceTest {
      * </p>
      */
     @Test
-    @DisplayName("AnalysisFlow 생성 시 FastAPI 파일 분석을 요청하고 결과를 저장한다")
+    @DisplayName("AnalysisFlow 생성 시 Job을 QUEUED로 저장하고 파일 분석 비동기 작업을 시작한다")
     void createAnalysisFlow_success() {
         User user = User.builder()
                 .id(USER_ID)
@@ -230,11 +227,10 @@ class AnalServiceTest {
 
         verify(analysisFlowRepository).save(any(AnalysisFlow.class));
         verify(aiTaggingJobRepository).save(any(AiTaggingJob.class));
-        verify(restTemplate).exchange(
-                eq("http://localhost:8000/v1/llm/data-sources/analyze"),
-                eq(HttpMethod.POST),
+        verify(fileAnalysisAsyncService).analyzeFileAsync(
                 any(),
-                eq(FileAnalysisResponse.class)
+                eq(DATASOURCE_ID),
+                any()
         );
     }
 
