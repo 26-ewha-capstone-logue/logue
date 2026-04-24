@@ -32,7 +32,6 @@ public class AnalController {
     @Operation(summary = "대화 시작", description = "새로운 분석 대화 생성")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "대화 시작 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "해당 파일을 찾을 수 없음 (D001)"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 내부 오류 (C004)"),
     })
     @PostMapping("/conversations")
