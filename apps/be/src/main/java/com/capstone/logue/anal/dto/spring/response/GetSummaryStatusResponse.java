@@ -1,7 +1,4 @@
-package com.capstone.logue.anal.dto.response;
-
-import lombok.Builder;
-import lombok.Getter;
+package com.capstone.logue.anal.dto.spring.response;
 
 public record GetSummaryStatusResponse (
 
