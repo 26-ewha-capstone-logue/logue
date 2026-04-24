@@ -3,7 +3,7 @@ package com.capstone.logue.anal.service;
 import com.capstone.logue.anal.client.FastApiClient;
 import com.capstone.logue.anal.dto.fastapi.ColumnRoleInfo;
 import com.capstone.logue.anal.dto.fastapi.FileAnalysisResponse;
-import com.capstone.logue.anal.dto.fastapi.Warning;
+import com.capstone.logue.anal.dto.fastapi.WarningInfo;
 import com.capstone.logue.anal.dto.request.FileAnalysisRequest;
 import com.capstone.logue.global.entity.DataSource;
 import lombok.RequiredArgsConstructor;
@@ -66,7 +66,7 @@ public class FileAnalysisAsyncService {
 
             List<ColumnRoleInfo> columnRoles = (fileAnalysisResponse.columnRoles() == null)
                     ? List.of() : fileAnalysisResponse.columnRoles();
-            List<Warning> responseWarnings = (fileAnalysisResponse.warnings() == null)
+            List<WarningInfo> responseWarnings = (fileAnalysisResponse.warnings() == null)
                     ? List.of() : fileAnalysisResponse.warnings();
 
             // 트랜잭션 2 - 결과 저장 + SUCCESS 상태 변경

@@ -17,5 +17,5 @@ public record FileAnalysisResponse (
     @JsonProperty("data_status_summary")
     DataStatusSummary dataStatusSummary,
 
-    List<Warning> warnings
+    List<WarningInfo> warnings
 ) {}

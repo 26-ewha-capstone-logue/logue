@@ -1,7 +1,7 @@
 package com.capstone.logue.anal.service;
 
 import com.capstone.logue.anal.dto.fastapi.ColumnRoleInfo;
-import com.capstone.logue.anal.dto.fastapi.Warning;
+import com.capstone.logue.anal.dto.fastapi.WarningInfo;
 import com.capstone.logue.anal.dto.request.ColumnMeta;
 import com.capstone.logue.anal.dto.request.FileAnalysisRequest;
 import com.capstone.logue.anal.repository.AiTaggingJobRepository;
@@ -64,7 +64,7 @@ public class JobStateService {
             Long jobId,
             Long dataSourceId,
             List<ColumnRoleInfo> columnRoles,
-            List<Warning> responseWarnings,
+            List<WarningInfo> responseWarnings,
             FileAnalysisRequest fileAnalysisRequest
     ) {
         AiTaggingJob job = aiTaggingJobRepository.findById(jobId).orElseThrow();
