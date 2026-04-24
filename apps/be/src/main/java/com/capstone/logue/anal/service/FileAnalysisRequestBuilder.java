@@ -59,7 +59,7 @@ public class FileAnalysisRequestBuilder {
                 .map(w -> new SourceWarningKeyInfo(w.name(), w.getName(), w.getComment()))
                 .collect(Collectors.toList());
 
-        Catalog catalog = new Catalog(semanticRoles, warningKeys);
+        CatalogInfo catalog = new CatalogInfo(semanticRoles, warningKeys);
 
         return new FileAnalysisRequest(requestId, dataSourceMeta, catalog);
     }

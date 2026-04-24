@@ -4,10 +4,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
-public record Catalog (
+public record CatalogInfo(
     @JsonProperty("semantic_roles")
     List<String> semanticRoles,
 
     @JsonProperty("source_warning_keys")
-    List<SourceWarningKeyDto> sourceWarningKeys
+    List<SourceWarningKeyInfo> sourceWarningKeys
 ) {}

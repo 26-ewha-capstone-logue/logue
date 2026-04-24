@@ -12,5 +12,5 @@ public record FileAnalysisRequest (
     @JsonProperty("data_source")
     DataSourceMetaInfo dataSource,
 
-    Catalog catalog
+    CatalogInfo catalog
 ) {}
