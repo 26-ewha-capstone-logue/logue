@@ -13,7 +13,9 @@ import com.capstone.logue.global.exception.LogueException;
 import com.capstone.logue.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -48,6 +50,10 @@ public class AnalService {
     private final SecurityContextProvider securityContextProvider;
     private final UserRepository userRepository;
     private final FileAnalysisAsyncService fileAnalysisAsyncService;
+    private final RestTemplate restTemplate;
+
+    @Value("${ai.base-url}")
+    private String fastApiBaseUrl;
 
     /**
      * 새로운 분석 대화를 생성합니다.
@@ -165,7 +171,7 @@ public class AnalService {
                 .orElseThrow(() -> new LogueException(ErrorCode.DATASOURCE_NOT_FOUND));
 
         AiTaggingJob job = aiTaggingJobRepository
-                .findByConversationIdAndStage(conversationId, JobStage.DATA_STATUS)
+                .findTopByConversationIdAndStageOrderByCreatedAtDesc(conversationId, JobStage.DATA_STATUS)
                 .orElseThrow(() -> new LogueException(ErrorCode.INTERNAL_SERVER_ERROR));
 
         if (job.getStatus() != JobStatus.SUCCESS) {
@@ -223,7 +229,7 @@ public class AnalService {
                 .orElseThrow(() -> new LogueException(ErrorCode.DATASOURCE_NOT_FOUND));
 
         AiTaggingJob job = aiTaggingJobRepository
-                .findByConversationIdAndStage(conversationId, JobStage.DATA_STATUS)
+                .findTopByConversationIdAndStageOrderByCreatedAtDesc(conversationId, JobStage.DATA_STATUS)
                 .orElseThrow(() -> new LogueException(ErrorCode.INTERNAL_SERVER_ERROR));
 
         return GetSummaryStatusResponse.builder()
@@ -246,7 +252,7 @@ public class AnalService {
                 .orElseThrow(() -> new LogueException(ErrorCode.DATASOURCE_NOT_FOUND));
 
         AiTaggingJob job = aiTaggingJobRepository
-                .findByConversationIdAndStage(conversationId, JobStage.DATA_STATUS)
+                .findTopByConversationIdAndStageOrderByCreatedAtDesc(conversationId, JobStage.DATA_STATUS)
                 .orElseThrow(() -> new LogueException(ErrorCode.INTERNAL_SERVER_ERROR));
 
         if (job.getStatus() != JobStatus.QUEUED && job.getStatus() != JobStatus.RUNNING) {
@@ -255,7 +261,17 @@ public class AnalService {
 
         job.markCanceled();
         aiTaggingJobRepository.save(job);
-        // TODO: FastAPI 취소 엔드포인트 호출 (AI 담당자분 구현 후 연동)
+
+        // FastAPI 취소 요청
+        try {
+            restTemplate.postForEntity(
+                    fastApiBaseUrl + "/v1/llm/data-sources/analyze/cancel",
+                    null,
+                    Void.class
+            );
+        } catch (Exception e) {
+            log.warn("[AnalService] FastAPI 취소 요청 실패 (무시): conversationId={}", conversationId, e);
+        }
 
         return CancelSummaryResponse.builder()
                 .status("CANCELLED")

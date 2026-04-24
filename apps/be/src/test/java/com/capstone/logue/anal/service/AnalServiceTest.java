@@ -14,6 +14,8 @@ import com.capstone.logue.anal.repository.*;
 import com.capstone.logue.data.repository.DataSourceRepository;
 import com.capstone.logue.auth.provider.SecurityContextProvider;
 import com.capstone.logue.global.entity.*;
+import com.capstone.logue.global.entity.enums.JobStage;
+import com.capstone.logue.global.entity.enums.JobStatus;
 import com.capstone.logue.global.exception.ErrorCode;
 import com.capstone.logue.global.exception.LogueException;
 import com.capstone.logue.user.repository.UserRepository;
@@ -32,6 +34,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.OffsetDateTime;
 import java.util.Optional;
 
 /**
@@ -90,7 +93,8 @@ class AnalServiceTest {
                 aiTaggingJobRepository,
                 securityContextProvider,
                 userRepository,
-                fileAnalysisAsyncService
+                fileAnalysisAsyncService,
+                restTemplate
         );
 
         ReflectionTestUtils.setField(
@@ -186,52 +190,28 @@ class AnalServiceTest {
                 .dataSource(dataSource)
                 .build();
 
-        FileAnalysisRequest fileAnalysisRequest = FileAnalysisRequest.builder()
-                .requestId("request-id")
+        AiTaggingJob savedJob = AiTaggingJob.builder()
+                .id(1L).conversation(conversation)
+                .stage(JobStage.DATA_STATUS).status(JobStatus.QUEUED)
+                .startedAt(OffsetDateTime.now())
                 .build();
 
-        FileAnalysisResponse fileAnalysisResponse = new FileAnalysisResponse();
-
-        when(conversationRepository.findById(CONVERSATION_ID))
-                .thenReturn(Optional.of(conversation));
-        when(dataSourceRepository.findById(DATASOURCE_ID))
-                .thenReturn(Optional.of(dataSource));
-        when(analysisFlowRepository.save(any(AnalysisFlow.class)))
-                .thenReturn(savedFlow);
-        when(fileAnalysisRequestBuilder.build(
-                any(),
-                eq(DATASOURCE_ID),
-                eq("test.csv"),
-                eq(10),
-                eq(2),
-                eq(schemaJson)
-        )).thenReturn(fileAnalysisRequest);
-        when(aiTaggingJobRepository.save(any(AiTaggingJob.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-        when(restTemplate.exchange(
-                eq("http://localhost:8000/v1/llm/data-sources/analyze"),
-                eq(HttpMethod.POST),
-                any(),
-                eq(FileAnalysisResponse.class)
-        )).thenReturn(ResponseEntity.ok(fileAnalysisResponse));
+        when(conversationRepository.findById(CONVERSATION_ID)).thenReturn(Optional.of(conversation));
+        when(dataSourceRepository.findById(DATASOURCE_ID)).thenReturn(Optional.of(dataSource));
+        when(analysisFlowRepository.save(any(AnalysisFlow.class))).thenReturn(savedFlow);
+        when(aiTaggingJobRepository.save(any(AiTaggingJob.class))).thenReturn(savedJob);
 
         CreateAnalysisFlowRequest request = CreateAnalysisFlowRequest.builder()
                 .dataSourceId(DATASOURCE_ID)
                 .build();
 
-        CreateAnalysisFlowResponse response =
-                analService.createAnalysisFlow(CONVERSATION_ID, request);
+        CreateAnalysisFlowResponse response = analService.createAnalysisFlow(CONVERSATION_ID, request);
 
         assertThat(response.getAnalysisFlowId()).isEqualTo(ANALYSIS_FLOW_ID);
         assertThat(response.getDataSourceId()).isEqualTo(DATASOURCE_ID);
-
         verify(analysisFlowRepository).save(any(AnalysisFlow.class));
         verify(aiTaggingJobRepository).save(any(AiTaggingJob.class));
-        verify(fileAnalysisAsyncService).analyzeFileAsync(
-                any(),
-                eq(DATASOURCE_ID),
-                any()
-        );
+        verify(fileAnalysisAsyncService).analyzeFileAsync(eq(1L), eq(DATASOURCE_ID), any(String.class));
     }
 
     /**

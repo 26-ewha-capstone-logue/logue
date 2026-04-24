@@ -8,4 +8,6 @@ import java.util.Optional;
 
 public interface AiTaggingJobRepository extends JpaRepository<AiTaggingJob, Long> {
     Optional<AiTaggingJob> findByConversationIdAndStage(Long conversationId, JobStage stage);
+
+    Optional<AiTaggingJob> findTopByConversationIdAndStageOrderByCreatedAtDesc(Long conversationId, JobStage stage);
 }
