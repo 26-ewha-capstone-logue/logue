@@ -11,6 +11,7 @@ import com.capstone.logue.anal.dto.request.CreateAnalysisFlowRequest;
 import com.capstone.logue.anal.dto.response.CreateAnalysisFlowResponse;
 import com.capstone.logue.anal.dto.response.CreateConversationResponse;
 import com.capstone.logue.anal.repository.*;
+import com.capstone.logue.auth.security.UserPrincipal;
 import com.capstone.logue.data.repository.DataSourceRepository;
 import com.capstone.logue.auth.provider.SecurityContextProvider;
 import com.capstone.logue.global.entity.*;
@@ -72,7 +73,6 @@ class AnalServiceTest {
     @Mock private DataSourceColumnRepository dataSourceColumnRepository;
     @Mock private SourceDataWarningRepository sourceDataWarningRepository;
     @Mock private AiTaggingJobRepository aiTaggingJobRepository;
-    @Mock private SecurityContextProvider securityContextProvider;
     @Mock private UserRepository userRepository;
     @Mock private FileAnalysisRequestBuilder fileAnalysisRequestBuilder;
     @Mock private RestTemplate restTemplate;
@@ -91,7 +91,6 @@ class AnalServiceTest {
                 dataSourceColumnRepository,
                 sourceDataWarningRepository,
                 aiTaggingJobRepository,
-                securityContextProvider,
                 userRepository,
                 fileAnalysisAsyncService,
                 restTemplate
@@ -127,11 +126,10 @@ class AnalServiceTest {
                 .id(CONVERSATION_ID).user(user).title("새 대화")
                 .build();
 
-        when(securityContextProvider.getAuthenticatedUserId()).thenReturn(USER_ID);
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(conversationRepository.save(any())).thenReturn(saved);
 
-        CreateConversationResponse response = analService.createConversation();
+        CreateConversationResponse response = analService.createConversation(USER_ID);
 
         assertThat(response.getConversationId()).isEqualTo(CONVERSATION_ID);
         verify(conversationRepository).save(any());

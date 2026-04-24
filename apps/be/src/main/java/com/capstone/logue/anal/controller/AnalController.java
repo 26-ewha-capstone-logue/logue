@@ -3,6 +3,8 @@ package com.capstone.logue.anal.controller;
 import com.capstone.logue.anal.dto.request.CreateAnalysisFlowRequest;
 import com.capstone.logue.anal.dto.response.*;
 import com.capstone.logue.anal.service.AnalService;
+import com.capstone.logue.auth.annotation.CurrentUser;
+import com.capstone.logue.auth.security.UserPrincipal;
 import com.capstone.logue.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -34,8 +36,12 @@ public class AnalController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 내부 오류 (C004)"),
     })
     @PostMapping("/conversations")
-    public ResponseEntity<ApiResponse<CreateConversationResponse>> createConversation() {
-        return ResponseEntity.ok(ApiResponse.success("대화 시작 성공", analService.createConversation()));
+    public ResponseEntity<ApiResponse<CreateConversationResponse>> createConversation(
+            @CurrentUser UserPrincipal userPrincipal
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "대화 시작 성공",
+                analService.createConversation(userPrincipal.userId())));
     }
 
 

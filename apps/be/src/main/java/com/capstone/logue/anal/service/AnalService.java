@@ -47,7 +47,6 @@ public class AnalService {
     private final DataSourceColumnRepository dataSourceColumnRepository;
     private final SourceDataWarningRepository sourceDataWarningRepository;
     private final AiTaggingJobRepository aiTaggingJobRepository;
-    private final SecurityContextProvider securityContextProvider;
     private final UserRepository userRepository;
     private final FileAnalysisAsyncService fileAnalysisAsyncService;
     private final RestTemplate restTemplate;
@@ -63,8 +62,7 @@ public class AnalService {
      * @return 생성된 대화 정보 (conversationId, createdAt)
      * @throws LogueException 파일을 찾을 수 없는 경우 (D001), 서버 내부 오류 발생 시 (C004)
      */
-    public CreateConversationResponse createConversation() {
-        Long userId = securityContextProvider.getAuthenticatedUserId();
+    public CreateConversationResponse createConversation(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new LogueException(ErrorCode.USER_NOT_FOUND));
 
