@@ -79,10 +79,7 @@ public class AnalService {
 
         Conversation saved = conversationRepository.save(conversation);
 
-        return CreateConversationResponse.builder()
-                .conversationId(saved.getId())
-                .createdAt(saved.getCreatedAt())
-                .build();
+        return new CreateConversationResponse(saved.getId(), saved.getCreatedAt());
     }
 
     /**
@@ -145,11 +142,7 @@ public class AnalService {
                 dataSource.getId()
         );
 
-        return CreateAnalysisFlowResponse.builder()
-                .analysisFlowId(saved.getId())
-                .dataSourceId(request.dataSourceId())
-                .createdAt(saved.getCreatedAt())
-                .build();
+        return new CreateAnalysisFlowResponse(saved.getId(), request.dataSourceId(), saved.getCreatedAt());
     }
 
     /**
@@ -207,21 +200,19 @@ public class AnalService {
                 ? null
                 : warnings.get(0).getComment(); // TODO: 경고 메시지가 여러 개일 경우 처리 정책 필요 (현재 첫 번째만 반환)
 
-        return GetSummaryResponse.builder()
-                .rowCount(dataSource.getRowCount())
-                .columnCount(dataSource.getColumnCount())
-
-                // TODO: ⚠️ 임시 매핑 (나중에 AI 결과 구조 반영 필요)
-                .dataCriteria(columnNames)
-                .measure(List.of())
-                .dimension(List.of())
-                .statusCondition(List.of())
-                .flag(List.of())
-                .idCriteria(List.of())
-
-                .sourceDataWarning(warningMessage)
-                .createdAt(dataSource.getCreatedAt().toLocalDateTime())
-                .build();
+        // TODO: ⚠️ 임시 매핑 (나중에 AI 결과 구조 반영 필요)
+        return new GetSummaryResponse(
+                dataSource.getRowCount(),
+                dataSource.getColumnCount(),
+                columnNames,
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                warningMessage,
+                dataSource.getCreatedAt().toLocalDateTime()
+        );
     }
 
     /**
@@ -245,9 +236,7 @@ public class AnalService {
                 .findTopByConversationIdAndStageOrderByCreatedAtDesc(analysisFlowId, JobStage.DATA_STATUS)
                 .orElseThrow(() -> new LogueException(ErrorCode.INTERNAL_SERVER_ERROR));
 
-        return GetSummaryStatusResponse.builder()
-                .status(job.getStatus().name())
-                .build();
+        return new GetSummaryStatusResponse(job.getStatus().name());
     }
 
     /**
@@ -281,9 +270,7 @@ public class AnalService {
             log.warn("[AnalService] FastAPI 취소 요청 실패 (무시): conversationId={}", conversationId, e);
         }
 
-        return CancelSummaryResponse.builder()
-                .status("CANCELLED")
-                .build();
+        return new CancelSummaryResponse("CANCELLED");
     }
 
 
