@@ -31,56 +31,37 @@ import java.util.stream.Collectors;
  * 파일 분석 비동기 작업을 처리하는 서비스입니다.
  *
  * <p>
- * {@link AnalService#createAnalysisFlow(Long, com.capstone.logue.anal.dto.request.CreateAnalysisFlowRequest)}
- * 에서 생성된 {@link AiTaggingJob}을 기반으로 FastAPI 파일 분석 API를 호출하고,
- * 응답 결과를 DB에 저장합니다.
+ * DB 작업은 JobStateService에 위임하여 트랜잭션 범위를 최소화합니다.
+ * FastAPI 호출 구간은 트랜잭션 없이 실행되어 DB 커넥션을 점유하지 않습니다.
  * </p>
  *
- * <p>주요 처리 흐름:</p>
- * <ul>
- *   <li>작업 상태를 RUNNING으로 변경</li>
- *   <li>DataSource 메타데이터 기반 FastAPI 요청 DTO 생성</li>
- *   <li>FastAPI 파일 분석 API 호출</li>
- *   <li>컬럼 역할 분석 결과를 DataSourceColumn으로 저장</li>
- *   <li>데이터 경고 결과를 SourceDataWarning으로 저장</li>
- *   <li>성공 시 SUCCESS, 실패 시 FAILED 상태로 변경</li>
- * </ul>
- *
- * <p>
- * 이 서비스는 {@code @Async}로 실행되므로,
- * API 요청 스레드와 분리된 백그라운드 스레드에서 동작합니다.
- * </p>
+ * <p>트랜잭션 흐름:</p>
+ * <pre>
+ * [트랜잭션 1: markRunning]
+ *        ↓
+ * [트랜잭션 없음: FastAPI 호출]
+ *        ↓
+ * [트랜잭션 2: 결과 저장 + markSuccess]
+ *        또는
+ * [트랜잭션 3: markFailed]
+ * </pre>
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class FileAnalysisAsyncService {
 
-    private final AiTaggingJobRepository aiTaggingJobRepository;
-    private final DataSourceColumnRepository dataSourceColumnRepository;
-    private final DataSourceRepository dataSourceRepository;
-    private final SourceDataWarningRepository sourceDataWarningRepository;
+    private final JobStateService jobStateService;
     private final FileAnalysisRequestBuilder fileAnalysisRequestBuilder;
     private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
 
     @Value("${ai.base-url}")
     private String fastApiBaseUrl;
 
     /**
      * FastAPI 파일 분석 요청을 비동기로 수행합니다.
-     *
-     * <p>
-     * 전달받은 jobId와 dataSourceId로 작업 및 데이터 소스를 다시 조회한 뒤,
-     * FastAPI에 파일 분석 요청을 보냅니다.
-     * 엔티티 객체를 직접 전달하지 않고 ID만 전달하는 이유는
-     * 비동기 스레드에서 별도의 트랜잭션과 영속성 컨텍스트를 사용하기 위함입니다.
-     * </p>
-     *
-     * <p>
-     * 분석 성공 시 컬럼 분석 결과와 경고 정보를 저장하고 작업 상태를 SUCCESS로 변경합니다.
-     * 분석 실패 시 에러 메시지를 기록하고 작업 상태를 FAILED로 변경합니다.
-     * </p>
+     * 이 메서드 자체에는 @Transactional을 걸지 않습니다.
+     * DB 커넥션은 JobStateService의 각 메서드 안에서만 점유됩니다.
      *
      * @param jobId      파일 분석 작업 ID
      * @param dataSourceId 분석 대상 데이터 소스 ID
@@ -89,15 +70,12 @@ public class FileAnalysisAsyncService {
     @Async
     @Transactional
     public void analyzeFileAsync(Long jobId, Long dataSourceId, String requestId) {
-        AiTaggingJob job = aiTaggingJobRepository.findById(jobId)
-                .orElseThrow();
 
-        DataSource dataSource = dataSourceRepository.findById(dataSourceId)
-                .orElseThrow();
+        // 트랜잭션 1 - RUNNING 상태 변경 + DataSource 조회
+        DataSource dataSource = jobStateService.markRunningAndGetDataSource(jobId, dataSourceId);
 
         try {
-            job.markRunning();
-
+            // 트랜잭션 없음 - FastAPI 호출 (수십 초 소요 가능)
             FileAnalysisRequest fileAnalysisRequest = fileAnalysisRequestBuilder.build(
                     requestId,
                     dataSource.getId(),
@@ -122,53 +100,23 @@ public class FileAnalysisAsyncService {
 
             FileAnalysisResponse body = response.getBody();
 
-            if (body != null) {
-                List<ColumnRole> columnRoles =
-                        body.getColumnRoles() == null ? List.of() : body.getColumnRoles();
+            List<ColumnRole> columnRoles = (body == null || body.getColumnRoles() == null)
+                    ? List.of() : body.getColumnRoles();
+            List<Warning> responseWarnings = (body == null || body.getWarnings() == null)
+                    ? List.of() : body.getWarnings();
 
-                List<Warning> responseWarnings =
-                        body.getWarnings() == null ? List.of() : body.getWarnings();
-
-                List<DataSourceColumn> columns = columnRoles.stream()
-                        .map(role -> {
-                            ColumnMeta meta = fileAnalysisRequest.getDataSource().getColumns().stream()
-                                    .filter(c -> c.getColumnName().equals(role.getColumnName()))
-                                    .findFirst()
-                                    .orElseThrow();
-
-                            return DataSourceColumn.builder()
-                                    .dataSource(dataSource)
-                                    .columnName(role.getColumnName())
-                                    .dataType(meta.getDataType())
-                                    .nullRatio(meta.getNullRatio())
-                                    .uniqueRatio(meta.getUniqueRatio())
-                                    .sampleValues(objectMapper.valueToTree(meta.getSampleValues()))
-                                    .build();
-                        })
-                        .collect(Collectors.toList());
-
-                dataSourceColumnRepository.saveAll(columns);
-
-                List<SourceDataWarning> warnings = responseWarnings.stream()
-                        .map(w -> SourceDataWarning.builder()
-                                .dataSource(dataSource)
-                                .code(SourceWarningKey.valueOf(w.getCode()))
-                                .name(SourceWarningKey.valueOf(w.getCode()).getName())
-                                .comment(SourceWarningKey.valueOf(w.getCode()).getComment())
-                                .build())
-                        .collect(Collectors.toList());
-
-                sourceDataWarningRepository.saveAll(warnings);
-            }
-
-            job.markSuccess();
+            // 트랜잭션 2 - 결과 저장 + SUCCESS 상태 변경
+            jobStateService.saveResultAndMarkSuccess(
+                    jobId, dataSourceId, columnRoles, responseWarnings, fileAnalysisRequest
+            );
             log.info("[FileAnalysisAsyncService] 파일 분석 완료: dataSourceId={}", dataSource.getId());
 
         } catch (Exception e) {
             log.error("[FileAnalysisAsyncService] 파일 분석 실패: jobId={}, dataSourceId={}",
                     jobId, dataSource.getId(), e);
 
-            job.markFailed(e.getMessage());
+            // 트랜잭션 3 - FAILED 상태 변경
+            jobStateService.markFailed(jobId, e.getMessage());
         }
     }
 }
