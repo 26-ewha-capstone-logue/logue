@@ -11,6 +11,8 @@ import com.capstone.logue.global.entity.enums.JobStatus;
 import com.capstone.logue.global.exception.ErrorCode;
 import com.capstone.logue.global.exception.LogueException;
 import com.capstone.logue.user.repository.UserRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +21,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 
@@ -50,6 +53,7 @@ public class AnalService {
     private final UserRepository userRepository;
     private final FileAnalysisAsyncService fileAnalysisAsyncService;
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
 
     @Value("${ai.base-url}")
     private String fastApiBaseUrl;
@@ -126,10 +130,17 @@ public class AnalService {
 
         AiTaggingJob savedJob = aiTaggingJobRepository.save(job);
 
+        JsonNode payload = objectMapper.valueToTree(Map.of(
+                "requestId", savedJob.getId(),   // jobId = requestId
+                "dataSourceId", dataSource.getId(),
+                "fileName", dataSource.getFileName()
+        ));
+        savedJob.setRequestPayload(payload);
+        aiTaggingJobRepository.save(savedJob);
+
         fileAnalysisAsyncService.analyzeFileAsync(
                 savedJob.getId(),
-                dataSource.getId(),
-                requestId
+                dataSource.getId()
         );
 
         return CreateAnalysisFlowResponse.builder()
@@ -264,7 +275,7 @@ public class AnalService {
         try {
             restTemplate.postForEntity(
                     fastApiBaseUrl + "/v1/llm/data-sources/analyze/cancel",
-                    null,
+                    Map.of("requestId", job.getRequestPayload().get("requestId")),
                     Void.class
             );
         } catch (Exception e) {

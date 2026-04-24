@@ -11,7 +11,7 @@ import lombok.Getter;
 @Builder
 public class FileAnalysisRequest {
     @JsonProperty("request_id")
-    private String requestId;
+    private Long requestId;
 
     @JsonProperty("data_source")
     private DataSourceMeta dataSource;

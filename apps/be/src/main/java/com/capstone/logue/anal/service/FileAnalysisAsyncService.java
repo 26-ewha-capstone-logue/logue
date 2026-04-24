@@ -65,11 +65,10 @@ public class FileAnalysisAsyncService {
      *
      * @param jobId      파일 분석 작업 ID
      * @param dataSourceId 분석 대상 데이터 소스 ID
-     * @param requestId  FastAPI 요청 추적용 ID
      */
     @Async
     @Transactional
-    public void analyzeFileAsync(Long jobId, Long dataSourceId, String requestId) {
+    public void analyzeFileAsync(Long jobId, Long dataSourceId) {
 
         // 트랜잭션 1 - RUNNING 상태 변경 + DataSource 조회
         DataSource dataSource = jobStateService.markRunningAndGetDataSource(jobId, dataSourceId);
@@ -77,7 +76,7 @@ public class FileAnalysisAsyncService {
         try {
             // 트랜잭션 없음 - FastAPI 호출 (수십 초 소요 가능)
             FileAnalysisRequest fileAnalysisRequest = fileAnalysisRequestBuilder.build(
-                    requestId,
+                    jobId,
                     dataSource.getId(),
                     dataSource.getFileName(),
                     dataSource.getRowCount(),

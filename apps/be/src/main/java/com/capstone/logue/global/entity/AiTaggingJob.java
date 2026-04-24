@@ -16,11 +16,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -84,6 +81,7 @@ public class AiTaggingJob extends BaseTimeEntity {
      * 작업 요청 당시의 입력값 스냅샷.
      * 디버깅 및 재실행 시 당시 컨텍스트를 복원하기 위해 사용됩니다.
      */
+    @Setter
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "request_payload", columnDefinition = "jsonb")
     private JsonNode requestPayload;

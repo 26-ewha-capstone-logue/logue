@@ -93,7 +93,8 @@ class AnalServiceTest {
                 aiTaggingJobRepository,
                 userRepository,
                 fileAnalysisAsyncService,
-                restTemplate
+                restTemplate,
+                objectMapper
         );
 
         ReflectionTestUtils.setField(
@@ -209,7 +210,7 @@ class AnalServiceTest {
         assertThat(response.getDataSourceId()).isEqualTo(DATASOURCE_ID);
         verify(analysisFlowRepository).save(any(AnalysisFlow.class));
         verify(aiTaggingJobRepository).save(any(AiTaggingJob.class));
-        verify(fileAnalysisAsyncService).analyzeFileAsync(eq(1L), eq(DATASOURCE_ID), any(String.class));
+        verify(fileAnalysisAsyncService).analyzeFileAsync(eq(1L), eq(DATASOURCE_ID));
     }
 
     /**

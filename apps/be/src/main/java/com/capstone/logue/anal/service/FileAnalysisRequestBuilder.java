@@ -35,7 +35,7 @@ public class FileAnalysisRequestBuilder {
      * @return FastAPI 전송용 FileAnalysisRequest
      */
     public FileAnalysisRequest build(
-            String requestId,
+            Long requestId,
             Long dataSourceId,
             String fileName,
             int rowCount,
