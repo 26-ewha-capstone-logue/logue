@@ -1,4 +1,4 @@
-package com.capstone.logue.anal.dto.request;
+package com.capstone.logue.anal.dto.spring.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
