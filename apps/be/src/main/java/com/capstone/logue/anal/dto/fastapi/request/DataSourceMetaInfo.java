@@ -17,5 +17,5 @@ public record DataSourceMetaInfo(
     @JsonProperty("column_count")
     int columnCount,
 
-    List<ColumnMeta> columns
+    List<ColumnMetaInfo> columns
 ) {}

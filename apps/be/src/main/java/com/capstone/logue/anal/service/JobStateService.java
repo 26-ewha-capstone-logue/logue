@@ -2,7 +2,7 @@ package com.capstone.logue.anal.service;
 
 import com.capstone.logue.anal.dto.fastapi.response.ColumnRoleInfo;
 import com.capstone.logue.anal.dto.fastapi.response.WarningInfo;
-import com.capstone.logue.anal.dto.fastapi.request.ColumnMeta;
+import com.capstone.logue.anal.dto.fastapi.request.ColumnMetaInfo;
 import com.capstone.logue.anal.dto.fastapi.request.FileAnalysisRequest;
 import com.capstone.logue.anal.repository.AiTaggingJobRepository;
 import com.capstone.logue.anal.repository.DataSourceColumnRepository;
@@ -79,7 +79,7 @@ public class JobStateService {
 
         List<DataSourceColumn> columns = columnRoles.stream()
                 .map(role -> {
-                    ColumnMeta meta = fileAnalysisRequest.dataSource().columns().stream()
+                    ColumnMetaInfo meta = fileAnalysisRequest.dataSource().columns().stream()
                             .filter(c -> c.columnName().equals(role.columnName()))
                             .findFirst()
                             .orElseThrow(() -> new LogueException(ErrorCode.COLUMN_NOT_FOUND));

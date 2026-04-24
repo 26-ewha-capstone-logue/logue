@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * FastAPI 파일 분석 요청 시 전달하는 단일 컬럼 메타데이터입니다.
  */
-public record ColumnMeta (
+public record ColumnMetaInfo(
     @JsonProperty("column_name")
     String columnName,
 

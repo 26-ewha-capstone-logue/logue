@@ -45,7 +45,7 @@ public class FileAnalysisRequestBuilder {
         List<String> headers = extractHeaders(schemaJson);
         List<List<String>> rows = extractRows(schemaJson);
 
-        List<ColumnMeta> columns = headers.stream()
+        List<ColumnMetaInfo> columns = headers.stream()
                 .map(header -> buildColumnMeta(header, headers, rows))
                 .collect(Collectors.toList());
 
@@ -64,11 +64,11 @@ public class FileAnalysisRequestBuilder {
         return new FileAnalysisRequest(requestId, dataSourceMeta, catalog);
     }
 
-    private ColumnMeta buildColumnMeta(String header, List<String> headers, List<List<String>> rows) {
+    private ColumnMetaInfo buildColumnMeta(String header, List<String> headers, List<List<String>> rows) {
         int colIndex = headers.indexOf(header);
         List<String> values = extractColumnValues(rows, colIndex);
 
-        return new ColumnMeta(header, inferDataType(values), calcNullRatio(values), calcUniqueRatio(values), extractSampleValues(values));
+        return new ColumnMetaInfo(header, inferDataType(values), calcNullRatio(values), calcUniqueRatio(values), extractSampleValues(values));
     }
 
     /** 각 컬럼의 값 목록을 추출합니다. */
