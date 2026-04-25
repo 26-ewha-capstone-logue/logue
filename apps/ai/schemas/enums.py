@@ -22,6 +22,17 @@ class MetricType(StrEnum):
     SUM = "SUM"
 
 
+class DataType(StrEnum):
+    """데이터 소스 컬럼의 파싱된 데이터 타입. wire는 소문자."""
+
+    STRING = "string"
+    INTEGER = "integer"
+    DOUBLE = "double"
+    BOOLEAN = "boolean"
+    DATE = "date"
+    DATETIME = "datetime"
+
+
 class SemanticRoleType(StrEnum):
     """데이터 소스 컬럼의 시맨틱 역할."""
 
