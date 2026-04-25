@@ -1,0 +1,37 @@
+"""분석 기준 도출 라우터.
+
+`POST /v1/llm/analysis-criteria/resolve` — Spring 으로부터 질문/카탈로그/데이터 소스를
+받아 구조화된 분석 기준을 반환한다. 서비스는 `Depends` 로 주입되어
+테스트에서 `app.dependency_overrides` 로 교체 가능하다.
+"""
+
+from __future__ import annotations
+
+from typing import Callable
+
+from fastapi import APIRouter, Depends
+
+from schemas.analysis_criteria import (
+    QuestionAnalysisRequest,
+    QuestionAnalysisResponse,
+)
+from services.analysis_criteria_service import resolve as resolve_service
+
+
+router = APIRouter(prefix="/v1/llm/analysis-criteria", tags=["analysis-criteria"])
+
+
+def get_resolver() -> Callable[[QuestionAnalysisRequest], QuestionAnalysisResponse]:
+    return resolve_service
+
+
+@router.post(
+    "/resolve",
+    response_model=QuestionAnalysisResponse,
+    summary="질문 분석 — 분석 기준 도출",
+)
+def resolve_endpoint(
+    payload: QuestionAnalysisRequest,
+    resolver: Callable[[QuestionAnalysisRequest], QuestionAnalysisResponse] = Depends(get_resolver),
+) -> QuestionAnalysisResponse:
+    return resolver(payload)
