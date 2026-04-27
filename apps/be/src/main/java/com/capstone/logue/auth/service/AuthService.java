@@ -46,4 +46,11 @@ public class AuthService {
 
         return new ReIssueTokenResponse(newAccessToken, newRefreshToken);
     }
+
+    @Transactional
+    public void logout(String refreshToken) {
+        Claims claims = jwtProvider.validateToken(refreshToken);
+        Long userId = jwtProvider.getUserIdFromToken(claims);
+        refreshTokenService.deleteByUserId(userId);
+    }
 }
