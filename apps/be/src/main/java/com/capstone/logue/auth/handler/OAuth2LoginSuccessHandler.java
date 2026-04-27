@@ -54,6 +54,10 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     @Value("${spring.jwt.access-token.expiration-time}")
     private long ACCESS_TOKEN_EXPIRATION_TIME;
 
+    /** refresh token 만료 시간 */
+    @Value("${spring.jwt.refresh-token.expiration-time}")
+    private long REFRESH_TOKEN_EXPIRATION_TIME;
+
 
     /** JWT 생성 및 파싱을 담당하는 provider */
     private final JWTProvider jwtProvider;
@@ -118,6 +122,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             log.info("기존 유저입니다. userId={}", existUser.getId());
 
             String accessToken = jwtProvider.generateToken(existUser.getId(), existUser.getEmail(), ACCESS_TOKEN_EXPIRATION_TIME);
+            String refreshToken = jwtProvider.generateToken(existUser.getId(), existUser.getEmail(), REFRESH_TOKEN_EXPIRATION_TIME);
 
             String redirectUrl = UriComponentsBuilder
                     .fromUriString(REDIRECT_URI_BASE)
