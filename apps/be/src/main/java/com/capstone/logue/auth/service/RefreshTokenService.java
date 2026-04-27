@@ -20,25 +20,17 @@ public class RefreshTokenService {
     private long REFRESH_TOKEN_EXPIRATION_TIME;
 
     // 저장 (기존 토큰 있으면 덮어쓰기)
-    @Transactional
-    public void saveRefreshToken(Long userId, String token) {
-        refreshTokenRepository.deleteByUserId(userId);
-        refreshTokenRepository.save(RefreshToken.builder()
-                .userId(userId)
-                .token(token)
-                .expiresAt(LocalDateTime.now().plusSeconds(REFRESH_TOKEN_EXPIRATION_TIME / 1000))
-                .build());
-    }
-
-    // 조회
-    public RefreshToken getRefreshToken(Long userId) {
-        return refreshTokenRepository.findByUserId(userId)
-                .orElseThrow(() -> new LogueException(ErrorCode.EXPIRED_TOKEN));
+    public void saveRefreshToken(Long userId, String refreshToken) {
+        refreshTokenRepository.save(userId, refreshToken);
     }
 
     // 삭제
-    @Transactional
     public void deleteByUserId(Long userId) {
         refreshTokenRepository.deleteByUserId(userId);
+    }
+
+    // Refresh Token 재발급할 때 동시 요청 방어
+    public boolean rotate(Long userId, String expectedOld, String newToken) {
+        return refreshTokenRepository.rotate(userId, expectedOld, newToken);
     }
 }
