@@ -90,6 +90,7 @@ public class JWTFilter extends OncePerRequestFilter {
                 || path.equals("/health") || path.equals("/error")
                 || path.startsWith("/oauth2") || path.startsWith("/login/oauth2/")
                 || path.startsWith("/swagger-ui/") || path.startsWith("/v3/api-docs")
+                || path.equals("/api/auth/reissue")
                 ;
     }
 
