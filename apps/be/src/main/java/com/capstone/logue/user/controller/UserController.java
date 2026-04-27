@@ -8,13 +8,18 @@ import com.capstone.logue.global.exception.ErrorCode;
 import com.capstone.logue.global.exception.LogueException;
 import com.capstone.logue.global.response.ApiResponse;
 import com.capstone.logue.user.dto.GetUserInfoResponse;
+import com.capstone.logue.user.dto.SignUpRequest;
+import com.capstone.logue.user.dto.SignUpResponse;
 import com.capstone.logue.user.repository.UserRepository;
+import com.capstone.logue.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -26,9 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 public class UserController {
-    /** 사용자 조회를 위한 repository */
-    private final UserRepository userRepository;
-
+    private final UserService userService;
 
     /**
      * 현재 로그인한 사용자의 정보를 조회합니다.
@@ -51,10 +54,20 @@ public class UserController {
     @GetMapping("/api/user/me")
     public ResponseEntity<ApiResponse<GetUserInfoResponse>> getMyInfo(@CurrentUser UserPrincipal currentUser) {
 
-        User user = userRepository.findById(currentUser.userId())
-                .orElseThrow(() -> new LogueException(ErrorCode.USER_NOT_FOUND));
+        User user = userService.findById(currentUser.userId());
 
         GetUserInfoResponse response = GetUserInfoResponse.from(user);
         return ResponseEntity.ok(ApiResponse.success("사용자 정보 조회 성공", response));
+    }
+
+    /**
+     * 유저 회원가입 진행
+     * @return X
+     */
+    @Operation(summary = "사용자 회원가입")
+    @PostMapping("/api/user/signup")
+    public ResponseEntity<ApiResponse<SignUpResponse>> signupUser(@RequestBody SignUpRequest request) {
+        SignUpResponse response = userService.signupUser(request);
+        return ResponseEntity.ok(ApiResponse.success("사용자 회원가입 성공", response));
     }
 }

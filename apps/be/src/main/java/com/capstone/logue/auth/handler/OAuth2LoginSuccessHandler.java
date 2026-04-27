@@ -93,6 +93,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         }
 
         String providerUserId = oAuth2UserInfo.getProviderUserId();
+        String name = oAuth2UserInfo.getName();
         String email = oAuth2UserInfo.getEmail();
         String profileImageUrl = oAuth2UserInfo.getProfileImageUrl();
 
@@ -107,6 +108,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                     .fromUriString(REDIRECT_URI_ONBOARDING)
                     .queryParam("provider", provider)
                     .queryParam("providerUserId", providerUserId)
+                    .queryParam("name", name)
                     .queryParam("email", email)
                     .queryParam("profileImageUrl", profileImageUrl)
                     .build()
