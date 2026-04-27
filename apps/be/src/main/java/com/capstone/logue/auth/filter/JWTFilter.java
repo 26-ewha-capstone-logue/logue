@@ -58,9 +58,11 @@ public class JWTFilter extends OncePerRequestFilter {
         try {
             String accessToken = resolveAccessToken(request);  // Authorization 헤더에서 JWT를 가져온다.
 
-            //토큰이 없으면 인증 없이 다음 필터로 넘김
+            //토큰이 없으면 인증 오류 발생
             if (accessToken == null) {
-                filterChain.doFilter(request,response);
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"code\": \"AUTH_401\", \"message\": \"인증이 필요합니다.\", \"data\": null}");
                 return;
             }
 
@@ -90,7 +92,7 @@ public class JWTFilter extends OncePerRequestFilter {
                 || path.equals("/health") || path.equals("/error")
                 || path.startsWith("/oauth2") || path.startsWith("/login/oauth2/")
                 || path.startsWith("/swagger-ui/") || path.startsWith("/v3/api-docs")
-                || path.equals("/api/auth/reissue")
+                || path.equals("/api/auth/reissue") || path.equals("/api/auth/logout")
                 ;
     }
 
