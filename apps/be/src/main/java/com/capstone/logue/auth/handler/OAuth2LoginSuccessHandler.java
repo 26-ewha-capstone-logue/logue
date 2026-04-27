@@ -1,6 +1,8 @@
 package com.capstone.logue.auth.handler;
 
 import com.capstone.logue.auth.provider.JWTProvider;
+import com.capstone.logue.auth.service.AuthService;
+import com.capstone.logue.auth.service.RefreshTokenService;
 import com.capstone.logue.global.entity.User;
 import com.capstone.logue.auth.dto.GoogleUserInfo;
 import com.capstone.logue.auth.dto.OAuth2UserInfo;
@@ -65,6 +67,8 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     /** 사용자 조회를 위한 repository */
     private final UserRepository userRepository;
 
+    private final RefreshTokenService refreshTokenService;
+
 
     /**
      * OAuth2 로그인 성공 시 호출되는 메서드입니다.
@@ -124,9 +128,12 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             String accessToken = jwtProvider.generateToken(existUser.getId(), existUser.getEmail(), ACCESS_TOKEN_EXPIRATION_TIME);
             String refreshToken = jwtProvider.generateToken(existUser.getId(), existUser.getEmail(), REFRESH_TOKEN_EXPIRATION_TIME);
 
+            refreshTokenService.saveRefreshToken(existUser.getId(), refreshToken);
+
             String redirectUrl = UriComponentsBuilder
                     .fromUriString(REDIRECT_URI_BASE)
                     .queryParam("accessToken", accessToken)
+                    .queryParam("refreshToken", refreshToken)
                     .build()
                     .toUriString();
 
