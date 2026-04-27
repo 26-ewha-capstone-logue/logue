@@ -120,10 +120,14 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
         log.info("OAuth 로그인 성공. providerUserId = {}", providerUserId);
         String accessToken = jwtProvider.generateToken(user.getId(), user.getEmail(), ACCESS_TOKEN_EXPIRATION_TIME);
+        String refreshToken = jwtProvider.generateToken(user.getId(), user.getEmail(), REFRESH_TOKEN_EXPIRATION_TIME);
+
+        refreshTokenService.saveRefreshToken(user.getId(), refreshToken);
 
         String redirectUrl = UriComponentsBuilder
                 .fromUriString(REDIRECT_URI_BASE)
                 .queryParam("accessToken", accessToken)
+                .queryParam("refreshToken", refreshToken)
                 .build()
                 .toUriString();
 
