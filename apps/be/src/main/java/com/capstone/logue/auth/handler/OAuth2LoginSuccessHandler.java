@@ -102,43 +102,32 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
         String providerUserId = oAuth2UserInfo.getProviderUserId();
         String email = oAuth2UserInfo.getEmail();
+        String name = oAuth2UserInfo.getName();
         String profileImageUrl = oAuth2UserInfo.getProfileImageUrl();
 
+        // 신규 유저면 저장, 기존 유저면 그대로 조회
+        User user = userRepository.findByProviderUserId(providerUserId)
+                .orElseGet(() -> {
+                    log.info("신규 유저 저장. provider={}, providerUserId={}", provider, providerUserId);
+                    return userRepository.save(User.builder()
+                            .provider(provider)
+                            .providerUserId(providerUserId)
+                            .email(email)
+                            .name(name)
+                            .profileImageUrl(profileImageUrl)
+                            .build());
+                });
+
         log.info("OAuth 로그인 성공. providerUserId = {}", providerUserId);
-        log.info("email = {}", email);
+        String accessToken = jwtProvider.generateToken(user.getId(), user.getEmail(), ACCESS_TOKEN_EXPIRATION_TIME);
 
-        Optional<User> optionalUser = userRepository.findByProviderUserId(providerUserId);
-        if (optionalUser.isEmpty()) {
-            log.info("신규 유저입니다. provider={}, providerUserId={}", provider, providerUserId);
+        String redirectUrl = UriComponentsBuilder
+                .fromUriString(REDIRECT_URI_BASE)
+                .queryParam("accessToken", accessToken)
+                .build()
+                .toUriString();
 
-            String redirectUrl = UriComponentsBuilder
-                    .fromUriString(REDIRECT_URI_ONBOARDING)
-                    .queryParam("provider", provider)
-                    .queryParam("providerUserId", providerUserId)
-                    .queryParam("email", email)
-                    .queryParam("profileImageUrl", profileImageUrl)
-                    .build()
-                    .toUriString();
-
-            getRedirectStrategy().sendRedirect(request, response, redirectUrl);
-        } else {
-            User existUser = optionalUser.get();
-            log.info("기존 유저입니다. userId={}", existUser.getId());
-
-            String accessToken = jwtProvider.generateToken(existUser.getId(), existUser.getEmail(), ACCESS_TOKEN_EXPIRATION_TIME);
-            String refreshToken = jwtProvider.generateToken(existUser.getId(), existUser.getEmail(), REFRESH_TOKEN_EXPIRATION_TIME);
-
-            refreshTokenService.saveRefreshToken(existUser.getId(), refreshToken);
-
-            String redirectUrl = UriComponentsBuilder
-                    .fromUriString(REDIRECT_URI_BASE)
-                    .queryParam("accessToken", accessToken)
-                    .queryParam("refreshToken", refreshToken)
-                    .build()
-                    .toUriString();
-
-            getRedirectStrategy().sendRedirect(request, response, redirectUrl);
-        }
+        getRedirectStrategy().sendRedirect(request, response, redirectUrl);
 
     }
 }
