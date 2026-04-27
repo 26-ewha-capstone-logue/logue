@@ -1,10 +1,8 @@
 package com.capstone.logue.user.controller;
 
 import com.capstone.logue.auth.annotation.CurrentUser;
-import com.capstone.logue.auth.dto.ReIssueTokenResponse;
 import com.capstone.logue.auth.provider.SecurityContextProvider;
 import com.capstone.logue.auth.security.UserPrincipal;
-import com.capstone.logue.auth.service.AuthService;
 import com.capstone.logue.global.entity.User;
 import com.capstone.logue.global.exception.ErrorCode;
 import com.capstone.logue.global.exception.LogueException;
@@ -17,10 +15,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -34,7 +28,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
     /** 사용자 조회를 위한 repository */
     private final UserRepository userRepository;
-
 
     /**
      * 현재 로그인한 사용자의 정보를 조회합니다.
@@ -62,21 +55,6 @@ public class UserController {
 
         GetUserInfoResponse response = GetUserInfoResponse.from(user);
         return ResponseEntity.ok(ApiResponse.success("사용자 정보 조회 성공", response));
-    }
-
-    @Tag(name = "Auth", description = "인증 API")
-    @RestController
-    @RequiredArgsConstructor
-    public class AuthController {
-
-        private final AuthService authService;
-
-        @Operation(summary = "토큰 재발급")
-        @PostMapping("/api/auth/reissue")
-        public ResponseEntity<ApiResponse<ReIssueTokenResponse>> reIssueToken(@RequestHeader("Refresh-Token") String refreshToken) {
-            ReIssueTokenResponse response = authService.reIssueToken(refreshToken);
-            return ResponseEntity.ok(ApiResponse.success("토큰 재발급 성공", response));
-        }
     }
 
 }
