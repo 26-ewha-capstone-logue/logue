@@ -34,6 +34,9 @@ public class UserService {
 
     @Transactional
     public SignUpResponse signupUser(SignUpRequest request){
+        if (userRepository.findByProviderUserId(request.providerUserId()).isPresent())
+            throw new LogueException(ErrorCode.ALREADY_EXISTS_USER);
+
         User user = userRepository.save(
                 SignUpRequest.toEntity(
                         request.provider(),

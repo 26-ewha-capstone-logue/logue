@@ -23,6 +23,7 @@ public enum ErrorCode {
 
     // User
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "사용자를 찾을 수 없습니다."),
+    ALREADY_EXISTS_USER(HttpStatus.CONFLICT, "U002", "이미 존재하는 사용자입니다."),
 
     // DataSource
     DATASOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "D001", "데이터 소스를 찾을 수 없습니다."),
