@@ -35,23 +35,14 @@ public class AuthService {
         Long userId = jwtProvider.getUserIdFromToken(claims);
         String email = jwtProvider.getEmailFromToken(claims);
 
-        // 2. DB에서 저장된 토큰 조회 및 검증
-        RefreshToken storedToken = refreshTokenService.getRefreshToken(userId);
-
-        if (!storedToken.getToken().equals(refreshToken)) {
-            throw new LogueException(ErrorCode.INVALID_TOKEN);
-        }
-
-        if (storedToken.getExpiresAt().isBefore(LocalDateTime.now())) {
-            refreshTokenService.deleteByUserId(userId);
-            throw new LogueException(ErrorCode.EXPIRED_TOKEN);
-        }
-
-        // 3. 새 토큰 발급 및 저장
+        // 2. CAS로 rotate (이전 토큰 일치 확인 + 새 토큰 저장 원자 실행)
         String newAccessToken = jwtProvider.generateToken(userId, email, ACCESS_TOKEN_EXPIRATION_TIME);
         String newRefreshToken = jwtProvider.generateToken(userId, email, REFRESH_TOKEN_EXPIRATION_TIME);
 
-        refreshTokenService.saveRefreshToken(userId, newRefreshToken);
+        boolean rotated = refreshTokenService.rotate(userId, refreshToken, newRefreshToken);
+        if (!rotated) {
+            throw new LogueException(ErrorCode.INVALID_TOKEN);
+        }
 
         return new ReIssueTokenResponse(newAccessToken, newRefreshToken);
     }
