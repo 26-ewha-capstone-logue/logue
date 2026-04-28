@@ -157,13 +157,28 @@ public class AiTaggingJob extends BaseTimeEntity {
         this.finishedAt = OffsetDateTime.now();
     }
 
+    /**
+     * 작업 상태를 CANCELED로 변경합니다.
+     *
+     * <p>
+     * 사용자가 진행 중인 작업을 취소한 경우 호출되며,
+     * 종료 시각을 기록합니다.
+     * </p>
+     */
     public void markCanceled() {
         this.status = JobStatus.CANCELED;
         this.finishedAt = OffsetDateTime.now();
     }
 
     /**
-     * 수동 재시도 API용: FAILED → QUEUED 으로만 전환 허용
+     * 작업 상태를 QUEUED로 초기화합니다.
+     *
+     * <p>
+     * 수동 재시도 API를 통해 FAILED 상태의 작업을 재시도할 때 호출됩니다.
+     * FAILED 상태가 아닌 경우 예외가 발생하며, 재시도 횟수와 에러 메시지를 초기화합니다.
+     * </p>
+     *
+     * @throws LogueException FAILED 상태가 아닌 경우 (JOB_NOT_RETRYABLE)
      */
     public void resetToQueued() {
         if (this.status != JobStatus.FAILED) {
