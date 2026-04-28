@@ -16,6 +16,7 @@ package com.capstone.logue.global.entity.enums;
 public enum JobStatus {
     QUEUED,
     RUNNING,
+    RETRYING,
     SUCCESS,
     FAILED,
     CANCELED
