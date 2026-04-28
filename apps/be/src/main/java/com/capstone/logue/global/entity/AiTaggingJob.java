@@ -3,6 +3,8 @@ package com.capstone.logue.global.entity;
 import com.capstone.logue.global.entity.base.BaseTimeEntity;
 import com.capstone.logue.global.entity.enums.JobStage;
 import com.capstone.logue.global.entity.enums.JobStatus;
+import com.capstone.logue.global.exception.ErrorCode;
+import com.capstone.logue.global.exception.LogueException;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -104,6 +106,9 @@ public class AiTaggingJob extends BaseTimeEntity {
     private AnalysisFlow analysisFlow;
 
 
+    @Column(nullable = false)
+    private int retryCount = 0;
+
     /**
      * 작업 상태를 RUNNING으로 변경합니다.
      *
@@ -115,6 +120,12 @@ public class AiTaggingJob extends BaseTimeEntity {
     public void markRunning() {
         this.status = JobStatus.RUNNING;
         this.startedAt = OffsetDateTime.now();
+    }
+
+    public void markRetrying(String errorMessage) {
+        this.status = JobStatus.RETRYING;
+        this.retryCount++;
+        this.errorMessage = errorMessage;
     }
 
     /**
@@ -146,9 +157,20 @@ public class AiTaggingJob extends BaseTimeEntity {
         this.finishedAt = OffsetDateTime.now();
     }
 
-
     public void markCanceled() {
         this.status = JobStatus.CANCELED;
         this.finishedAt = OffsetDateTime.now();
+    }
+
+    /**
+     * 수동 재시도 API용: FAILED → QUEUED 으로만 전환 허용
+     */
+    public void resetToQueued() {
+        if (this.status != JobStatus.FAILED) {
+            throw new LogueException(ErrorCode.JOB_NOT_RETRYABLE);
+        }
+        this.status = JobStatus.QUEUED;
+        this.retryCount = 0;
+        this.errorMessage = null;
     }
 }
