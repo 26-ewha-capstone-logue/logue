@@ -106,7 +106,7 @@ public class AiTaggingJob extends BaseTimeEntity {
     private AnalysisFlow analysisFlow;
 
 
-    @Column(nullable = false)
+    @Column(name = "retry_count", nullable = false)
     private int retryCount = 0;
 
     /**
