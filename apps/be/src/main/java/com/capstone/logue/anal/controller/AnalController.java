@@ -3,6 +3,7 @@ package com.capstone.logue.anal.controller;
 import com.capstone.logue.anal.dto.spring.request.CreateAnalysisFlowRequest;
 import com.capstone.logue.anal.dto.spring.response.*;
 import com.capstone.logue.anal.service.AnalService;
+import com.capstone.logue.anal.service.JobRetryService;
 import com.capstone.logue.auth.annotation.CurrentUser;
 import com.capstone.logue.auth.security.UserPrincipal;
 import com.capstone.logue.global.response.ApiResponse;
@@ -117,5 +118,20 @@ public class AnalController {
             @PathVariable Long conversationId,
             @PathVariable Long analysisFlowId) {
         return ResponseEntity.ok(ApiResponse.success("데이터 상태 요약 취소", analService.cancelSummary(conversationId, analysisFlowId)));
+    }
+
+
+    private final JobRetryService jobRetryService;
+
+    @Operation(summary = "분석 작업 재시도", description = "FAILED 상태의 분석 작업을 수동으로 재시도합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "202", description = "재시도 요청 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "작업을 찾을 수 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "FAILED 상태가 아니어서 재시도 불가"),
+    })
+    @PostMapping("/jobs/{jobId}/retry")
+    public ResponseEntity<ApiResponse<Void>> retryJob(@PathVariable Long jobId) {
+        jobRetryService.retryJob(jobId);
+        return ResponseEntity.accepted().build();
     }
 }
