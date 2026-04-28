@@ -21,7 +21,8 @@ public class FastApiClient {
     @Value("${ai.base-url}")
     private String fastApiBaseUrl;
 
-    public FileAnalysisResponse analyzeFile(FileAnalysisRequest request) {
+    // ResponseEntity로 변경 - status code 직접 확인하기 위해
+    public ResponseEntity<FileAnalysisResponse> analyzeFile(FileAnalysisRequest request) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -32,11 +33,10 @@ public class FastApiClient {
                 FileAnalysisResponse.class
         );
 
-        FileAnalysisResponse body = response.getBody();
-        if (body == null) {
+        if (response.getBody() == null) {
             throw new IllegalStateException("FastAPI 응답 body가 null입니다.");
         }
-        return body;
+        return response;
     }
 
     public void cancelAnalysis(Long jobId) {
