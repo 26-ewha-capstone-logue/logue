@@ -128,4 +128,17 @@ public class JobStateService {
 
         job.markFailed(errorMessage);
     }
+
+    @Transactional
+    public void markRetrying(Long jobId, String errorMessage) {
+        AiTaggingJob job = aiTaggingJobRepository.findById(jobId).orElseThrow();
+
+        if (job.getStatus() == JobStatus.CANCELED) {
+            log.info("[JobStateService] 이미 취소된 작업 - RETRYING 처리 skip: jobId={}", jobId);
+            return;
+        }
+
+        job.markRetrying(errorMessage);
+        log.info("[JobStateService] RETRYING: jobId={}, retryCount={}", jobId, job.getRetryCount());
+    }
 }
