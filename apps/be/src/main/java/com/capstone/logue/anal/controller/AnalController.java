@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 public class AnalController {
 
     private final AnalService analService;
+    private final JobRetryService jobRetryService;
 
     /**
      * 새로운 분석 대화를 시작합니다.
@@ -121,7 +122,6 @@ public class AnalController {
     }
 
 
-    private final JobRetryService jobRetryService;
 
     @Operation(summary = "분석 작업 재시도", description = "FAILED 상태의 분석 작업을 수동으로 재시도합니다.")
     @ApiResponses({
