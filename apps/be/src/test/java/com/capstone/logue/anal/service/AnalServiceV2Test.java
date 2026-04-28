@@ -25,6 +25,23 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
 
+/**
+ * {@link FileAnalysisAsyncService} 단위 테스트입니다.
+ *
+ * <p>
+ * FastAPI 응답 유형별 에러 처리 및 재시도 로직을 검증합니다.
+ * 외부 의존성은 모두 Mockito로 대체합니다.
+ * </p>
+ *
+ * <p>검증 시나리오:</p>
+ * <ul>
+ *   <li>4xx 응답 시 재시도 없이 즉시 FAILED</li>
+ *   <li>5xx 응답 3회 연속 시 재시도 소진 후 FAILED</li>
+ *   <li>5xx 2회 후 성공 시 SUCCESS</li>
+ *   <li>네트워크 에러 3회 소진 시 FAILED</li>
+ *   <li>2xx지만 스키마 불일치 시 롤백 후 FAILED, 재시도 없음</li>
+ * </ul>
+ */
 @ExtendWith(MockitoExtension.class)
 public class AnalServiceV2Test {
     @Mock private JobStateService jobStateService;
