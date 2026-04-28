@@ -26,10 +26,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * AiTaggingJob 상태 관리 및 분석 결과 저장을 담당하는 서비스입니다.
+ * {@link AiTaggingJob} 상태 관리 및 분석 결과 저장을 담당하는 서비스입니다.
  *
  * <p>
- * FileAnalysisAsyncService에서 FastAPI 호출과 DB 작업을 분리하기 위해
+ * {@link FileAnalysisAsyncService}에서 FastAPI 호출과 DB 작업을 분리하기 위해
  * 별도 빈으로 분리되었습니다. 각 메서드는 독립적인 트랜잭션으로 실행되어
  * DB 커넥션 점유 시간을 최소화합니다.
  * </p>
@@ -46,7 +46,11 @@ public class JobStateService {
     private final ObjectMapper objectMapper;
 
     /**
-     * 작업 상태를 RUNNING으로 변경하고, 분석에 필요한 DataSource를 반환합니다.
+     * 작업 상태를 RUNNING으로 변경하고, 분석에 필요한 {@link DataSource}를 반환합니다.
+     *
+     * @param jobId        파일 분석 작업 ID
+     * @param dataSourceId 분석 대상 데이터 소스 ID
+     * @return 분석 대상 {@link DataSource}
      */
     @Transactional
     public DataSource markRunningAndGetDataSource(Long jobId, Long dataSourceId) {
@@ -58,6 +62,19 @@ public class JobStateService {
 
     /**
      * 분석 결과(컬럼 역할, 경고)를 저장하고 작업 상태를 SUCCESS로 변경합니다.
+     *
+     * <p>
+     * CANCELED 상태인 경우 결과 저장을 skip합니다.
+     * columnRoles에 요청에 없던 컬럼명이 포함된 경우 {@link LogueException}이 발생하며
+     * 트랜잭션이 롤백됩니다.
+     * </p>
+     *
+     * @param jobId               파일 분석 작업 ID
+     * @param dataSourceId        분석 대상 데이터 소스 ID
+     * @param columnRoles         FastAPI가 반환한 컬럼 역할 목록
+     * @param responseWarnings    FastAPI가 반환한 경고 목록
+     * @param fileAnalysisRequest 원본 분석 요청 DTO (컬럼 메타데이터 조회용)
+     * @throws LogueException FastAPI 응답의 컬럼명이 요청에 없는 경우 (COLUMN_NOT_FOUND)
      */
     @Transactional
     public void saveResultAndMarkSuccess(
@@ -116,6 +133,11 @@ public class JobStateService {
 
     /**
      * 작업 상태를 FAILED로 변경하고 에러 메시지를 기록합니다.
+     *
+     * <p>CANCELED 상태인 경우 FAILED 처리를 skip합니다.</p>
+     *
+     * @param jobId        파일 분석 작업 ID
+     * @param errorMessage 실패 원인 메시지
      */
     @Transactional
     public void markFailed(Long jobId, String errorMessage) {
@@ -129,6 +151,17 @@ public class JobStateService {
         job.markFailed(errorMessage);
     }
 
+    /**
+     * 작업 상태를 RETRYING으로 변경하고 에러 메시지를 기록합니다.
+     *
+     * <p>
+     * 5xx 또는 네트워크 에러 발생 시 재시도 직전에 호출됩니다.
+     * CANCELED 상태인 경우 RETRYING 처리를 skip합니다.
+     * </p>
+     *
+     * @param jobId        파일 분석 작업 ID
+     * @param errorMessage 재시도 원인 메시지
+     */
     @Transactional
     public void markRetrying(Long jobId, String errorMessage) {
         AiTaggingJob job = aiTaggingJobRepository.findById(jobId).orElseThrow();

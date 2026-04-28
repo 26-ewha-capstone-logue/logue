@@ -21,19 +21,22 @@ import java.util.List;
  * 파일 분석 비동기 작업을 처리하는 서비스입니다.
  *
  * <p>
- * DB 작업은 JobStateService에 위임하여 트랜잭션 범위를 최소화합니다.
+ * DB 작업은 {@link JobStateService}에 위임하여 트랜잭션 범위를 최소화합니다.
  * FastAPI 호출 구간은 트랜잭션 없이 실행되어 DB 커넥션을 점유하지 않습니다.
  * </p>
  *
  * <p>트랜잭션 흐름:</p>
  * <pre>
- * [트랜잭션 1: markRunning]
- *        ↓
- * [트랜잭션 없음: FastAPI 호출]
- *        ↓
- * [트랜잭션 2: 결과 저장 + markSuccess]
- *        또는
- * [트랜잭션 3: markFailed]
+ * [트랜잭션 1: markRunningAndGetDataSource]
+ *  *        ↓
+ *  * [트랜잭션 없음: FastAPI 호출 - 재시도 루프]
+ *  *   - 5xx / 네트워크 에러: 최대 3회 재시도 (1s→2s→4s ±30% jitter), RETRYING 상태 전환
+ *  *   - 4xx: 재시도 없이 즉시 FAILED
+ *  *   - 2xx 스키마 불일치: 트랜잭션 롤백 후 FAILED
+ *  *        ↓
+ *  * [트랜잭션 2: saveResultAndMarkSuccess]
+ *  *        또는
+ *  * [트랜잭션 3: markFailed]
  * </pre>
  */
 @Slf4j
@@ -52,24 +55,13 @@ public class FileAnalysisAsyncService {
 
     /**
      * FastAPI 파일 분석 요청을 비동기로 수행합니다.
-     * 이 메서드 자체에는 @Transactional을 걸지 않습니다.
-     * DB 커넥션은 JobStateService의 각 메서드 안에서만 점유됩니다.
      *
-     * <p>트랜잭션 흐름:</p>
-     * <pre>
-     * [트랜잭션 1: markRunning]
-     *        ↓
-     * [트랜잭션 없음: FastAPI 호출 - 재시도 루프]
-     *   - 5xx / 네트워크 에러: 최대 3회 재시도 (1s→2s→4s ±30% jitter)
-     *   - 4xx: 재시도 없이 즉시 FAILED
-     *   - 2xx 스키마 불일치: 롤백 후 FAILED
-     *        ↓
-     * [트랜잭션 2: 결과 저장 + SUCCESS]
-     *        또는
-     * [트랜잭션 3: markFailed]
-     * </pre>
+     * <p>
+     * 이 메서드 자체에는 {@code @Transactional}을 걸지 않습니다.
+     * DB 커넥션은 {@link JobStateService}의 각 메서드 안에서만 점유됩니다.
+     * </p>
      *
-     * @param jobId      파일 분석 작업 ID
+     * @param jobId        파일 분석 작업 ID
      * @param dataSourceId 분석 대상 데이터 소스 ID
      */
     @Async
@@ -130,8 +122,17 @@ public class FileAnalysisAsyncService {
     }
 
     /**
-     * 재시도 가능 여부를 판단하여 RETRYING 상태로 전환하거나 FAILED 처리합니다.
-     * attempt == MAX_ATTEMPTS면 재시도 소진으로 FAILED.
+     * 재시도 가능 여부를 판단하여 상태를 전환합니다.
+            *
+            * <p>
+     * 재시도 횟수가 남아 있으면 {@link JobStateService#markRetrying}을 호출하고
+     * Exponential Backoff 후 다음 시도를 진행합니다.
+            * 최대 횟수({@value MAX_ATTEMPTS}회)를 소진하면 즉시 FAILED 처리합니다.
+     * </p>
+            *
+            * @param jobId        파일 분석 작업 ID
+     * @param attempt      현재 시도 횟수 (1-based)
+     * @param errorMessage 에러 원인 메시지
      */
     private void handleRetryOrFail(Long jobId, int attempt, String errorMessage) {
         if (attempt == MAX_ATTEMPTS) {
@@ -143,7 +144,16 @@ public class FileAnalysisAsyncService {
         sleep(backoffMillis(attempt));
     }
 
-    /** 1s → 2s → 4s, ±30% jitter */
+    /**
+     * Exponential Backoff 대기 시간을 계산합니다.
+     *
+     * <p>
+     * 1회: 1s, 2회: 2s, 3회: 4s 기준에 ±30% jitter를 적용합니다.
+     * </p>
+     *
+     * @param attempt 현재 시도 횟수 (1-based)
+     * @return 대기 시간 (밀리초)
+     */
     private long backoffMillis(int attempt) {
         long base = (long) (1000 * Math.pow(2, attempt - 1));
         double jitter = 1.0 + (Math.random() * 0.6 - 0.3); // 0.7 ~ 1.3
@@ -158,6 +168,13 @@ public class FileAnalysisAsyncService {
         }
     }
 
+    /**
+     * {@link DataSource} 메타데이터를 기반으로 FastAPI 요청 DTO를 생성합니다.
+     *
+     * @param jobId      파일 분석 작업 ID (requestId로 사용)
+     * @param dataSource 분석 대상 데이터 소스
+     * @return FastAPI 전송용 {@link FileAnalysisRequest}
+     */
     private FileAnalysisRequest buildRequest(Long jobId, DataSource dataSource) {
         return fileAnalysisRequestBuilder.build(
                 jobId,

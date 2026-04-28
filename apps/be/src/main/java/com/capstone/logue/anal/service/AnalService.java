@@ -218,7 +218,7 @@ public class AnalService {
      *
      * <p>
      * AnalysisFlow와 연결된 DATA_STATUS 단계의 AiTaggingJob 상태를 조회하여 반환합니다.
-     * 상태값은 QUEUED, RUNNING, SUCCESS, FAILED, CANCELED 중 하나입니다.
+     * 상태값은QUEUED, RUNNING, RETRYING, SUCCESS, FAILED, CANCELED 중 하나입니다.
      * </p>
      *
      * @param conversationId 대화 ID
