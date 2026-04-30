@@ -6,6 +6,7 @@ import com.capstone.logue.auth.filter.JWTFilter;
 import com.capstone.logue.auth.handler.OAuth2LoginFailureHandler;
 import com.capstone.logue.auth.handler.OAuth2LoginSuccessHandler;
 import com.capstone.logue.auth.provider.JWTProvider;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -82,6 +83,13 @@ public class SecurityConfig {
                                 "/swagger-resources/**"
                         ).permitAll()
                         .anyRequest().authenticated()
+                )
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"code\": \"A001\", \"message\": \"인증이 필요합니다.\", \"data\": null}");
+                        })
                 )
                 .addFilterBefore(new JWTFilter(jwtProvider), UsernamePasswordAuthenticationFilter.class)
                 .build();
