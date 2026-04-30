@@ -10,7 +10,7 @@ import httpx
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from routers.column import router as anal_router
+from routers.file_analysis import router as anal_router
 
 
 logging.basicConfig(
