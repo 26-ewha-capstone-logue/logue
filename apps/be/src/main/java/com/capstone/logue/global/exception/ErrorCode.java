@@ -38,7 +38,8 @@ public enum ErrorCode {
     CONVERSATION_NOT_FOUND(HttpStatus.NOT_FOUND, "CV001", "해당 대화를 찾을 수 없습니다."),
 
     // Analysis
-    JOB_NOT_FOUND(HttpStatus.NOT_FOUND, "AN001", "분석 작업을 찾을 수 없습니다.")
+    JOB_NOT_FOUND(HttpStatus.NOT_FOUND, "AN001", "분석 작업을 찾을 수 없습니다."),
+    JOB_NOT_RETRYABLE(HttpStatus.BAD_REQUEST, "AN002", "재시도는 FAILED 상태에서만 가능합니다.")
     ;
 
     private final HttpStatus httpStatus;
