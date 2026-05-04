@@ -75,25 +75,6 @@ public class JWTFilter extends OncePerRequestFilter {
     }
 
     /**
-     * JWT 인증 필터를 적용하지 않을 경로를 지정합니다.
-     *
-     * <p>루트, 헬스 체크, 에러 페이지, OAuth2 로그인 관련 경로,
-     * Swagger 문서 경로 등은 JWT 인증 없이 접근할 수 있도록 제외합니다.</p>
-     *
-     * @param request HTTP 요청
-     * @return 필터 적용 제외 여부
-     */
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getServletPath();
-        return path.equals("/")
-                || path.equals("/health") || path.equals("/error")
-                || path.startsWith("/oauth2") || path.startsWith("/login/oauth2/")
-                || path.startsWith("/swagger-ui/") || path.startsWith("/v3/api-docs")
-                ;
-    }
-
-    /**
      * Authorization 헤더에서 Bearer access token을 추출합니다.
      *
      * <p>헤더가 없거나 Bearer 형식이 아니면 null을 반환합니다.</p>
