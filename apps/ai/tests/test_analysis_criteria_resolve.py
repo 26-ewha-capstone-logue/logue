@@ -169,3 +169,25 @@ def test_mutual_exclusion_violation_returns_502_output_invalid(
 
     assert response.status_code == 502
     assert response.json()["error_code"] == "LLM_OUTPUT_INVALID"
+
+
+# ---------- LLM 호출 실패 502 ----------
+
+
+def test_llm_call_failure_returns_502_call_failed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """LLM 호출 자체가 타임아웃/네트워크 예외로 실패 → LLM_CALL_FAILED."""
+
+    def boom(req: QuestionAnalysisRequest) -> QuestionAnalysisResponse:
+        raise TimeoutError("upstream timed out")
+
+    monkeypatch.setattr(svc, "_call_llm", boom)
+
+    response = client.post(ENDPOINT, json=_valid_request_payload())
+
+    assert response.status_code == 502
+    body = response.json()
+    assert body["error_code"] == "LLM_CALL_FAILED"
+    assert body["request_id"] == "req_X"
+    assert any("upstream timed out" in (d.get("reason") or "") for d in body["details"])
