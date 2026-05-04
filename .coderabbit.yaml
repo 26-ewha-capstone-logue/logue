@@ -8,6 +8,8 @@ reviews:
   auto_review:
     enabled: true
     drafts: false
+    base_branches:
+      - ".*"
   path_instructions:
     - path: "apps/fe/**"
       instructions: |
@@ -36,7 +38,6 @@ reviews:
         - 롤백 가능한 DDL인지 확인해주세요.
         - 데이터 유실 가능성이 있는 변경인지 확인해주세요.
   path_filters:
-    - "!**/*.lock"
     - "!**/yarn.lock"
     - "!**/package-lock.json"
     - "!**/pnpm-lock.yaml"
