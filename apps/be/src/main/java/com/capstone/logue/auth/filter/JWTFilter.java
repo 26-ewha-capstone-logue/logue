@@ -58,11 +58,9 @@ public class JWTFilter extends OncePerRequestFilter {
         try {
             String accessToken = resolveAccessToken(request);  // Authorization 헤더에서 JWT를 가져온다.
 
-            //토큰이 없으면 인증 오류 발생
+            //토큰이 없으면 SecurityContext 비움 → doFilter 통과 (미인증 이슈는 securityconfig에서 걸러짐)
             if (accessToken == null) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json");
-                response.getWriter().write("{\"code\": \"AUTH_401\", \"message\": \"인증이 필요합니다.\", \"data\": null}");
+                filterChain.doFilter(request,response);
                 return;
             }
 
