@@ -24,7 +24,7 @@ public class FileAnalysisRequestBuilder {
     private final ObjectMapper objectMapper;
 
     /**
-     * schemaJson에서 컬럼 메타데이터를 계산하여 FileAnalysisRequest를 생성합니다.
+     * schemaJson에서 컬럼 메타데이터를 계산하여 {@link FileAnalysisRequest}를 생성합니다.
      *
      * @param requestId    Spring이 생성한 요청 추적 ID
      * @param dataSourceId DataSource ID
@@ -32,7 +32,7 @@ public class FileAnalysisRequestBuilder {
      * @param rowCount     전체 행 수
      * @param columnCount  전체 열 수
      * @param schemaJson   DataSource의 schemaJson
-     * @return FastAPI 전송용 FileAnalysisRequest
+     * @return FastAPI 전송용 {@link FileAnalysisRequest}
      */
     public FileAnalysisRequest build(
             Long requestId,
@@ -64,6 +64,15 @@ public class FileAnalysisRequestBuilder {
         return new FileAnalysisRequest(requestId, dataSourceMeta, catalog);
     }
 
+
+    /**
+     * 헤더명과 행 데이터를 기반으로 단일 컬럼의 메타데이터를 생성합니다.
+     *
+     * @param header  컬럼명
+     * @param headers 전체 헤더 목록 (컬럼 인덱스 탐색용)
+     * @param rows    전체 행 데이터
+     * @return 해당 컬럼의 {@link ColumnMetaInfo}
+     */
     private ColumnMetaInfo buildColumnMeta(String header, List<String> headers, List<List<String>> rows) {
         int colIndex = headers.indexOf(header);
         List<String> values = extractColumnValues(rows, colIndex);
@@ -71,7 +80,13 @@ public class FileAnalysisRequestBuilder {
         return new ColumnMetaInfo(header, inferDataType(values), calcNullRatio(values), calcUniqueRatio(values), extractSampleValues(values));
     }
 
-    /** 각 컬럼의 값 목록을 추출합니다. */
+    /**
+     * 특정 컬럼 인덱스에 해당하는 값 목록을 추출합니다.
+     *
+     * @param rows     전체 행 데이터
+     * @param colIndex 추출할 컬럼 인덱스
+     * @return 해당 컬럼의 값 목록
+     */
     private List<String> extractColumnValues(List<List<String>> rows, int colIndex) {
         return rows.stream()
                 .filter(row -> colIndex < row.size())
@@ -79,7 +94,14 @@ public class FileAnalysisRequestBuilder {
                 .collect(Collectors.toList());
     }
 
-    /** NULL 값 비율을 계산합니다. (빈 문자열을 null로 처리) */
+    /**
+     * NULL 값 비율을 계산합니다.
+     *
+     * <p>빈 문자열({@code ""}) 및 공백만 있는 문자열도 null로 처리합니다.</p>
+     *
+     * @param values 컬럼 값 목록
+     * @return null 비율 (0.0 ~ 1.0)
+     */
     private double calcNullRatio(List<String> values) {
         if (values.isEmpty()) return 0.0;
         long nullCount = values.stream()
@@ -88,14 +110,26 @@ public class FileAnalysisRequestBuilder {
         return (double) nullCount / values.size();
     }
 
-    /** 고유값 비율을 계산합니다. */
+    /**
+     * 고유값 비율을 계산합니다.
+     *
+     * @param values 컬럼 값 목록
+     * @return 고유값 비율 (0.0 ~ 1.0)
+     */
     private double calcUniqueRatio(List<String> values) {
         if (values.isEmpty()) return 0.0;
         long uniqueCount = values.stream().distinct().count();
         return (double) uniqueCount / values.size();
     }
 
-    /** 대표 샘플 값을 최대 10개 추출합니다. (중복 제거) */
+    /**
+     * 대표 샘플 값을 최대 10개 추출합니다.
+     *
+     * <p>null 및 공백 값은 제외하며, 중복을 제거한 후 추출합니다.</p>
+     *
+     * @param values 컬럼 값 목록
+     * @return 샘플 값 목록 (최대 10개)
+     */
     private List<String> extractSampleValues(List<String> values) {
         return values.stream()
                 .filter(v -> v != null && !v.isBlank())
@@ -105,8 +139,12 @@ public class FileAnalysisRequestBuilder {
     }
 
     /**
-     * 값 목록을 보고 데이터 타입을 추론합니다.
-     * datetime > integer > double > string 순으로 판단합니다.
+     * 값 목록을 분석하여 데이터 타입을 추론합니다.
+     *
+     * <p>우선순위: {@code datetime > integer > double > string}</p>
+     *
+     * @param values 컬럼 값 목록
+     * @return 추론된 데이터 타입 문자열 ({@code "datetime"}, {@code "integer"}, {@code "double"}, {@code "string"})
      */
     private String inferDataType(List<String> values) {
         List<String> nonNull = values.stream()
@@ -135,6 +173,12 @@ public class FileAnalysisRequestBuilder {
         catch (NumberFormatException e) { return false; }
     }
 
+    /**
+     * schemaJson에서 헤더 목록을 추출합니다.
+     *
+     * @param schemaJson DataSource의 schemaJson
+     * @return 헤더(컬럼명) 목록
+     */
     private List<String> extractHeaders(JsonNode schemaJson) {
         return objectMapper.convertValue(
                 schemaJson.path("headers"),
@@ -142,6 +186,12 @@ public class FileAnalysisRequestBuilder {
         );
     }
 
+    /**
+     * schemaJson에서 미리보기 행 데이터를 추출합니다.
+     *
+     * @param schemaJson DataSource의 schemaJson
+     * @return 행 데이터 목록 (각 행은 문자열 목록)
+     */
     private List<List<String>> extractRows(JsonNode schemaJson) {
         return objectMapper.convertValue(
                 schemaJson.path("previewRows"),

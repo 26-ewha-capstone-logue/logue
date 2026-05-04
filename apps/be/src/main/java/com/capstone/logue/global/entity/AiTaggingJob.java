@@ -3,6 +3,8 @@ package com.capstone.logue.global.entity;
 import com.capstone.logue.global.entity.base.BaseTimeEntity;
 import com.capstone.logue.global.entity.enums.JobStage;
 import com.capstone.logue.global.entity.enums.JobStatus;
+import com.capstone.logue.global.exception.ErrorCode;
+import com.capstone.logue.global.exception.LogueException;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -104,6 +106,9 @@ public class AiTaggingJob extends BaseTimeEntity {
     private AnalysisFlow analysisFlow;
 
 
+    @Column(name = "retry_count", nullable = false)
+    private int retryCount = 0;
+
     /**
      * 작업 상태를 RUNNING으로 변경합니다.
      *
@@ -115,6 +120,12 @@ public class AiTaggingJob extends BaseTimeEntity {
     public void markRunning() {
         this.status = JobStatus.RUNNING;
         this.startedAt = OffsetDateTime.now();
+    }
+
+    public void markRetrying(String errorMessage) {
+        this.status = JobStatus.RETRYING;
+        this.retryCount++;
+        this.errorMessage = errorMessage;
     }
 
     /**
@@ -146,9 +157,35 @@ public class AiTaggingJob extends BaseTimeEntity {
         this.finishedAt = OffsetDateTime.now();
     }
 
-
+    /**
+     * 작업 상태를 CANCELED로 변경합니다.
+     *
+     * <p>
+     * 사용자가 진행 중인 작업을 취소한 경우 호출되며,
+     * 종료 시각을 기록합니다.
+     * </p>
+     */
     public void markCanceled() {
         this.status = JobStatus.CANCELED;
         this.finishedAt = OffsetDateTime.now();
+    }
+
+    /**
+     * 작업 상태를 QUEUED로 초기화합니다.
+     *
+     * <p>
+     * 수동 재시도 API를 통해 FAILED 상태의 작업을 재시도할 때 호출됩니다.
+     * FAILED 상태가 아닌 경우 예외가 발생하며, 재시도 횟수와 에러 메시지를 초기화합니다.
+     * </p>
+     *
+     * @throws LogueException FAILED 상태가 아닌 경우 (JOB_NOT_RETRYABLE)
+     */
+    public void resetToQueued() {
+        if (this.status != JobStatus.FAILED) {
+            throw new LogueException(ErrorCode.JOB_NOT_RETRYABLE);
+        }
+        this.status = JobStatus.QUEUED;
+        this.retryCount = 0;
+        this.errorMessage = null;
     }
 }
