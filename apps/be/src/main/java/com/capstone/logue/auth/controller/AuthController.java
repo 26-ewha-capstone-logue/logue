@@ -29,4 +29,16 @@ public class AuthController {
         ReIssueTokenResponse response = authService.reIssueToken(refreshToken);
         return ResponseEntity.ok(ApiResponse.success("토큰 재발급 성공", response));
     }
+
+    @Operation(summary = "로그아웃")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "로그아웃 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "유효하지 않은 토큰"),
+    })
+    @PostMapping("/api/auth/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @RequestHeader("Refresh-Token") String refreshToken) {
+        authService.logout(refreshToken);
+        return ResponseEntity.ok(ApiResponse.success("로그아웃 성공", null));
+    }
 }

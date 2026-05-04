@@ -58,7 +58,7 @@ public class JWTFilter extends OncePerRequestFilter {
         try {
             String accessToken = resolveAccessToken(request);  // Authorization 헤더에서 JWT를 가져온다.
 
-            //토큰이 없으면 인증 없이 다음 필터로 넘김
+            //토큰이 없으면 SecurityContext 비움 → doFilter 통과 (미인증 이슈는 securityconfig에서 걸러짐)
             if (accessToken == null) {
                 filterChain.doFilter(request,response);
                 return;
