@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import os
 
+from core.errors import AppError, ErrorDetail, LLMCallFailedError
 from schemas.analysis_criteria import (
     QuestionAnalysisRequest,
     QuestionAnalysisResponse,
@@ -26,9 +27,25 @@ _MOCK_ENV = "ANAL_LLM_MOCK"
 
 
 def resolve(req: QuestionAnalysisRequest) -> QuestionAnalysisResponse:
-    """질문 분석 요청을 받아 셀프 검증을 통과한 응답을 반환한다."""
+    """질문 분석 요청을 받아 셀프 검증을 통과한 응답을 반환한다.
 
-    response = _call_llm(req)
+    `_call_llm` 에서 발생한 타임아웃·네트워크·upstream 5xx 등 운영 환경 예외는
+    `LLMCallFailedError` 로 변환되어 502 + `LLM_CALL_FAILED` 응답으로 매핑된다.
+    `AppError` 는 그대로 통과시켜 셀프 검증 분기 의미를 보존하고,
+    `NotImplementedError` 는 골격 단계 가드라 의도적으로 변환하지 않는다.
+    """
+
+    try:
+        response = _call_llm(req)
+    except (AppError, NotImplementedError):
+        raise
+    except Exception as exc:
+        raise LLMCallFailedError(
+            f"LLM 호출 실패: {type(exc).__name__}",
+            request_id=req.request_id,
+            details=[ErrorDetail(reason=str(exc))],
+        ) from exc
+
     validate_llm_output(response, req)
     return response
 
