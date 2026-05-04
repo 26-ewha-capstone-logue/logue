@@ -11,6 +11,7 @@ from typing import Callable
 
 from fastapi import APIRouter, Depends
 
+from core.errors import ErrorResponse
 from schemas.analysis_criteria import (
     QuestionAnalysisRequest,
     QuestionAnalysisResponse,
@@ -25,10 +26,26 @@ def get_resolver() -> Callable[[QuestionAnalysisRequest], QuestionAnalysisRespon
     return resolve_service
 
 
+_ERROR_RESPONSES: dict[int | str, dict] = {
+    422: {
+        "model": ErrorResponse,
+        "description": "입력 검증 실패 — `REQUEST_VALIDATION_FAILED`",
+    },
+    502: {
+        "model": ErrorResponse,
+        "description": (
+            "LLM 응답/호출 실패 — "
+            "`LLM_OUTPUT_INVALID` · `LLM_REFERENCE_VIOLATION` · `LLM_CALL_FAILED`"
+        ),
+    },
+}
+
+
 @router.post(
     "/resolve",
     response_model=QuestionAnalysisResponse,
     summary="질문 분석 — 분석 기준 도출",
+    responses=_ERROR_RESPONSES,
 )
 def resolve_endpoint(
     payload: QuestionAnalysisRequest,
