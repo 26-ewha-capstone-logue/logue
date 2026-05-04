@@ -1,6 +1,8 @@
 package com.capstone.logue.auth.handler;
 
 import com.capstone.logue.auth.provider.JWTProvider;
+import com.capstone.logue.auth.service.AuthService;
+import com.capstone.logue.auth.service.RefreshTokenService;
 import com.capstone.logue.global.entity.User;
 import com.capstone.logue.auth.dto.GoogleUserInfo;
 import com.capstone.logue.auth.dto.OAuth2UserInfo;
@@ -54,12 +56,18 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     @Value("${spring.jwt.access-token.expiration-time}")
     private long ACCESS_TOKEN_EXPIRATION_TIME;
 
+    /** refresh token 만료 시간 */
+    @Value("${spring.jwt.refresh-token.expiration-time}")
+    private long REFRESH_TOKEN_EXPIRATION_TIME;
+
 
     /** JWT 생성 및 파싱을 담당하는 provider */
     private final JWTProvider jwtProvider;
 
     /** 사용자 조회를 위한 repository */
     private final UserRepository userRepository;
+
+    private final RefreshTokenService refreshTokenService;
 
 
     /**
@@ -112,10 +120,14 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
         log.info("OAuth 로그인 성공. providerUserId = {}", providerUserId);
         String accessToken = jwtProvider.generateToken(user.getId(), user.getEmail(), ACCESS_TOKEN_EXPIRATION_TIME);
+        String refreshToken = jwtProvider.generateToken(user.getId(), user.getEmail(), REFRESH_TOKEN_EXPIRATION_TIME);
+
+        refreshTokenService.saveRefreshToken(user.getId(), refreshToken);
 
         String redirectUrl = UriComponentsBuilder
                 .fromUriString(REDIRECT_URI_BASE)
                 .queryParam("accessToken", accessToken)
+                .queryParam("refreshToken", refreshToken)
                 .build()
                 .toUriString();
 
