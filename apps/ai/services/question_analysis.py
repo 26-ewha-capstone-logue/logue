@@ -27,10 +27,24 @@ async def resolve_analysis_criteria(request: QuestionAnalysisRequest) -> Questio
 
     metric = request.catalog.predefined_metrics[0]
     date_column = next(
-        column.column_name
-        for column in request.data_source.columns
-        if column.semantic_role == "DATE_CRITERIA"
+        (
+            column.column_name
+            for column in request.data_source.columns
+            if column.semantic_role == "DATE_CRITERIA"
+        ),
+        None,
     )
+    if date_column is None:
+        return QuestionAnalysisResponse(
+            request_id=request.request_id,
+            analysis_criteria=None,
+            flow_columns=[],
+            warnings=[],
+            unsupported_question=UnsupportedQuestion(
+                reason="DATE_CRITERIA semantic role column is required for analysis criteria.",
+                detected_intent="missing_date_criteria",
+            ),
+        )
     group_by = [
         column.column_name
         for column in request.data_source.columns

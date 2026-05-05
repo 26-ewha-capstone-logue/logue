@@ -85,3 +85,15 @@ def test_resolve_unsupported_question() -> None:
     body = response.json()
     assert body["analysis_criteria"] is None
     assert body["unsupported_question"] is not None
+
+
+def test_resolve_question_without_date_criteria_is_unsupported() -> None:
+    body = request_body("이번 주 가입 전환율이 지난주 대비 어디에서 떨어졌어?")
+    body["data_source"]["columns"][0]["semantic_role"] = "DIMENSION"
+
+    response = client.post("/v1/llm/analysis-criteria/resolve", json=body)
+
+    assert response.status_code == 200
+    response_body = response.json()
+    assert response_body["analysis_criteria"] is None
+    assert response_body["unsupported_question"]["detected_intent"] == "missing_date_criteria"
