@@ -65,7 +65,7 @@ def request_body(question: str) -> dict:
 def test_resolve_comparison_question() -> None:
     response = client.post(
         "/v1/llm/analysis-criteria/resolve",
-        json=request_body("이번 주 가입 전환율이 지난주 대비 어디에서 떨어졌어?"),
+        json=request_body("compare conversion rate vs last week by channel"),
     )
 
     assert response.status_code == 200
@@ -75,10 +75,25 @@ def test_resolve_comparison_question() -> None:
     assert body["unsupported_question"] is None
 
 
+def test_resolve_mixed_ranking_comparison_uses_consistent_comparison_mode() -> None:
+    response = client.post(
+        "/v1/llm/analysis-criteria/resolve",
+        json=request_body("top 5 compare last week conversion rate by channel"),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    criteria = body["analysis_criteria"]
+    assert criteria["analysis_type"] == "COMPARISON"
+    assert criteria["compare_period"] == "last_week"
+    assert criteria["sort_by"] == "delta_conversion_rate"
+    assert criteria["limit_num"] is None
+
+
 def test_resolve_unsupported_question() -> None:
     response = client.post(
         "/v1/llm/analysis-criteria/resolve",
-        json=request_body("왜 전환율이 떨어졌는지 원인을 분석해줘"),
+        json=request_body("explain why conversion rate dropped"),
     )
 
     assert response.status_code == 200
@@ -88,7 +103,7 @@ def test_resolve_unsupported_question() -> None:
 
 
 def test_resolve_question_without_date_criteria_is_unsupported() -> None:
-    body = request_body("이번 주 가입 전환율이 지난주 대비 어디에서 떨어졌어?")
+    body = request_body("compare conversion rate vs last week by channel")
     body["data_source"]["columns"][0]["semantic_role"] = "DIMENSION"
 
     response = client.post("/v1/llm/analysis-criteria/resolve", json=body)

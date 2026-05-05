@@ -10,8 +10,8 @@ from schemas.question_analysis import (
 
 async def resolve_analysis_criteria(request: QuestionAnalysisRequest) -> QuestionAnalysisResponse:
     question = request.question.content.lower()
-    is_ranking = any(token in question for token in ("top", "상위", "하위", "가장 낮", "가장 높"))
-    is_comparison = any(token in question for token in ("대비", "비교", "지난주", "전주"))
+    is_ranking = any(token in question for token in ("top", "ranking"))
+    is_comparison = any(token in question for token in ("compare", "last week", "vs"))
 
     if not is_ranking and not is_comparison:
         return QuestionAnalysisResponse(
@@ -20,11 +20,12 @@ async def resolve_analysis_criteria(request: QuestionAnalysisRequest) -> Questio
             flow_columns=[],
             warnings=[],
             unsupported_question=UnsupportedQuestion(
-                reason="이번 MVP에서는 comparison/ranking 질문만 지원합니다.",
+                reason="Only comparison/ranking questions are supported in this MVP.",
                 detected_intent="unknown",
             ),
         )
 
+    mode = "COMPARISON" if is_comparison else "RANKING"
     metric = request.catalog.predefined_metrics[0]
     date_column = next(
         (
@@ -45,6 +46,7 @@ async def resolve_analysis_criteria(request: QuestionAnalysisRequest) -> Questio
                 detected_intent="missing_date_criteria",
             ),
         )
+
     group_by = [
         column.column_name
         for column in request.data_source.columns
@@ -56,29 +58,33 @@ async def resolve_analysis_criteria(request: QuestionAnalysisRequest) -> Questio
         if column.semantic_role == "FLAG"
     ]
 
+    compare_period = "last_week" if mode == "COMPARISON" else None
+    sort_by = f"delta_{metric.metric_name}" if mode == "COMPARISON" else metric.metric_name
+
     criteria = AnalysisCriteria(
-        analysis_type="RANKING" if is_ranking else "COMPARISON",
+        analysis_type=mode,
         metric_name=metric.metric_name,
         metric_type=metric.metric_type,
         formula_numerator=metric.formula_numerator,
         formula_denominator=metric.formula_denominator,
         base_date_column=date_column,
         standard_period="this_week",
-        compare_period=None if is_ranking else "last_week",
-        sort_by=f"delta_{metric.metric_name}" if is_comparison else metric.metric_name,
+        compare_period=compare_period,
+        sort_by=sort_by,
         sort_direction="asc",
         group_by=group_by,
-        limit_num=5 if is_ranking else None,
+        limit_num=5 if mode == "RANKING" else None,
         filters=filters,
     )
 
+    flow_column_names = {date_column, *group_by, *(item.field for item in filters)}
     return QuestionAnalysisResponse(
         request_id=request.request_id,
         analysis_criteria=criteria,
         flow_columns=[
             FlowColumn(column_name=column.column_name, semantic_role=column.semantic_role)
             for column in request.data_source.columns
-            if column.column_name in {date_column, *group_by, *(item.field for item in filters)}
+            if column.column_name in flow_column_names
         ],
         warnings=[],
         unsupported_question=None,
