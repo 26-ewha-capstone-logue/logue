@@ -17,6 +17,29 @@ public enum ErrorCode {
     // Auth
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "A001", "인증이 필요합니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "A002", "접근 권한이 없습니다."),
+    EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "A003", "만료된 토큰입니다."),
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "A004", "유효하지 않은 토큰입니다."),
+    UNSUPPORTED_OAUTH_PROVIDER(HttpStatus.BAD_REQUEST, "A005", "지원하지 않는 OAuth Provider입니다."),
+
+    // User
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "사용자를 찾을 수 없습니다."),
+
+    // DataSource
+    DATASOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "D001", "데이터 소스를 찾을 수 없습니다."),
+    DATASOURCE_FORBIDDEN(HttpStatus.FORBIDDEN, "D002", "해당 데이터 소스에 대한 접근 권한이 없습니다."),
+    DATASOURCE_INVALID_FILE(HttpStatus.BAD_REQUEST, "D003", "올바르지 않은 CSV 파일입니다."),
+    DATASOURCE_STORAGE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "D004", "데이터 소스 파일 저장/읽기에 실패했습니다."),
+    DATASOURCE_INVALID_PAGE_PARAM(HttpStatus.BAD_REQUEST, "D005", "잘못된 페이지 요청 파라미터입니다."),
+    COLUMN_NOT_FOUND(HttpStatus.BAD_GATEWAY, "D006", "FastAPI 응답에 알 수 없는 컬럼명이 포함되어 있습니다."),
+    SUMMARY_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "D101", "데이터 요약이 완료되지 않았습니다."),
+    SUMMARY_NOT_STARTED(HttpStatus.BAD_REQUEST, "D102", "데이터 요약이 시작되지 않았습니다."),
+
+    // Conversation
+    CONVERSATION_NOT_FOUND(HttpStatus.NOT_FOUND, "CV001", "해당 대화를 찾을 수 없습니다."),
+
+    // Analysis
+    JOB_NOT_FOUND(HttpStatus.NOT_FOUND, "AN001", "분석 작업을 찾을 수 없습니다."),
+    JOB_NOT_RETRYABLE(HttpStatus.BAD_REQUEST, "AN002", "재시도는 FAILED 상태에서만 가능합니다.")
     ;
 
     private final HttpStatus httpStatus;
