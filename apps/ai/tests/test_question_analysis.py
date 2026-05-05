@@ -1,0 +1,87 @@
+from fastapi.testclient import TestClient
+
+import main
+
+
+client = TestClient(main.app)
+
+
+def request_body(question: str) -> dict:
+    return {
+        "request_id": "req_question_001",
+        "conversation_id": 184,
+        "question": {"content": question, "previous_messages": []},
+        "data_source": {
+            "id": 91,
+            "columns": [
+                {
+                    "column_name": "signed_at",
+                    "data_type": "datetime",
+                    "semantic_role": "DATE_CRITERIA",
+                    "null_ratio": 0.02,
+                    "sample_values": ["2024-10-01T09:12:00Z"],
+                },
+                {
+                    "column_name": "signup_complete",
+                    "data_type": "integer",
+                    "semantic_role": "MEASURE",
+                    "null_ratio": 0.0,
+                    "sample_values": [0, 1],
+                },
+                {
+                    "column_name": "channel",
+                    "data_type": "string",
+                    "semantic_role": "DIMENSION",
+                    "null_ratio": 0.0,
+                    "sample_values": ["organic"],
+                },
+                {
+                    "column_name": "internal_test",
+                    "data_type": "boolean",
+                    "semantic_role": "FLAG",
+                    "null_ratio": 0.0,
+                    "sample_values": [False, True],
+                },
+            ],
+        },
+        "catalog": {
+            "analysis_types": ["COMPARISON", "RANKING"],
+            "metric_types": ["RATIO", "COUNT", "SUM"],
+            "predefined_metrics": [
+                {
+                    "metric_name": "conversion_rate",
+                    "display_name": "Signup conversion rate",
+                    "metric_type": "RATIO",
+                    "formula_numerator": "signup_complete",
+                    "formula_denominator": "landing_sessions",
+                }
+            ],
+            "supported_periods": ["this_week", "last_week"],
+            "flow_warning_keys": [],
+        },
+    }
+
+
+def test_resolve_comparison_question() -> None:
+    response = client.post(
+        "/v1/llm/analysis-criteria/resolve",
+        json=request_body("이번 주 가입 전환율이 지난주 대비 어디에서 떨어졌어?"),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["analysis_criteria"]["analysis_type"] == "COMPARISON"
+    assert body["analysis_criteria"]["compare_period"] == "last_week"
+    assert body["unsupported_question"] is None
+
+
+def test_resolve_unsupported_question() -> None:
+    response = client.post(
+        "/v1/llm/analysis-criteria/resolve",
+        json=request_body("왜 전환율이 떨어졌는지 원인을 분석해줘"),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["analysis_criteria"] is None
+    assert body["unsupported_question"] is not None
