@@ -57,7 +57,7 @@ class DataStatusSummary(BaseModel):
     primary_candidates: PrimaryCandidates
 
 
-class Warning(BaseModel):
+class SourceWarning(BaseModel):
     code: str
     related_columns: list[str] = Field(min_length=1)
 
@@ -66,4 +66,4 @@ class FileAnalysisResponse(BaseModel):
     request_id: str
     column_roles: list[ColumnRole] = Field(min_length=1)
     data_status_summary: DataStatusSummary
-    warnings: list[Warning] = []
+    warnings: list[SourceWarning] = []
