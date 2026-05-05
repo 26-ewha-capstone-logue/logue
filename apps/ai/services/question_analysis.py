@@ -26,6 +26,18 @@ async def resolve_analysis_criteria(request: QuestionAnalysisRequest) -> Questio
         )
 
     mode = "COMPARISON" if is_comparison else "RANKING"
+    if not request.catalog.predefined_metrics:
+        return QuestionAnalysisResponse(
+            request_id=request.request_id,
+            analysis_criteria=None,
+            flow_columns=[],
+            warnings=[],
+            unsupported_question=UnsupportedQuestion(
+                reason="At least one predefined metric is required for analysis criteria.",
+                detected_intent="missing_predefined_metric",
+            ),
+        )
+
     metric = request.catalog.predefined_metrics[0]
     date_column = next(
         (

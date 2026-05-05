@@ -1,6 +1,9 @@
 from fastapi.testclient import TestClient
+import asyncio
 
 import main
+from schemas.question_analysis import QuestionAnalysisRequest
+from services.question_analysis import resolve_analysis_criteria
 
 
 client = TestClient(main.app)
@@ -112,3 +115,16 @@ def test_resolve_question_without_date_criteria_is_unsupported() -> None:
     response_body = response.json()
     assert response_body["analysis_criteria"] is None
     assert response_body["unsupported_question"]["detected_intent"] == "missing_date_criteria"
+
+
+def test_resolve_question_without_predefined_metrics_is_unsupported() -> None:
+    request = QuestionAnalysisRequest.model_validate(
+        request_body("compare conversion rate vs last week by channel")
+    )
+    request.catalog.predefined_metrics = []
+
+    response = asyncio.run(resolve_analysis_criteria(request))
+
+    assert response.analysis_criteria is None
+    assert response.unsupported_question is not None
+    assert response.unsupported_question.detected_intent == "missing_predefined_metric"
