@@ -1,3 +1,5 @@
+import re
+
 from schemas.question_analysis import (
     AnalysisCriteria,
     CriteriaFilter,
@@ -8,10 +10,17 @@ from schemas.question_analysis import (
 )
 
 
+def has_keyword(question: str, keywords: tuple[str, ...]) -> bool:
+    return any(
+        re.search(rf"\b{re.escape(keyword)}\b", question) is not None
+        for keyword in keywords
+    )
+
+
 async def resolve_analysis_criteria(request: QuestionAnalysisRequest) -> QuestionAnalysisResponse:
     question = request.question.content.lower()
-    is_ranking = any(token in question for token in ("top", "ranking"))
-    is_comparison = any(token in question for token in ("compare", "last week", "vs"))
+    is_ranking = has_keyword(question, ("top", "ranking"))
+    is_comparison = has_keyword(question, ("compare", "last week", "vs"))
 
     if not is_ranking and not is_comparison:
         return QuestionAnalysisResponse(

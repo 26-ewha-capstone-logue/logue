@@ -105,6 +105,18 @@ def test_resolve_unsupported_question() -> None:
     assert body["unsupported_question"] is not None
 
 
+def test_keyword_matching_does_not_treat_topic_as_top() -> None:
+    response = client.post(
+        "/v1/llm/analysis-criteria/resolve",
+        json=request_body("show the topic breakdown for conversion rate"),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["analysis_criteria"] is None
+    assert body["unsupported_question"] is not None
+
+
 def test_resolve_question_without_date_criteria_is_unsupported() -> None:
     body = request_body("compare conversion rate vs last week by channel")
     body["data_source"]["columns"][0]["semantic_role"] = "DIMENSION"
