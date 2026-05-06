@@ -23,6 +23,7 @@
 ## 현재 업무 흐름의 병목
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Pretendard, Inter, sans-serif", "primaryColor": "#EEF6FF", "primaryBorderColor": "#2563EB", "lineColor": "#64748B", "textColor": "#0F172A"}}}%%
 flowchart LR
     A[성과 수치 확인] --> B[원인 설명 필요]
     B --> C[대시보드 확인]
@@ -33,6 +34,11 @@ flowchart LR
     C -. 막힘 .-> C1[원하는 기준이 없음]
     D -. 막힘 .-> D1[필터·기준일 흔들림]
     E -. 막힘 .-> E1[계산 기준 설명 어려움]
+
+    classDef work fill:#EEF6FF,stroke:#2563EB,color:#0F172A,stroke-width:1.4px;
+    classDef pain fill:#FFF1F2,stroke:#E11D48,color:#7F1D1D,stroke-width:1.4px;
+    class A,B,C,D,E,F work;
+    class C1,D1,E1 pain;
 ```
 
 ## Pain Point 구조
@@ -86,12 +92,20 @@ flowchart LR
 ## 서비스 흐름
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Pretendard, Inter, sans-serif", "primaryColor": "#F8FAFC", "primaryBorderColor": "#0F766E", "lineColor": "#475569", "textColor": "#0F172A"}}}%%
 flowchart LR
-    A[자연어 질문] --> B[질문 해석]
-    B --> C[분석 조건 구조화]
-    C --> D[CSV 계산]
-    D --> E[표/차트 출력]
-    E --> F[계산 기준 표시]
+    Q[자연어 질문] --> P[질문 해석]
+    P --> S[분석 조건 구조화]
+    S --> C[CSV 메타데이터 분석]
+    C --> R[기준·경고 출력]
+    R --> E[계산 기준 표시]
+
+    classDef input fill:#ECFEFF,stroke:#0891B2,color:#164E63,stroke-width:1.4px;
+    classDef logic fill:#F0FDFA,stroke:#0F766E,color:#134E4A,stroke-width:1.4px;
+    classDef output fill:#F8FAFC,stroke:#475569,color:#0F172A,stroke-width:1.4px;
+    class Q input;
+    class P,S,C logic;
+    class R,E output;
 ```
 
 ## Logue가 제공하는 결과 단위
@@ -108,37 +122,61 @@ flowchart LR
 
 # 3. 기술 / 구현
 
-## 사용자가 들으면 바로 떠올릴 수 있는 구현 흐름
+## 우리 스택 기준 구현 흐름
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Pretendard, Inter, sans-serif", "primaryColor": "#F8FAFC", "primaryBorderColor": "#334155", "lineColor": "#64748B", "textColor": "#0F172A"}}}%%
 flowchart LR
-    A[질문 입력] --> B[AI 질문 해석]
-    B --> C[분석 조건 JSON]
-    C --> D[CSV 업로드]
-    D --> E[컬럼 역할 매핑]
-    E --> F[pandas 분석 실행]
-    F --> G[결과 + 기준 출력]
+    A[Next.js 화면<br/>질문·CSV 입력] --> B[Spring Boot API<br/>CSV 업로드·저장]
+    B --> C[Spring CSV Parser<br/>헤더·샘플·통계 추출]
+    C --> D[FastAPI AI 서버<br/>컬럼 역할 태깅]
+    D --> E[Pydantic Schema<br/>응답 계약 검증]
+    E --> F[Next.js 결과 화면<br/>기준·경고 표시]
+
+    classDef fe fill:#EFF6FF,stroke:#2563EB,color:#1E3A8A,stroke-width:1.4px;
+    classDef be fill:#F0FDF4,stroke:#16A34A,color:#14532D,stroke-width:1.4px;
+    classDef ai fill:#FFF7ED,stroke:#EA580C,color:#7C2D12,stroke-width:1.4px;
+    class A,F fe;
+    class B,C be;
+    class D,E ai;
 ```
 
 ## 시스템 구조
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Pretendard, Inter, sans-serif", "primaryColor": "#F8FAFC", "primaryBorderColor": "#334155", "lineColor": "#475569", "textColor": "#0F172A"}}}%%
 flowchart TB
-    U[User] --> FE[Frontend<br/>Next.js · TypeScript]
-    FE --> BE[Backend<br/>Spring Boot]
-    BE --> AI[AI Server<br/>FastAPI · OpenAI SDK · pandas]
+    U[User] --> FE[Frontend<br/>Next.js 16 · TypeScript · Tailwind CSS]
+    FE --> BE[Backend<br/>Spring Boot 3.5 · Java 21]
+    BE --> DB[(PostgreSQL<br/>분석 요청·메타데이터)]
+    BE --> CACHE[(Redis<br/>임시 상태·캐시)]
+    BE --> S3[(S3<br/>CSV 임시 저장)]
+    BE --> AI[AI Server<br/>FastAPI · Python 3.11 · uv]
+    AI --> LLM[OpenAI API<br/>컬럼 역할 해석]
+    AI --> SCHEMA[Pydantic v2<br/>요청·응답 검증]
     AI --> BE
     BE --> FE
+
+    classDef user fill:#F8FAFC,stroke:#334155,color:#0F172A,stroke-width:1.4px;
+    classDef fe fill:#EFF6FF,stroke:#2563EB,color:#1E3A8A,stroke-width:1.4px;
+    classDef be fill:#F0FDF4,stroke:#16A34A,color:#14532D,stroke-width:1.4px;
+    classDef ai fill:#FFF7ED,stroke:#EA580C,color:#7C2D12,stroke-width:1.4px;
+    classDef store fill:#F5F3FF,stroke:#7C3AED,color:#4C1D95,stroke-width:1.4px;
+    class U user;
+    class FE fe;
+    class BE be;
+    class AI,LLM,SCHEMA ai;
+    class DB,CACHE,S3 store;
 ```
 
 ## 역할 분담
 
 | 영역 | 담당 역할 | 핵심 산출물 |
 | --- | --- | --- |
-| Frontend | 질문 입력, CSV 업로드, 결과 화면 | 사용자 인터페이스 |
-| Backend | 요청 처리, 파일 관리, 서버 연결 | API 흐름 제어 |
-| AI Server | 질문 해석, 조건 생성, 모호성 판단 | 분석 조건 JSON |
-| pandas | CSV 기반 계산 | 비교·순위 분석 결과 |
+| Frontend | 질문 입력, CSV 업로드, 결과 화면 | Next.js 기반 사용자 인터페이스 |
+| Backend | CSV 파싱, 파일·상태 관리, AI 서버 연결 | Spring Boot API와 컬럼 메타데이터 |
+| AI Server | 컬럼 역할 태깅, 소스 경고 판단, 응답 검증 | FastAPI 기반 파일 분석 응답 |
+| Storage | CSV 보관과 분석 상태 저장 | S3, PostgreSQL, Redis 기반 관리 |
 
 ## 분석 조건 JSON 예시
 
@@ -158,11 +196,11 @@ flowchart TB
 
 | 기술 요소 | 구현 내용 | 사용자 가치 |
 | --- | --- | --- |
-| Natural Language Parsing | 질문을 분석 조건으로 분해 | BI 조건을 직접 설계하지 않아도 됨 |
-| Schema Mapping | CSV 컬럼의 의미를 매핑 | 컬럼명이 달라도 분석 가능 |
-| Metric Grounding | 지표와 계산식 연결 | 계산 기준 확인 가능 |
-| Ambiguity Handling | 애매한 기준 감지 | 임의 계산 방지 |
-| Explainable Output | 결과와 기준 동시 출력 | 보고·공유 가능성 증가 |
+| CSV Parser | 업로드한 CSV의 헤더, 샘플, 컬럼 통계를 추출 | 원본 파일을 분석 흐름에 연결 |
+| OpenAI Parsing | 컬럼명·샘플·카탈로그를 기준으로 의미를 해석 | 컬럼명이 달라도 기준 후보를 찾음 |
+| Pydantic Schema | AI 응답을 검증 가능한 형태로 고정 | 임의 응답과 누락을 줄임 |
+| Semantic Role Tagging | 날짜, 지표, 차원, 상태 조건 후보를 태깅 | 분석 기준 확인을 쉽게 만듦 |
+| Warning Handling | 기준 충돌과 데이터 상태 경고를 표시 | 애매한 기준을 임의로 넘기지 않음 |
 
 ---
 
@@ -183,12 +221,18 @@ flowchart TB
 ## MVP 사용자 흐름
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Pretendard, Inter, sans-serif", "primaryColor": "#F8FAFC", "primaryBorderColor": "#334155", "lineColor": "#475569", "textColor": "#0F172A"}}}%%
 flowchart LR
     A[질문 입력] --> B[CSV 업로드]
     B --> C[분석 기준 확인]
     C --> D[분석 실행]
     D --> E[결과 확인]
     E --> F[계산 기준 공유]
+
+    classDef step fill:#F8FAFC,stroke:#334155,color:#0F172A,stroke-width:1.4px;
+    classDef check fill:#ECFDF5,stroke:#059669,color:#064E3B,stroke-width:1.4px;
+    class A,B,D,E step;
+    class C,F check;
 ```
 
 ## 화면 단위 산출물
@@ -206,9 +250,9 @@ flowchart LR
 | 구성 요소 | 배포 방식 |
 | --- | --- |
 | Frontend | Vercel 또는 AWS |
-| Backend | AWS EC2 / Docker |
-| AI Server | FastAPI 분리 배포 |
-| Storage | CSV 임시 저장 후 결과 반환 |
+| Backend | AWS EC2 / Docker, PostgreSQL, Redis |
+| AI Server | FastAPI 분리 배포, uv 기반 실행 |
+| Storage | S3 또는 임시 저장소에 CSV 보관 후 결과 반환 |
 
 ## MVP 검증 기준
 
