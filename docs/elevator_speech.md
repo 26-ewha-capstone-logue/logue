@@ -2,7 +2,7 @@
 
 # Logue
 
-## 자연어 질문을 분석 가능한 조건으로 바꾸는 Question-first 분석 지원 서비스
+## Question-first 분석 지원 서비스
 
 | 한 줄 정의 |
 | --- |
@@ -10,9 +10,9 @@
 
 ---
 
-# 1. 문제 — 고객, Pain Point / Vitamin
+# 1. 문제
 
-## 성과를 설명해야 하는 실무자는 많지만, 질문은 바로 분석 조건이 되지 않습니다
+## 고객과 반복 질문
 
 | Target User | 주요 업무 | 반복 질문 |
 | --- | --- | --- |
@@ -20,7 +20,7 @@
 | 기획 실무자 | 서비스 지표 변화 설명 | 이번 주 수치가 왜 변했지? |
 | 운영 실무자 | 세그먼트별 성과 점검 | 어떤 조건에서 문제가 커졌지? |
 
-## 현재 업무 흐름의 병목
+## 업무 흐름의 병목
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"fontFamily": "Pretendard, Inter, sans-serif", "primaryColor": "#EEF6FF", "primaryBorderColor": "#2563EB", "lineColor": "#64748B", "textColor": "#0F172A"}}}%%
@@ -61,7 +61,7 @@ flowchart LR
 
 # 2. 해결 아이디어
 
-## 자연어 질문을 분석 조건으로 바꾸고, 결과와 계산 기준을 함께 제공합니다
+## 해결 방향
 
 ### Before / After
 
@@ -108,7 +108,7 @@ flowchart LR
     class R,E output;
 ```
 
-## Logue가 제공하는 결과 단위
+## 결과 단위
 
 | 결과 영역 | 제공 내용 |
 | --- | --- |
@@ -122,7 +122,7 @@ flowchart LR
 
 # 3. 기술 / 구현
 
-## 우리 스택 기준 구현 흐름
+## 구현 흐름
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"fontFamily": "Pretendard, Inter, sans-serif", "primaryColor": "#F8FAFC", "primaryBorderColor": "#334155", "lineColor": "#64748B", "textColor": "#0F172A"}}}%%
@@ -206,7 +206,7 @@ flowchart TB
 
 # 4. MVP / 배포
 
-## MVP는 반복성이 높은 두 가지 질문 유형에 집중합니다
+## MVP 범위
 
 | MVP 범위 | 포함 여부 | 설명 |
 | --- | --- | --- |
@@ -267,7 +267,7 @@ flowchart LR
 
 # 5. 차별성
 
-## Logue는 BI, Excel, AI 챗봇 사이의 질문 구조화 구간을 겨냥합니다
+## 비교 구간
 
 | 비교 대상 | 강점 | 한계 | Logue의 차이 |
 | --- | --- | --- | --- |
