@@ -1,4 +1,4 @@
-![Logue Banner](https://raw.githubusercontent.com/26-ewha-capstone-logue/logue/docs/%2362-elevator-speech/assets/banner.png)
+![Logue Banner](https://raw.githubusercontent.com/26-ewha-capstone-logue/logue/main/assets/banner.png)
 
 # Logue
 
