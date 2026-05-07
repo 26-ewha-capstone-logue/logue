@@ -45,6 +45,19 @@ class ChartData(BaseModel):
     columns: List[str] = Field(min_length=1, description="결과 테이블의 컬럼 순서")
     rows: List[List[Any]] = Field(description="결과 테이블의 행 데이터 (각 행 길이 = columns 길이, 비어있을 수 있음)")
 
+    @model_validator(mode="after")
+    def _validate_row_length(self) -> "ChartData":
+
+        """각 row의 길이가 columns 길이와 일치하는지 검증합니다."""
+
+        expected = len(self.columns)
+        for idx, row in enumerate(self.rows):
+            if len(row) != expected:
+                raise ValueError(
+                    f"rows[{idx}]의 길이 {len(row)}가 columns 길이 {expected}와 일치하지 않습니다."
+                )
+        return self
+
 class AnalysisSummaryRequest(BaseModel):
 
     """결과 요약 요청 DTO입니다."""
