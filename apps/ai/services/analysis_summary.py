@@ -54,7 +54,7 @@ async def summarize_analysis_result(request: AnalysisSummaryRequest) -> Analysis
     """
 
     # TODO: AI 담당자분이 이 파일에 실제 LLM 호출 로직 채워넣으면 됩니다
-    # 인계 가이드: docs/ai/analysis-summary-handover.md
+    # 인계 가이드: apps/ai/README.md - "결과 요약 API (AI 개발자 인계)" 섹션
 
     response = AnalysisSummaryResponse(
         request_id=request.request_id,
