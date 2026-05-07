@@ -230,6 +230,13 @@ flowchart LR
 %%{init: {"theme": "base", "themeVariables": {"fontFamily": "Pretendard, Inter, sans-serif", "primaryColor": "#F8FAFC", "primaryBorderColor": "#334155", "lineColor": "#475569", "textColor": "#0F172A"}}}%%
 flowchart TB
     User([User])
+    Google["Google OAuth 2.0"]
+
+    subgraph CICD["CI/CD Pipeline"]
+        GH["GitHub Actions"]
+        ECR[("AWS ECR<br/>Docker Image Registry")]
+        GH -- "build & push" --> ECR
+    end
 
     subgraph DNS["AWS Route53 · logue-ai.site"]
         R_FE["logue-ai.site"]
@@ -250,8 +257,13 @@ flowchart TB
             ALB --> TG_AI
         end
 
-        BE["Backend<br/>Spring Boot 3.5 · Java 21"]
-        AI["AI Server<br/>FastAPI · Python 3.11 · uv<br/>Stateless"]
+        subgraph BE_INST["EC2 Instance"]
+            BE["Backend Container<br/>Spring Boot 3.5 · Java 21<br/>+ Flyway Migration"]
+        end
+
+        subgraph AI_INST["EC2 Instance"]
+            AI["AI Server Container<br/>FastAPI · Python 3.11 · uv<br/>Stateless"]
+        end
 
         DB[("RDS PostgreSQL")]
         S3[("S3 Storage")]
@@ -270,13 +282,19 @@ flowchart TB
     R_BE --> ALB
     R_AI -.확장 대비.-> ALB
 
+    BE -. "OAuth 검증" .-> Google
+    BE -- "JWT 발급" --> FE
+
     BE -- "Internal API Key" --> R_AI
 
-    BE --- DB
+    BE -- "Schema Migration" --> DB
     BE --- S3
     BE --- REDIS
 
     AI -- "외부 LLM 호출" --> LLM
+
+    ECR -. "image pull" .-> BE_INST
+    ECR -. "image pull" .-> AI_INST
 
     classDef user fill:#F8FAFC,stroke:#334155,color:#0F172A,stroke-width:1.4px;
     classDef dns fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:1.4px;
@@ -287,6 +305,8 @@ flowchart TB
     classDef alb fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:1.4px;
     classDef tg fill:#FECACA,stroke:#B91C1C,color:#7F1D1D,stroke-width:1.2px;
     classDef ext fill:#FCE7F3,stroke:#DB2777,color:#831843,stroke-width:1.4px;
+    classDef cicd fill:#E0E7FF,stroke:#4338CA,color:#312E81,stroke-width:1.4px;
+    classDef inst fill:#F1F5F9,stroke:#64748B,color:#0F172A,stroke-width:1.2px,stroke-dasharray: 4 3;
 
     class User user;
     class R_FE,R_BE,R_AI dns;
@@ -296,8 +316,26 @@ flowchart TB
     class DB,S3,REDIS store;
     class ALB alb;
     class TG_BE,TG_AI tg;
-    class LLM ext;
+    class LLM,Google ext;
+    class GH,ECR cicd;
 ```
+
+## Tech Stack
+
+| 구분 | Frontend | API Server | AI Server |
+| --- | --- | --- | --- |
+| Framework | Next.js 16 | Spring Boot 3.5 | FastAPI |
+| Language | TypeScript | Java 21 | Python 3.11 |
+| 주요 라이브러리 | Tailwind CSS | Flyway | Pydantic v2 · uv |
+| Database | - | RDS PostgreSQL | Stateless (DB 미접근) |
+| Cache / Storage | - | Redis · S3 | - |
+| External API | - | Google OAuth 2.0 | OpenAI GPT-4o mini / nano |
+| 인증 | JWT (BE 발급) | OAuth 2.0 직접 검증 · JWT 발급 | Internal API Key |
+| 컨테이너 | - | Docker (AWS ECR) | Docker (AWS ECR) |
+| Hosting | Vercel | EC2 + ALB | EC2 + ALB |
+| DNS | `logue-ai.site` | `api.logue-ai.site` | `ai.logue-ai.site` |
+| 환경 분리 | - | Staging / Production | - |
+| CI/CD | Vercel | GitHub Actions | GitHub Actions |
 
 ## MVP 검증 기준
 
