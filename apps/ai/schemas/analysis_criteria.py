@@ -96,6 +96,21 @@ class Filter(BaseModel):
     operator: Operator
     value: Any
 
+    @model_validator(mode="after")
+    def _check_value_shape_for_operator(self) -> "Filter":
+        list_operators = {Operator.IN, Operator.NOT_IN}
+        if self.operator in list_operators:
+            if not isinstance(self.value, list) or len(self.value) == 0:
+                raise ValueError(
+                    f"{self.operator.value} 연산자는 비어있지 않은 list value 가 필요합니다."
+                )
+        else:
+            if isinstance(self.value, list):
+                raise ValueError(
+                    f"{self.operator.value} 연산자는 스칼라 value 를 사용해야 합니다."
+                )
+        return self
+
 
 class AnalysisCriteria(BaseModel):
     analysis_type: AnalysisType

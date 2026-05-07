@@ -12,6 +12,7 @@ Spring 연동/통합 테스트가 LLM 없이도 가능하다.
 
 from __future__ import annotations
 
+import logging
 import os
 
 from core.errors import AppError, ErrorDetail, LLMCallFailedError
@@ -24,6 +25,8 @@ from services.llm_output_validator import validate_llm_output
 
 
 _MOCK_ENV = "ANAL_LLM_MOCK"
+
+logger = logging.getLogger("logue_ai")
 
 
 def resolve(req: QuestionAnalysisRequest) -> QuestionAnalysisResponse:
@@ -40,10 +43,11 @@ def resolve(req: QuestionAnalysisRequest) -> QuestionAnalysisResponse:
     except (AppError, NotImplementedError):
         raise
     except Exception as exc:
+        logger.exception("LLM 호출 실패 (request_id=%s)", req.request_id)
         raise LLMCallFailedError(
             f"LLM 호출 실패: {type(exc).__name__}",
             request_id=req.request_id,
-            details=[ErrorDetail(reason=str(exc))],
+            details=[ErrorDetail(reason="업스트림 LLM 호출 중 오류가 발생했습니다.")],
         ) from exc
 
     validate_llm_output(response, req)

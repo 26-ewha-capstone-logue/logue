@@ -190,4 +190,5 @@ def test_llm_call_failure_returns_502_call_failed(
     body = response.json()
     assert body["error_code"] == "LLM_CALL_FAILED"
     assert body["request_id"] == "req_X"
-    assert any("upstream timed out" in (d.get("reason") or "") for d in body["details"])
+    assert all("upstream timed out" not in (d.get("reason") or "") for d in body["details"])
+    assert any("업스트림" in (d.get("reason") or "") for d in body["details"])
