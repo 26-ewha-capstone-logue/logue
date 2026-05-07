@@ -6,8 +6,14 @@ router = APIRouter(prefix="/v1/llm")
 
 @router.post(
     "/analysis-results/describe",
+    response_model=AnalysisSummaryResponse,
     summary="결과 요약",
     description="확정된 analysis_criteria와 chart_data를 받아 한 줄 자연어 설명(강조 구간 포함)을 생성합니다.",
+    responses={
+        200: {"description": "요약 생성 성공"},
+        422: {"description": "응답 스키마 불일치 — 재시도 없이 FAILED 처리됨"},
+        500: {"description": "서버 내부 오류 — Spring 단에서 재시도"},
+    },
 )
 async def describe_analysis_result(request: AnalysisSummaryRequest) -> AnalysisSummaryResponse:
     """
