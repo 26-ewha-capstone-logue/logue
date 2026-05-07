@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import List, Optional, Literal, Any
 
 # ── Request ──────────────────────────────────────
@@ -16,6 +16,27 @@ class AnalysisCriteria(BaseModel):
     sort_by: str
     sort_direction: Literal["asc", "desc"]
     limit_num: Optional[int] = Field(default=None, ge=1, description="RANKING일 때 필수, COMPARISON일 때 null")
+
+    @model_validator(mode="after")
+    def _validate_type_specific_fields(self) -> "AnalysisCriteria":
+
+        """analysis_type별 필수/금지 필드를 검증합니다.
+
+        - COMPARISON: compare_period 필수, limit_num은 null이어야 함
+        - RANKING: limit_num 필수, compare_period는 null이어야 함
+        """
+
+        if self.analysis_type == "COMPARISON":
+            if self.compare_period is None:
+                raise ValueError("analysis_type이 COMPARISON일 때 compare_period는 필수입니다.")
+            if self.limit_num is not None:
+                raise ValueError("analysis_type이 COMPARISON일 때 limit_num은 null이어야 합니다.")
+        elif self.analysis_type == "RANKING":
+            if self.limit_num is None:
+                raise ValueError("analysis_type이 RANKING일 때 limit_num은 필수입니다.")
+            if self.compare_period is not None:
+                raise ValueError("analysis_type이 RANKING일 때 compare_period는 null이어야 합니다.")
+        return self
 
 class ChartData(BaseModel):
 
