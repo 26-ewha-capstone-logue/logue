@@ -35,6 +35,13 @@
   /* Error */
   --color-error-500: #FD312E;
 
+  /* Mint — 피그마 아이콘 자리(플레이스홀더)용 */
+  --color-mint-100: #ecfdf5;
+  --color-mint-200: #d1fae5;
+  --color-mint-300: #a7f3d0;
+  --color-mint-400: #6ee7b7;
+  --color-mint-500: #34d399;
+
   /* Gray */
   --color-gray-100: #FBFBFB;
   --color-gray-200: #F7F7F7;
@@ -43,6 +50,9 @@
   --color-gray-500: #BFBFBF;
   --color-gray-600: #ADADAD;
   --color-gray-700: #999999;
+
+  /* Disabled surface (CTA 등) */
+  --color-background-disabled: #999999;
   --color-gray-800: #505050;
   --color-gray-900: #111111;
 
@@ -56,6 +66,7 @@
   --spacing-8: 0.8rem;
   --spacing-12: 1.2rem;
   --spacing-16: 1.6rem;
+  --spacing-20: 2rem;
   --spacing-24: 2.4rem;
   --spacing-28: 2.8rem;
   --spacing-32: 3.2rem;
@@ -84,49 +95,53 @@
   }
 }
 
-/* CSS Reset */
-html {
-  font-size: 62.5%; /* 1rem = 10px */
-}
+/* 레이어 안에 두어 Tailwind 유틸(bg-*, text-*)이 리셋보다 우선하도록 함 */
+@layer base {
+  /* CSS Reset */
+  html {
+    font-size: 62.5%; /* 1rem = 10px */
+  }
 
-*,
-*::before,
-*::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+  *,
+  *::before,
+  *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 
-button {
-  cursor: pointer;
-  border: none;
-  background: none;
-  font: inherit;
-}
+  button {
+    cursor: pointer;
+    border: none;
+    font: inherit;
+    /* background 축약은 유틸보다 우선할 수 있어 color만 투명 처리 */
+    background-color: transparent;
+  }
 
-input,
-textarea,
-select {
-  font: inherit;
-}
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
 
-img {
-  display: block;
-  max-width: 100%;
-}
+  img {
+    display: block;
+    max-width: 100%;
+  }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: 'Pretendard', sans-serif;
-  font-size: 1.6rem;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: 'Pretendard', sans-serif;
+    font-size: 1.6rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
 }
 
 /* ========== Typography Utilities ========== */
