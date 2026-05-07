@@ -141,34 +141,6 @@ flowchart LR
     class D,E ai;
 ```
 
-## 시스템 구조
-
-```mermaid
-%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Pretendard, Inter, sans-serif", "primaryColor": "#F8FAFC", "primaryBorderColor": "#334155", "lineColor": "#475569", "textColor": "#0F172A"}}}%%
-flowchart TB
-    U[User] --> FE[Frontend<br/>Next.js 16 · TypeScript · Tailwind CSS]
-    FE --> BE[Backend<br/>Spring Boot 3.5 · Java 21]
-    BE --> DB[(PostgreSQL<br/>분석 요청·메타데이터)]
-    BE --> CACHE[(Redis<br/>임시 상태·캐시)]
-    BE --> S3[(S3<br/>CSV 임시 저장)]
-    BE --> AI[AI Server<br/>FastAPI · Python 3.11 · uv]
-    AI --> LLM[OpenAI API<br/>컬럼 역할 해석]
-    AI --> SCHEMA[Pydantic v2<br/>요청·응답 검증]
-    AI --> BE
-    BE --> FE
-
-    classDef user fill:#F8FAFC,stroke:#334155,color:#0F172A,stroke-width:1.4px;
-    classDef fe fill:#EFF6FF,stroke:#2563EB,color:#1E3A8A,stroke-width:1.4px;
-    classDef be fill:#F0FDF4,stroke:#16A34A,color:#14532D,stroke-width:1.4px;
-    classDef ai fill:#FFF7ED,stroke:#EA580C,color:#7C2D12,stroke-width:1.4px;
-    classDef store fill:#F5F3FF,stroke:#7C3AED,color:#4C1D95,stroke-width:1.4px;
-    class U user;
-    class FE fe;
-    class BE be;
-    class AI,LLM,SCHEMA ai;
-    class DB,CACHE,S3 store;
-```
-
 ## 역할 분담
 
 | 영역 | 담당 역할 | 핵심 산출물 |
@@ -247,12 +219,78 @@ flowchart LR
 
 ## 배포 구조
 
-| 구성 요소 | 배포 방식 |
-| --- | --- |
-| Frontend | Vercel 또는 AWS |
-| Backend | AWS EC2 / Docker, PostgreSQL, Redis |
-| AI Server | FastAPI 분리 배포, uv 기반 실행 |
-| Storage | S3 또는 임시 저장소에 CSV 보관 후 결과 반환 |
+```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Pretendard, Inter, sans-serif", "primaryColor": "#F8FAFC", "primaryBorderColor": "#334155", "lineColor": "#475569", "textColor": "#0F172A"}}}%%
+flowchart TB
+    User([User])
+
+    subgraph DNS["AWS Route53 · logue-ai.site"]
+        R_FE["logue-ai.site"]
+        R_BE["api.logue-ai.site"]
+        R_AI["ai.logue-ai.site<br/>※ FE 직접 연동 확장성 고려"]
+    end
+
+    subgraph Vercel["Vercel"]
+        FE["Frontend<br/>Next.js 16 · TypeScript · Tailwind"]
+    end
+
+    subgraph AWS["AWS"]
+        subgraph ALB_BLOCK["Application Load Balancer"]
+            ALB[["ALB"]]
+            TG_BE["Target Group: Backend"]
+            TG_AI["Target Group: AI"]
+            ALB --> TG_BE
+            ALB --> TG_AI
+        end
+
+        BE["Backend<br/>Spring Boot 3.5 · Java 21"]
+        AI["AI Server<br/>FastAPI · Python 3.11 · uv<br/>Stateless"]
+
+        DB[("RDS PostgreSQL")]
+        S3[("S3 Storage")]
+        REDIS[("Redis")]
+
+        TG_BE --> BE
+        TG_AI --> AI
+    end
+
+    LLM["OpenAI API<br/>GPT-4o mini / nano"]
+
+    User -- HTTPS --> R_FE
+    R_FE --> FE
+
+    FE -- "JWT 인증" --> R_BE
+    R_BE --> ALB
+    R_AI -.확장 대비.-> ALB
+
+    BE -- "Internal API Key" --> R_AI
+
+    BE --- DB
+    BE --- S3
+    BE --- REDIS
+
+    AI -- "외부 LLM 호출" --> LLM
+
+    classDef user fill:#F8FAFC,stroke:#334155,color:#0F172A,stroke-width:1.4px;
+    classDef dns fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:1.4px;
+    classDef fe fill:#EFF6FF,stroke:#2563EB,color:#1E3A8A,stroke-width:1.4px;
+    classDef be fill:#F0FDF4,stroke:#16A34A,color:#14532D,stroke-width:1.4px;
+    classDef ai fill:#FFF7ED,stroke:#EA580C,color:#7C2D12,stroke-width:1.4px;
+    classDef store fill:#F5F3FF,stroke:#7C3AED,color:#4C1D95,stroke-width:1.4px;
+    classDef alb fill:#FEE2E2,stroke:#DC2626,color:#7F1D1D,stroke-width:1.4px;
+    classDef tg fill:#FECACA,stroke:#B91C1C,color:#7F1D1D,stroke-width:1.2px;
+    classDef ext fill:#FCE7F3,stroke:#DB2777,color:#831843,stroke-width:1.4px;
+
+    class User user;
+    class R_FE,R_BE,R_AI dns;
+    class FE fe;
+    class BE be;
+    class AI ai;
+    class DB,S3,REDIS store;
+    class ALB alb;
+    class TG_BE,TG_AI tg;
+    class LLM ext;
+```
 
 ## MVP 검증 기준
 
