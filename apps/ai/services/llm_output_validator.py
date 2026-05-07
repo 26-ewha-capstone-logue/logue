@@ -111,16 +111,38 @@ def _check_reference_integrity(
     issues: list[ErrorDetail] = []
 
     column_names = {c.column_name for c in request.data_source.columns}
+    column_semantic_roles = {c.column_name: c.semantic_role for c in request.data_source.columns}
     metric_names = {m.metric_name for m in request.catalog.predefined_metrics}
+    metric_type_by_name = {m.metric_name: m.metric_type for m in request.catalog.predefined_metrics}
+    allowed_analysis_types = set(request.catalog.analysis_types)
+    allowed_metric_types = set(request.catalog.metric_types)
     periods = set(request.catalog.supported_periods)
     warning_codes = {w.code for w in request.catalog.flow_warning_keys}
 
     criteria = response.analysis_criteria
     if criteria is not None:
+        if criteria.analysis_type not in allowed_analysis_types:
+            issues.append(ErrorDetail(
+                field="analysis_criteria.analysis_type",
+                reason=f"'{criteria.analysis_type}' 은 catalog.analysis_types 에 없습니다.",
+            ))
+        if criteria.metric_type not in allowed_metric_types:
+            issues.append(ErrorDetail(
+                field="analysis_criteria.metric_type",
+                reason=f"'{criteria.metric_type}' 은 catalog.metric_types 에 없습니다.",
+            ))
         if criteria.metric_name not in metric_names:
             issues.append(ErrorDetail(
                 field="analysis_criteria.metric_name",
                 reason=f"'{criteria.metric_name}' 은 catalog.predefined_metrics 에 없습니다.",
+            ))
+        elif criteria.metric_type != metric_type_by_name[criteria.metric_name]:
+            issues.append(ErrorDetail(
+                field="analysis_criteria.metric_type",
+                reason=(
+                    f"metric_name='{criteria.metric_name}' 의 metric_type 은 "
+                    f"'{metric_type_by_name[criteria.metric_name]}' 이어야 합니다."
+                ),
             ))
         if criteria.base_date_column not in column_names:
             issues.append(ErrorDetail(
@@ -148,6 +170,21 @@ def _check_reference_integrity(
             issues.append(ErrorDetail(
                 field="analysis_criteria.compare_period",
                 reason=f"'{criteria.compare_period}' 은 catalog.supported_periods 에 없습니다.",
+            ))
+
+    for fc in response.flow_columns:
+        if fc.column_name not in column_names:
+            issues.append(ErrorDetail(
+                field="flow_columns[].column_name",
+                reason=f"'{fc.column_name}' 은 data_source.columns 에 없습니다.",
+            ))
+        elif fc.semantic_role != column_semantic_roles[fc.column_name]:
+            issues.append(ErrorDetail(
+                field="flow_columns[].semantic_role",
+                reason=(
+                    f"column '{fc.column_name}' 의 semantic_role 은 "
+                    f"'{column_semantic_roles[fc.column_name]}' 이어야 합니다."
+                ),
             ))
 
     for w in response.warnings:
