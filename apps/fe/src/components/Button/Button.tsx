@@ -1,33 +1,29 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 
-type ButtonVariant = 'cta' | 'primary';
+type ButtonVariant = 'cta' | 'primary' | 'outlined' | 'text';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 export type ButtonProps = {
   variant?: ButtonVariant;
-  /** primary(일반 버튼)만 S/M/L. cta는 고정 규격이라 무시됨 */
   size?: ButtonSize;
   fullWidth?: boolean;
-  /** 왼쪽 아이콘(SVG 등). 없으면 children만 표시 */
   icon?: ReactNode;
   children: ReactNode;
 } & ButtonHTMLAttributes<HTMLButtonElement>;
 
-/* ── CTA ──
- * 고정 너비 35rem, py-12 px-20, gap-2, pill
- * default: orange-500 / disabled: #999 / hover 없음
- */
 const ctaClass =
   'inline-flex h-auto w-[35rem] shrink-0 items-center justify-center gap-2 rounded-[22.2rem] bg-orange-500 px-20 py-12 text-center text-body2 font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:bg-background-disabled disabled:text-gray-900';
 
-/* ── 일반 버튼 ──
- * inline-flex, pill, gap-2
- * default: orange-500 / hover: white bg + orange text / disabled: #999
- */
 const primaryBaseClass =
   'inline-flex shrink-0 items-center justify-center gap-2 rounded-[22.2rem] bg-orange-500 text-center text-body2 font-semibold text-white transition-colors hover:bg-white hover:text-orange-500 disabled:cursor-not-allowed disabled:bg-background-disabled disabled:text-gray-900 disabled:hover:bg-background-disabled disabled:hover:text-gray-900';
 
-const primarySizeClass: Record<ButtonSize, string> = {
+const outlinedBaseClass =
+  'inline-flex shrink-0 items-center justify-center gap-2 rounded-[22.2rem] border border-gray-400 bg-white text-center text-body2 font-semibold text-gray-800 transition-colors hover:border-orange-500 hover:text-orange-500 disabled:cursor-not-allowed disabled:border-gray-300 disabled:text-gray-500';
+
+const textBaseClass =
+  'inline-flex shrink-0 items-center justify-center gap-2 bg-transparent text-center text-body2 font-semibold text-gray-700 transition-colors hover:text-orange-500 disabled:cursor-not-allowed disabled:text-gray-400';
+
+const sizeClass: Record<ButtonSize, string> = {
   sm: 'py-8 px-12',
   md: 'py-8 px-16',
   lg: 'py-12 px-16',
@@ -50,11 +46,15 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   },
   ref,
 ) {
-  const isCta = variant === 'cta';
+  const baseMap: Record<ButtonVariant, string> = {
+    cta: ctaClass,
+    primary: primaryBaseClass,
+    outlined: outlinedBaseClass,
+    text: textBaseClass,
+  };
 
-  const styles = isCta
-    ? ctaClass
-    : `${primaryBaseClass} ${primarySizeClass[size]} ${fullWidth ? 'w-full' : ''}`;
+  const needsSize = variant !== 'cta';
+  const styles = `${baseMap[variant]} ${needsSize ? sizeClass[size] : ''} ${fullWidth ? 'w-full' : ''}`;
 
   return (
     <button
