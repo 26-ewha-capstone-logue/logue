@@ -5,6 +5,7 @@ import com.capstone.logue.anal.dto.spring.request.CreateQuestionRequest;
 import com.capstone.logue.anal.dto.spring.request.UpdateQuestionCriteriaRequest;
 import com.capstone.logue.anal.dto.spring.response.*;
 import com.capstone.logue.anal.service.AnalService;
+import com.capstone.logue.anal.service.AnalysisResultService;
 import com.capstone.logue.anal.service.JobRetryService;
 import com.capstone.logue.anal.service.QuestionCriteriaService;
 import com.capstone.logue.auth.annotation.CurrentUser;
@@ -32,6 +33,7 @@ public class AnalController {
     private final AnalService analService;
     private final JobRetryService jobRetryService;
     private final QuestionCriteriaService questionCriteriaService;
+    private final AnalysisResultService analysisResultService;
 
     /**
      * 새로운 분석 대화를 시작합니다.
@@ -281,5 +283,71 @@ public class AnalController {
         return ResponseEntity.ok(ApiResponse.success(
                 "분석 기준 생성 상태 조회",
                 questionCriteriaService.getCriteriaStatus(conversationId, analysisFlowId, messageId)));
+    }
+
+    /**
+     * 최종 분석 결과를 조회합니다.
+     *
+     * @param conversationId       대화 ID
+     * @param analysisFlowId       분석 흐름 ID
+     * @param messageId            사용자 메시지 ID
+     * @param analysisCriteriaId   확정된 분석 기준 ID
+     * @return 결과 본문 + 차트 데이터 + 분석 기준 요약
+     */
+    @Operation(summary = "최종 분석 결과 조회", description = "확정된 분석 기준으로 도출된 결과를 조회합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "최종 분석 결과"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "분석 결과 도출 미완료 (AN202)"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "분석 결과 없음 (AN201)"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "502", description = "LLM 호출 실패 (L001)"),
+    })
+    @GetMapping("/conversations/{conversationId}/analysisFlows/{analysisFlowId}/messages/{messageId}/analysisCriterias/{analysisCriteriaId}/results")
+    public ResponseEntity<ApiResponse<GetQuestionResultResponse>> getResult(
+            @PathVariable Long conversationId,
+            @PathVariable Long analysisFlowId,
+            @PathVariable Long messageId,
+            @PathVariable Long analysisCriteriaId) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "최종 분석 결과",
+                analysisResultService.getResult(conversationId, analysisFlowId, messageId, analysisCriteriaId)));
+    }
+
+    /**
+     * 진행 중인 최종 분석 결과 도출 작업을 취소합니다.
+     */
+    @Operation(summary = "최종 분석 결과 도출 취소", description = "QUEUED/RUNNING/RETRYING 상태의 결과 도출 작업을 취소합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "최종 분석 결과 조회 취소"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "결과 도출 미시작 (AN203)"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "분석 결과 없음 (AN201)"),
+    })
+    @PostMapping("/conversations/{conversationId}/analysisFlows/{analysisFlowId}/messages/{messageId}/analysisCriterias/{analysisCriteriaId}/results/cancel")
+    public ResponseEntity<ApiResponse<CancelQuestionResultResponse>> cancelResult(
+            @PathVariable Long conversationId,
+            @PathVariable Long analysisFlowId,
+            @PathVariable Long messageId,
+            @PathVariable Long analysisCriteriaId) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "최종 분석 결과 조회 취소",
+                analysisResultService.cancelResult(conversationId, analysisFlowId, messageId, analysisCriteriaId)));
+    }
+
+    /**
+     * 최종 분석 결과 도출 작업 상태를 폴링합니다.
+     */
+    @Operation(summary = "최종 분석 결과 도출 상태 폴링", description = "결과 도출 비동기 작업의 현재 상태를 반환합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "상태 조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "분석 결과 없음 (AN201)"),
+    })
+    @GetMapping("/conversations/{conversationId}/analysisFlows/{analysisFlowId}/messages/{messageId}/analysisCriterias/{analysisCriteriaId}/results/status")
+    public ResponseEntity<ApiResponse<GetQuestionResultStatusResponse>> getResultStatus(
+            @PathVariable Long conversationId,
+            @PathVariable Long analysisFlowId,
+            @PathVariable Long messageId,
+            @PathVariable Long analysisCriteriaId) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "최종 분석결과 생성 상태 조회",
+                analysisResultService.getResultStatus(conversationId, analysisFlowId, messageId, analysisCriteriaId)));
     }
 }
