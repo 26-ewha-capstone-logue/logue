@@ -57,6 +57,7 @@ public class QuestionCriteriaService {
     private final FlowDataWarningRepository flowDataWarningRepository;
     private final SecurityContextProvider securityContextProvider;
     private final QuestionAnalysisAsyncService questionAnalysisAsyncService;
+    private final AnalysisResultAsyncService analysisResultAsyncService;
     private final FastApiClient fastApiClient;
     private final ObjectMapper objectMapper;
 
@@ -190,7 +191,7 @@ public class QuestionCriteriaService {
             UpdateQuestionCriteriaRequest request) {
 
         AnalysisFlow flow = validateAccess(conversationId, analysisFlowId);
-        loadMessage(flow, messageId);
+        Message message = loadMessage(flow, messageId);
 
         AnalysisCriteria criteria = analysisCriteriaRepository
                 .findTopByAnalysisFlowIdOrderByCreatedAtDesc(flow.getId())
@@ -200,10 +201,30 @@ public class QuestionCriteriaService {
             throw new LogueException(ErrorCode.CRITERIA_ALREADY_CONFIRMED);
         }
 
+        boolean wasConfirmed = Boolean.TRUE.equals(criteria.getIsConfirmed());
         applyUpdate(criteria, request);
         analysisCriteriaRepository.save(criteria);
 
+        if (!wasConfirmed && Boolean.TRUE.equals(criteria.getIsConfirmed())) {
+            triggerResultJob(flow, message, criteria);
+        }
+
         return new UpdateQuestionCriteriaResponse(criteria.getId(), criteria.getConfirmedAt());
+    }
+
+    /**
+     * 새로 확정된 분석 기준에 대해 ANALYSIS_RESULT Job 을 큐잉하고 비동기 도출을 시작합니다.
+     */
+    private void triggerResultJob(AnalysisFlow flow, Message message, AnalysisCriteria criteria) {
+        AiTaggingJob resultJob = AiTaggingJob.builder()
+                .conversation(flow.getConversation())
+                .analysisFlow(flow)
+                .message(message)
+                .stage(JobStage.ANALYSIS_RESULT)
+                .status(JobStatus.QUEUED)
+                .build();
+        AiTaggingJob savedJob = aiTaggingJobRepository.save(resultJob);
+        analysisResultAsyncService.resolveResultAsync(savedJob.getId());
     }
 
     /**
