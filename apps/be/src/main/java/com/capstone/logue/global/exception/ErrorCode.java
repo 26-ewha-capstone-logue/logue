@@ -39,7 +39,21 @@ public enum ErrorCode {
 
     // Analysis
     JOB_NOT_FOUND(HttpStatus.NOT_FOUND, "AN001", "분석 작업을 찾을 수 없습니다."),
-    JOB_NOT_RETRYABLE(HttpStatus.BAD_REQUEST, "AN002", "재시도는 FAILED 상태에서만 가능합니다.")
+    JOB_NOT_RETRYABLE(HttpStatus.BAD_REQUEST, "AN002", "재시도는 FAILED 상태에서만 가능합니다."),
+
+    // Question Analysis Criteria
+    CRITERIA_NOT_FOUND(HttpStatus.NOT_FOUND, "AN101", "분석 기준을 찾을 수 없습니다."),
+    CRITERIA_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "AN102", "분석 기준 도출이 완료되지 않았습니다."),
+    CRITERIA_NOT_STARTED(HttpStatus.BAD_REQUEST, "AN103", "분석 기준 도출이 시작되지 않았습니다."),
+    CRITERIA_ALREADY_CONFIRMED(HttpStatus.CONFLICT, "AN104", "이미 확정된 분석 기준입니다."),
+    UNSUPPORTED_QUESTION(HttpStatus.BAD_REQUEST, "AN105", "이번 MVP에서 지원하지 않는 질문 유형입니다."),
+    DATASOURCE_NOT_READY(HttpStatus.BAD_REQUEST, "AN106", "데이터 상태 요약이 완료되어야 질문을 분석할 수 있습니다."),
+
+    // Message
+    MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "M001", "메시지를 찾을 수 없습니다."),
+
+    // LLM
+    LLM_CALL_FAILED(HttpStatus.BAD_GATEWAY, "L001", "LLM 호출에 실패했습니다.")
     ;
 
     private final HttpStatus httpStatus;

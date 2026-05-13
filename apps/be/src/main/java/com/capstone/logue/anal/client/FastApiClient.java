@@ -2,6 +2,8 @@ package com.capstone.logue.anal.client;
 
 import com.capstone.logue.anal.dto.fastapi.response.FileAnalysisResponse;
 import com.capstone.logue.anal.dto.fastapi.request.FileAnalysisRequest;
+import com.capstone.logue.anal.dto.fastapi.request.QuestionAnalysisRequest;
+import com.capstone.logue.anal.dto.fastapi.response.QuestionAnalysisResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,6 +51,32 @@ public class FastApiClient {
                 HttpMethod.POST,
                 new HttpEntity<>(request, headers),
                 FileAnalysisResponse.class
+        );
+
+        if (response.getBody() == null) {
+            throw new IllegalStateException("FastAPI 응답 body가 null입니다.");
+        }
+        return response;
+    }
+
+    /**
+     * FastAPI 서버에 질문 → 분석 기준 도출을 요청합니다.
+     *
+     * <p>응답 body 가 null 인 경우 예외가 발생합니다.</p>
+     *
+     * @param request 질문 분석 요청 DTO
+     * @return FastAPI 응답 (HTTP 상태 코드 + body 포함)
+     * @throws IllegalStateException 응답 body 가 null 인 경우
+     */
+    public ResponseEntity<QuestionAnalysisResponse> resolveAnalysisCriteria(QuestionAnalysisRequest request) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        ResponseEntity<QuestionAnalysisResponse> response = fastApiRestTemplate.exchange(
+                fastApiBaseUrl + "/v1/llm/analysis-criteria/resolve",
+                HttpMethod.POST,
+                new HttpEntity<>(request, headers),
+                QuestionAnalysisResponse.class
         );
 
         if (response.getBody() == null) {

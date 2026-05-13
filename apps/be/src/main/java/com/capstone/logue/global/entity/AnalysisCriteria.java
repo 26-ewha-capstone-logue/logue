@@ -166,4 +166,40 @@ public class AnalysisCriteria extends BaseTimeEntity {
     @Builder.Default
     @OneToMany(mappedBy = "analysisCriteria", fetch = FetchType.LAZY)
     private List<FlowDataWarning> flowDataWarnings = new ArrayList<>();
+
+    /**
+     * 사용자 수정 요청을 반영합니다.
+     *
+     * <p>baseDateColumn, standardPeriod, comparePeriod, sortBy, sortDirection, limitNum 은 항상 갱신되며,
+     * groupBy / filters 는 null 이 아닌 경우에만 갱신됩니다.</p>
+     */
+    public void applyUserUpdate(
+            String baseDateColumn,
+            String standardPeriod,
+            String comparePeriod,
+            String sortBy,
+            String sortDirection,
+            Long limitNum,
+            JsonNode groupBy,
+            JsonNode filters
+    ) {
+        this.baseDateColumn = baseDateColumn;
+        this.standardPeriod = standardPeriod;
+        this.comparePeriod = comparePeriod;
+        this.sortBy = sortBy;
+        this.sortDirection = sortDirection;
+        this.limitNum = limitNum;
+        if (groupBy != null) {
+            this.groupBy = groupBy;
+        }
+        this.filters = filters;
+    }
+
+    /**
+     * 분석 기준을 확정 상태로 전환합니다.
+     */
+    public void confirm() {
+        this.isConfirmed = Boolean.TRUE;
+        this.confirmedAt = OffsetDateTime.now();
+    }
 }

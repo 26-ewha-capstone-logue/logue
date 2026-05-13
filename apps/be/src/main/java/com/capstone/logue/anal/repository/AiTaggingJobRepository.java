@@ -10,4 +10,8 @@ public interface AiTaggingJobRepository extends JpaRepository<AiTaggingJob, Long
     Optional<AiTaggingJob> findByConversationIdAndStage(Long conversationId, JobStage stage);
 
     Optional<AiTaggingJob> findTopByConversationIdAndStageOrderByCreatedAtDesc(Long conversationId, JobStage stage);
+
+    Optional<AiTaggingJob> findTopByAnalysisFlowIdAndStageOrderByCreatedAtDesc(Long analysisFlowId, JobStage stage);
+
+    Optional<AiTaggingJob> findTopByMessageIdAndStageOrderByCreatedAtDesc(Long messageId, JobStage stage);
 }
