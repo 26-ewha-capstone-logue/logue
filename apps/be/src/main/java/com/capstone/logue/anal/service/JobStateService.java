@@ -11,6 +11,7 @@ import com.capstone.logue.anal.dto.fastapi.request.FileAnalysisRequest;
 import com.capstone.logue.anal.repository.AiTaggingJobRepository;
 import com.capstone.logue.anal.repository.AnalysisCriteriaRepository;
 import com.capstone.logue.anal.repository.AnalysisFlowColumnRepository;
+import com.capstone.logue.anal.repository.AnalysisResultRepository;
 import com.capstone.logue.anal.repository.DataSourceColumnRepository;
 import com.capstone.logue.anal.repository.FlowDataWarningRepository;
 import com.capstone.logue.anal.repository.MessageRepository;
@@ -20,6 +21,7 @@ import com.capstone.logue.global.entity.AiTaggingJob;
 import com.capstone.logue.global.entity.AnalysisCriteria;
 import com.capstone.logue.global.entity.AnalysisFlow;
 import com.capstone.logue.global.entity.AnalysisFlowColumn;
+import com.capstone.logue.global.entity.AnalysisResult;
 import com.capstone.logue.global.entity.DataSource;
 import com.capstone.logue.global.entity.DataSourceColumn;
 import com.capstone.logue.global.entity.FlowDataWarning;
@@ -66,6 +68,7 @@ public class JobStateService {
     private final AnalysisCriteriaRepository analysisCriteriaRepository;
     private final AnalysisFlowColumnRepository analysisFlowColumnRepository;
     private final FlowDataWarningRepository flowDataWarningRepository;
+    private final AnalysisResultRepository analysisResultRepository;
     private final ObjectMapper objectMapper;
 
     /**
@@ -322,6 +325,62 @@ public class JobStateService {
                     .build();
             flowDataWarningRepository.save(warning);
         }
+
+        job.markSuccess();
+    }
+
+    /**
+     * 분석 결과 도출 작업을 RUNNING 으로 변경하고, 결과 도출에 필요한 컨텍스트를 묶어 반환합니다.
+     *
+     * <p>확정된 분석 기준과 그 분석 플로우가 가리키는 DataSource 를 함께 로드합니다.</p>
+     *
+     * @param jobId 분석 결과 도출 작업 ID
+     * @return FastAPI 요청 빌드 + CSV 집계용 {@link ResultJobContext}
+     */
+    @Transactional
+    public ResultJobContext markResultRunningAndGetContext(Long jobId) {
+        AiTaggingJob job = aiTaggingJobRepository.findById(jobId)
+                .orElseThrow(() -> new LogueException(ErrorCode.JOB_NOT_FOUND));
+        job.markRunning();
+
+        AnalysisFlow flow = job.getAnalysisFlow();
+        AnalysisCriteria criteria = analysisCriteriaRepository
+                .findTopByAnalysisFlowIdOrderByCreatedAtDesc(flow.getId())
+                .orElseThrow(() -> new LogueException(ErrorCode.CRITERIA_NOT_FOUND));
+
+        return new ResultJobContext(criteria, flow.getDataSource());
+    }
+
+    /**
+     * FastAPI 가 반환한 자연어 요약 + 집계 차트 데이터를 영속화하고 작업을 SUCCESS 로 변경합니다.
+     *
+     * <p>CANCELED 상태인 경우 저장을 skip 합니다.</p>
+     *
+     * @param jobId       분석 결과 도출 작업 ID
+     * @param description plain text 요약 (255자 이내)
+     * @param chartData   클라이언트 응답 형태의 차트 데이터 JSON
+     * @param criteria    저장 대상 분석 기준
+     */
+    @Transactional
+    public void saveResultAndMarkSuccess(
+            Long jobId,
+            String description,
+            com.fasterxml.jackson.databind.JsonNode chartData,
+            AnalysisCriteria criteria
+    ) {
+        AiTaggingJob job = aiTaggingJobRepository.findById(jobId).orElseThrow();
+
+        if (job.getStatus() == JobStatus.CANCELED) {
+            log.info("[JobStateService] 이미 취소된 결과 작업 - 저장 skip: jobId={}", jobId);
+            return;
+        }
+
+        AnalysisResult result = AnalysisResult.builder()
+                .analysisCriteria(criteria)
+                .description(description)
+                .chartData(chartData)
+                .build();
+        analysisResultRepository.save(result);
 
         job.markSuccess();
     }
