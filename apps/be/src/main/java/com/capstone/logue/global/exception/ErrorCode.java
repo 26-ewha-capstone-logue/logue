@@ -49,6 +49,11 @@ public enum ErrorCode {
     UNSUPPORTED_QUESTION(HttpStatus.BAD_REQUEST, "AN105", "이번 MVP에서 지원하지 않는 질문 유형입니다."),
     DATASOURCE_NOT_READY(HttpStatus.BAD_REQUEST, "AN106", "데이터 상태 요약이 완료되어야 질문을 분석할 수 있습니다."),
 
+    // Analysis Result
+    RESULT_NOT_FOUND(HttpStatus.NOT_FOUND, "AN201", "분석 결과를 찾을 수 없습니다."),
+    RESULT_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "AN202", "분석 결과 도출이 완료되지 않았습니다."),
+    RESULT_NOT_STARTED(HttpStatus.BAD_REQUEST, "AN203", "분석 결과 도출이 시작되지 않았습니다."),
+
     // Message
     MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "M001", "메시지를 찾을 수 없습니다."),
 
