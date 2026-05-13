@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from schemas.common import DataType, SemanticRoleType
+from schemas.enums import DataType, SemanticRoleType
 
 
 class ColumnMeta(BaseModel):

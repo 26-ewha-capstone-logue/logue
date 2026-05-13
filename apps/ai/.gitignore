@@ -9,8 +9,19 @@ wheels/
 # Virtual environments
 .venv
 
+# Environment variables
+.env
+
+# Logs
+logs/*.jsonl
+
 # Claude
 .omc/
 
 # IDE settings
 .idea/
+
+# pytest cache
+.pytest_cache/
+.coverage
+htmlcov/

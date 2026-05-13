@@ -1,0 +1,87 @@
+{
+  "basic_sales_data": {
+    "description": "기본 매출 데이터 분석",
+    "input": {
+      "request_id": "fixture-001",
+      "data_source": {
+        "file_name": "sales.csv",
+        "row_count": 500,
+        "column_count": 4,
+        "columns": [
+          {
+            "column_name": "sale_date",
+            "data_type": "date",
+            "null_ratio": 0.0,
+            "unique_ratio": 0.2,
+            "sample_values": ["2024-01-01", "2024-01-02", "2024-01-03"]
+          },
+          {
+            "column_name": "product_name",
+            "data_type": "string",
+            "null_ratio": 0.01,
+            "unique_ratio": 0.6,
+            "sample_values": ["iPhone", "MacBook", "iPad"]
+          },
+          {
+            "column_name": "quantity",
+            "data_type": "integer",
+            "null_ratio": 0.0,
+            "unique_ratio": 0.05,
+            "sample_values": [1, 2, 3]
+          },
+          {
+            "column_name": "revenue",
+            "data_type": "double",
+            "null_ratio": 0.0,
+            "unique_ratio": 0.8,
+            "sample_values": [999.99, 1999.99, 799.99]
+          }
+        ]
+      },
+      "catalog": {
+        "semantic_roles": ["DATE_CRITERIA", "MEASURE", "DIMENSION", "STATUS_CONDITION", "FLAG", "ID_CRITERIA"],
+        "source_warning_keys": []
+      }
+    },
+    "expected_roles": {
+      "sale_date": "DATE_CRITERIA",
+      "product_name": "DIMENSION",
+      "quantity": "MEASURE",
+      "revenue": "MEASURE"
+    }
+  },
+  "no_date_column": {
+    "description": "날짜 컬럼이 없는 데이터",
+    "input": {
+      "request_id": "fixture-002",
+      "data_source": {
+        "file_name": "products.csv",
+        "row_count": 100,
+        "column_count": 2,
+        "columns": [
+          {
+            "column_name": "product_id",
+            "data_type": "string",
+            "null_ratio": 0.0,
+            "unique_ratio": 1.0,
+            "sample_values": ["P001", "P002", "P003"]
+          },
+          {
+            "column_name": "price",
+            "data_type": "double",
+            "null_ratio": 0.0,
+            "unique_ratio": 0.9,
+            "sample_values": [99.99, 199.99, 299.99]
+          }
+        ]
+      },
+      "catalog": {
+        "semantic_roles": ["DATE_CRITERIA", "MEASURE", "DIMENSION", "STATUS_CONDITION", "FLAG", "ID_CRITERIA"],
+        "source_warning_keys": [
+          {"code": "NO_DATE_COLUMN", "name": "날짜 컬럼 없음", "comment": "시계열 분석 불가"}
+        ]
+      }
+    },
+    "expected_warnings": ["NO_DATE_COLUMN"]
+  }
+}

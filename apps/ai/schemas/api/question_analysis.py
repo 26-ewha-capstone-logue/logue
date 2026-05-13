@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from schemas.common import (
+from schemas.enums import (
     AnalysisType,
     DataType,
     FilterOperator,
