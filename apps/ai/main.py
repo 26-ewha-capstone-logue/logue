@@ -100,7 +100,7 @@ def check_upstream_health(url: str, timeout_sec: float) -> tuple[bool, int | Non
         return (False, None, str(exc))
 
 
-@app.get("/health")
+@app.get("/docs")
 def health() -> dict[str, object]:
     logger.info("Health check requested")
     upstream_ok, upstream_status_code, upstream_error = check_upstream_health(
