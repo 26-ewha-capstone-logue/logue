@@ -42,7 +42,7 @@ Python 3.11 + FastAPI + uv 기반 프로젝트 스캐폴드입니다.
 ### 엔드포인트
 
 ```
-POST /v1/llm/analysis-criteria/resolve
+POST /v1/llm/analysis-criteria/resolve-llm
 ```
 
 - 요청/응답 스키마: `schemas/analysis_criteria.py` (`QuestionAnalysisRequest` / `QuestionAnalysisResponse`)

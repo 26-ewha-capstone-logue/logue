@@ -1,6 +1,6 @@
 """질문 분석 요청/응답 스키마.
 
-`POST /v1/llm/analysis-criteria/resolve` 의 입력/출력을 정의한다.
+`POST /v1/llm/analysis-criteria/resolve-llm` 의 입력/출력을 정의한다.
 
 검증 책임 분담:
 - 본 모듈(`model_validator`) — 형태/타입/cross-field 등 LLM 호출 전후로 항상 보장되어야 할 제약
