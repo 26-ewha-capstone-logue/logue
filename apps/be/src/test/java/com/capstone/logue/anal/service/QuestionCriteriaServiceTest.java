@@ -75,6 +75,7 @@ class QuestionCriteriaServiceTest {
     @Mock private FlowDataWarningRepository flowDataWarningRepository;
     @Mock private SecurityContextProvider securityContextProvider;
     @Mock private QuestionAnalysisAsyncService questionAnalysisAsyncService;
+    @Mock private AnalysisResultAsyncService analysisResultAsyncService;
     @Mock private FastApiClient fastApiClient;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -97,6 +98,7 @@ class QuestionCriteriaServiceTest {
                 flowDataWarningRepository,
                 securityContextProvider,
                 questionAnalysisAsyncService,
+                analysisResultAsyncService,
                 fastApiClient,
                 objectMapper
         );
@@ -323,6 +325,12 @@ class QuestionCriteriaServiceTest {
                 .thenReturn(Optional.of(criteria));
         when(analysisCriteriaRepository.save(any(AnalysisCriteria.class))).thenReturn(criteria);
 
+        AiTaggingJob resultJob = AiTaggingJob.builder()
+                .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
+                .stage(JobStage.ANALYSIS_RESULT).status(JobStatus.QUEUED)
+                .build();
+        when(aiTaggingJobRepository.save(any(AiTaggingJob.class))).thenReturn(resultJob);
+
         UpdateQuestionCriteriaRequest request = new UpdateQuestionCriteriaRequest(
                 "signed_at", "this_week", "last_week",
                 List.of("channel", "device"),
@@ -335,6 +343,7 @@ class QuestionCriteriaServiceTest {
         assertThat(criteria.getIsConfirmed()).isTrue();
         assertThat(criteria.getConfirmedAt()).isNotNull();
         verify(analysisCriteriaRepository).save(criteria);
+        verify(analysisResultAsyncService).resolveResultAsync(JOB_ID);
     }
 
     @Test
