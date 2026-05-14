@@ -11,7 +11,11 @@ class AnalysisCriteria(BaseModel):
     metric_name: str
     metric_display_name: str
     standard_period: str
-    compare_period: Optional[str] = Field(default=None, description="COMPARISON일 때 필수, RANKING일 때 null")
+    compare_period: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        description="COMPARISON일 때 필수, RANKING일 때 null",
+    )
     group_by: List[str] = Field(min_length=1, description="비교 기준 축")
     sort_by: str
     sort_direction: Literal["asc", "desc"]
@@ -27,7 +31,7 @@ class AnalysisCriteria(BaseModel):
         """
 
         if self.analysis_type == "COMPARISON":
-            if self.compare_period is None:
+            if self.compare_period is None or not self.compare_period.strip():
                 raise ValueError("analysis_type이 COMPARISON일 때 compare_period는 필수입니다.")
             if self.limit_num is not None:
                 raise ValueError("analysis_type이 COMPARISON일 때 limit_num은 null이어야 합니다.")

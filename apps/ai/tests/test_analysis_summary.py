@@ -114,6 +114,22 @@ def test_comparison_without_compare_period_returns_422() -> None:
     assert response.status_code == 422
 
 
+def test_comparison_with_blank_compare_period_returns_422() -> None:
+    """
+    analysis_type=COMPARISON인데 compare_period가 빈 문자열/공백이면 422를 반환합니다.
+    """
+
+    client = TestClient(app)
+
+    for blank in ("", "   "):
+        request_body = _valid_request_body()
+        request_body["analysis_criteria"]["compare_period"] = blank
+
+        response = client.post("/v1/llm/analysis-results/describe", json=request_body)
+
+        assert response.status_code == 422, f"blank={blank!r} 응답: {response.status_code}"
+
+
 def test_ranking_without_limit_num_returns_422() -> None:
     """
     analysis_type=RANKING인데 limit_num이 null인 요청은 422를 반환합니다.
