@@ -68,11 +68,17 @@ export default function Card({
         </>
       )}
 
-      {/* 텍스트 layer (좌하단) */}
-      <div className="relative z-20 flex h-full flex-col items-start justify-end gap-2 pt-[11.2rem] pr-[15.4rem] pb-[2.2rem] pl-[2.2rem]">
+      {/* 텍스트 layer (좌하단)
+       * 시안의 padding-right 15.4rem 은 일러스트 영역을 위한 여백이지만,
+       * 텍스트에 그대로 적용하면 가용 폭이 좁아 잘리므로
+       * 텍스트 div 자체는 좌우 동일 패딩으로 두고 일러스트(thumbnail)는 별도 layer 로 처리한다.
+       */}
+      <div className="relative z-20 flex h-full flex-col items-start justify-end gap-2 px-[2.2rem] pt-[11.2rem] pb-[2.2rem]">
         <h3 className="text-head2 text-white">{title}</h3>
         {description && (
-          <p className="truncate text-body2 text-white/80">{description}</p>
+          <p className="line-clamp-1 w-full text-body2 text-white/80">
+            {description}
+          </p>
         )}
       </div>
     </div>

@@ -1,7 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-
 export type GreetingSectionProps = {
   userName: string;
 };
@@ -14,18 +12,13 @@ function getGreetingByHour(hour: number) {
 }
 
 export default function GreetingSection({ userName }: GreetingSectionProps) {
-  // SSR/CSR 간 시간대 차이로 인한 hydration mismatch 방지를 위해 마운트 후 갱신
-  const [greeting, setGreeting] = useState(() =>
-    getGreetingByHour(new Date().getHours()),
-  );
-
-  useEffect(() => {
-    setGreeting(getGreetingByHour(new Date().getHours()));
-  }, []);
+  // 시간 인사말은 서버 시간과 클라이언트 시간이 다를 수 있어
+  // hydration mismatch 가 발생할 수 있으나 의도된 동작이므로 suppressHydrationWarning 으로 무시
+  const greeting = getGreetingByHour(new Date().getHours());
 
   return (
-    <div className="text-center">
-      <h1 className="text-head1 text-gray-900">
+    <div className="mt-[6.7rem] text-center">
+      <h1 className="text-head1 text-gray-900" suppressHydrationWarning>
         {greeting}. {userName}님
       </h1>
       <p className="mt-8 text-head1 text-gray-900">분석을 시작해볼까요?</p>

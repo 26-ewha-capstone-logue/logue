@@ -6,6 +6,8 @@ import {
   type ReactNode,
   type MouseEvent,
 } from 'react';
+import PlusIcon from '@/assets/icons/plus.svg';
+import ArrowUpIcon from '@/assets/icons/arrow-up.svg';
 
 export type TextFieldProps = {
   /** 파일 추가 버튼 클릭 콜백 */
@@ -21,33 +23,6 @@ export type TextFieldProps = {
   /** 전체 너비 */
   fullWidth?: boolean;
 } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'children'>;
-
-function SendIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 18 18"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
-    >
-      <path
-        d="M9 15V3m0 0l-5.5 5.5M9 3l5.5 5.5"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function DefaultFileIcon() {
-  return (
-    <span className="inline-block h-[1.4rem] w-[1.4rem] shrink-0 rounded-[0.3rem] bg-mint-400" />
-  );
-}
 
 const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
   function TextField(
@@ -66,7 +41,8 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
     ref,
   ) {
     const innerRef = useRef<HTMLTextAreaElement>(null);
-    const textareaRef = (ref as React.RefObject<HTMLTextAreaElement>) ?? innerRef;
+    const textareaRef =
+      (ref as React.RefObject<HTMLTextAreaElement>) ?? innerRef;
 
     const handleContainerClick = useCallback(
       (e: MouseEvent<HTMLDivElement>) => {
@@ -94,7 +70,7 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
     return (
       <div
         onClick={handleContainerClick}
-        className={`inline-flex cursor-text flex-col items-start gap-[1rem] rounded-20 bg-white p-[2.9rem_2.6rem] shadow-[0_0.2rem_1.2rem_rgba(0,0,0,0.06)] ${fullWidth ? 'w-full' : ''} ${className}`.trim()}
+        className={`inline-flex cursor-text flex-col items-start gap-[3.8rem] rounded-20 bg-white p-[2.9rem_2.6rem] shadow-[0_0.2rem_1.2rem_rgba(0,0,0,0.06)] ${fullWidth ? 'w-full' : ''} ${className}`.trim()}
       >
         {/* textarea */}
         <textarea
@@ -114,7 +90,9 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
             onClick={onFileAttach}
             className="inline-flex items-center gap-[0.6rem] rounded-20 border border-gray-300 px-12 py-[0.6rem] text-body4 text-gray-700 transition-colors hover:bg-gray-100"
           >
-            {fileIcon ?? <DefaultFileIcon />}
+            {fileIcon ?? (
+              <PlusIcon aria-hidden className="icon-16 text-gray-800" />
+            )}
             {fileLabel}
           </button>
 
@@ -123,9 +101,9 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
             type="button"
             onClick={onSubmit}
             disabled={submitDisabled}
-            className="inline-flex h-[3.8rem] w-[3.8rem] shrink-0 items-center justify-center rounded-12 bg-orange-500 text-white transition-colors hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="inline-flex h-[3.8rem] w-[3.8rem] shrink-0 items-center justify-center rounded-12 bg-orange-500 transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-400"
           >
-            <SendIcon />
+            <ArrowUpIcon aria-hidden className="icon-20 text-[#000000]" />
           </button>
         </div>
       </div>

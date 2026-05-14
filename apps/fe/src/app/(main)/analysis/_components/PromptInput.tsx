@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { FileUploadZone, TextField } from '@/components';
+import { FileUploadZone, Modal, TextField } from '@/components';
 import UploadedFileChip from './UploadedFileChip';
 
 export type PromptInputValue = {
@@ -62,18 +62,14 @@ export default function PromptInput({
         onFileAttach={() => setIsUploadOpen((prev) => !prev)}
       />
 
-      {isUploadOpen && (
-        <div className="mt-16">
-          <FileUploadZone
-            onFileSelect={handleFileSelect}
-            onError={handleFileError}
-          />
-        </div>
-      )}
+      <Modal open={isUploadOpen} onClose={() => setIsUploadOpen(false)}>
+        <FileUploadZone
+          onFileSelect={handleFileSelect}
+          onError={handleFileError}
+        />
+      </Modal>
 
-      {file && (
-        <UploadedFileChip file={file} onRemove={() => setFile(null)} />
-      )}
+      {file && <UploadedFileChip file={file} onRemove={() => setFile(null)} />}
     </div>
   );
 }

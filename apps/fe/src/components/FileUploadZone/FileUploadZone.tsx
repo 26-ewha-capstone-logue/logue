@@ -19,32 +19,7 @@ export type FileUploadZoneProps = {
   disabled?: boolean;
 } & Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'onDrop' | 'onError'>;
 
-function CsvIcon() {
-  return (
-    <svg
-      width="48"
-      height="56"
-      viewBox="0 0 48 56"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
-    >
-      <rect x="0" y="0" width="48" height="56" rx="6" fill="#FFA947" opacity="0.2" />
-      <rect x="4" y="4" width="40" height="48" rx="4" fill="#FFA947" opacity="0.4" />
-      <text
-        x="24"
-        y="34"
-        textAnchor="middle"
-        fontSize="14"
-        fontWeight="700"
-        fill="#FC8320"
-        fontFamily="Pretendard, sans-serif"
-      >
-        CSV
-      </text>
-    </svg>
-  );
-}
+const CSV_GRAPHIC_SRC = '/illusts/csv-graphic.svg';
 
 export default function FileUploadZone({
   accept = '.csv',
@@ -127,13 +102,19 @@ export default function FileUploadZone({
       className={`flex w-full cursor-pointer flex-col items-center gap-12 rounded-20 border-2 border-dashed px-32 py-40 transition-colors ${isDragOver ? 'border-orange-500 bg-orange-100/30' : 'border-gray-300 bg-gray-100'} ${disabled ? 'cursor-not-allowed opacity-50' : 'hover:border-orange-400 hover:bg-orange-100/20'} ${className}`.trim()}
       {...rest}
     >
-      <CsvIcon />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={CSV_GRAPHIC_SRC}
+        alt=""
+        aria-hidden
+        className="h-[12.7rem] w-[12.7rem]"
+      />
       <div className="flex flex-col items-center gap-4">
         <p className="text-head4 font-semibold text-gray-900">
-          csv 파일을 업로드해주세요
+          Csv 파일을 업로드해주세요
         </p>
         <p className="text-body2 text-gray-600">
-          드래그 &amp; 드롭을 통해 파일을 업로드, 하고 대화를 시작해보세요.
+          드래그 &amp; 드롭을 통해 파일을 업로드 하고 대화를 시작해보세요.
         </p>
       </div>
       <input

@@ -3,43 +3,52 @@ import type { NextConfig } from 'next';
 /**
  * SVG 처리 규칙 (SVGR)
  *
- * - `import Icon from './icon.svg'`        → React 컴포넌트로 가져옴 (기본)
- * - `import url from './icon.svg?url'`     → URL 문자열로 가져옴 (next/image 등에 사용)
+ * - `src/assets/icons/*.svg`   → React 컴포넌트로 import 됨 (SVGR + currentColor 변환)
+ *     예) `import Icon from '@/assets/icons/file.svg'`
+ * - `public/illusts/*.svg`     → 정적 자산. URL 문자열(`/illusts/...`)로 직접 참조
+ *     (Turbopack 은 ?url 쿼리 분기를 지원하지 않으므로 다색 일러스트는 public/ 에 둔다)
  *
- * Turbopack(dev/build)와 webpack(폴백) 양쪽 모두 설정합니다.
+ * SVGR 옵션:
+ * - `dimensions: false`  → svg 의 width/height 속성 제거 → className 의 사이즈 클래스가 먹히도록
+ * - `convertColors`      → 모든 fill/stroke 색을 currentColor 로 변환 → text-* 로 색 제어
  */
+const svgrOptions = {
+  dimensions: false,
+  svgoConfig: {
+    plugins: [
+      {
+        name: 'preset-default',
+        params: { overrides: { removeViewBox: false } },
+      },
+      {
+        name: 'convertColors',
+        params: { currentColor: true },
+      },
+    ],
+  },
+};
+
 const nextConfig: NextConfig = {
   turbopack: {
     rules: {
       '*.svg': {
-        loaders: ['@svgr/webpack'],
+        loaders: [{ loader: '@svgr/webpack', options: svgrOptions }],
         as: '*.js',
       },
     },
   },
 
   webpack(config) {
-    // 기존 Next.js 의 svg 처리 규칙을 찾는다
     const fileLoaderRule = config.module.rules.find(
       (rule: { test?: RegExp }) =>
         rule.test instanceof RegExp && rule.test.test('.svg'),
     );
 
-    config.module.rules.push(
-      // 1) `?url` 쿼리가 붙은 경우는 URL 로딩 (기존 동작 유지)
-      {
-        ...fileLoaderRule,
-        test: /\.svg$/i,
-        resourceQuery: /url/,
-      },
-      // 2) 그 외의 svg 는 SVGR 로 React 컴포넌트화
-      {
-        test: /\.svg$/i,
-        issuer: fileLoaderRule?.issuer,
-        resourceQuery: { not: [...(fileLoaderRule?.resourceQuery?.not ?? []), /url/] },
-        use: ['@svgr/webpack'],
-      },
-    );
+    config.module.rules.push({
+      test: /\.svg$/i,
+      issuer: fileLoaderRule?.issuer,
+      use: [{ loader: '@svgr/webpack', options: svgrOptions }],
+    });
 
     if (fileLoaderRule) {
       fileLoaderRule.exclude = /\.svg$/i;
