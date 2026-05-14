@@ -192,7 +192,9 @@ public class AnalysisCriteria extends BaseTimeEntity {
         if (groupBy != null) {
             this.groupBy = groupBy;
         }
-        this.filters = filters;
+        if (filters != null) {
+            this.filters = filters;
+        }
     }
 
     /**

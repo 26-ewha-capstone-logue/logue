@@ -80,7 +80,7 @@ public class QuestionCriteriaService {
         AnalysisFlow flow = validateAccess(conversationId, analysisFlowId);
 
         AiTaggingJob latestDataStatusJob = aiTaggingJobRepository
-                .findTopByAnalysisFlowIdAndStageOrderByCreatedAtDesc(analysisFlowId, JobStage.DATA_STATUS)
+                .findTopByAnalysisFlowIdAndStageOrderByCreatedAtDescIdDesc(analysisFlowId, JobStage.DATA_STATUS)
                 .orElseThrow(() -> new LogueException(ErrorCode.DATASOURCE_NOT_READY));
         if (latestDataStatusJob.getStatus() != JobStatus.SUCCESS) {
             throw new LogueException(ErrorCode.DATASOURCE_NOT_READY);
@@ -127,7 +127,7 @@ public class QuestionCriteriaService {
         Message message = loadMessage(flow, messageId);
 
         AiTaggingJob job = aiTaggingJobRepository
-                .findTopByMessageIdAndStageOrderByCreatedAtDesc(messageId, JobStage.ANALYSIS_CRITERIA)
+                .findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(messageId, JobStage.ANALYSIS_CRITERIA)
                 .orElseThrow(() -> new LogueException(ErrorCode.CRITERIA_NOT_FOUND));
 
         if (job.getStatus() != JobStatus.SUCCESS) {
@@ -135,7 +135,7 @@ public class QuestionCriteriaService {
         }
 
         AnalysisCriteria criteria = analysisCriteriaRepository
-                .findTopByAnalysisFlowIdOrderByCreatedAtDesc(flow.getId())
+                .findTopByAnalysisFlowIdOrderByCreatedAtDescIdDesc(flow.getId())
                 .orElseThrow(() -> new LogueException(ErrorCode.CRITERIA_NOT_FOUND));
 
         List<FlowDataWarning> warnings = flowDataWarningRepository
@@ -193,7 +193,7 @@ public class QuestionCriteriaService {
         loadMessage(flow, messageId);
 
         AnalysisCriteria criteria = analysisCriteriaRepository
-                .findTopByAnalysisFlowIdOrderByCreatedAtDesc(flow.getId())
+                .findTopByAnalysisFlowIdOrderByCreatedAtDescIdDesc(flow.getId())
                 .orElseThrow(() -> new LogueException(ErrorCode.CRITERIA_NOT_FOUND));
 
         if (Boolean.TRUE.equals(criteria.getIsConfirmed()) && request.confirmed()) {
@@ -222,7 +222,7 @@ public class QuestionCriteriaService {
         loadMessage(flow, messageId);
 
         AiTaggingJob job = aiTaggingJobRepository
-                .findTopByMessageIdAndStageOrderByCreatedAtDesc(messageId, JobStage.ANALYSIS_CRITERIA)
+                .findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(messageId, JobStage.ANALYSIS_CRITERIA)
                 .orElseThrow(() -> new LogueException(ErrorCode.CRITERIA_NOT_FOUND));
 
         JobStatus status = job.getStatus();
@@ -261,7 +261,7 @@ public class QuestionCriteriaService {
         loadMessage(flow, messageId);
 
         AiTaggingJob job = aiTaggingJobRepository
-                .findTopByMessageIdAndStageOrderByCreatedAtDesc(messageId, JobStage.ANALYSIS_CRITERIA)
+                .findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(messageId, JobStage.ANALYSIS_CRITERIA)
                 .orElseThrow(() -> new LogueException(ErrorCode.CRITERIA_NOT_FOUND));
 
         return new GetQuestionCriteriaStatusResponse(job.getStatus().name());
@@ -342,9 +342,6 @@ public class QuestionCriteriaService {
         Set<String> result = new LinkedHashSet<>();
         for (JsonNode warning : dataWarnings) {
             JsonNode related = warning.path("relatedFields");
-            if (!related.isArray()) {
-                related = warning.path("related_fields");
-            }
             if (related.isArray()) {
                 related.forEach(f -> {
                     String v = f.asText(null);

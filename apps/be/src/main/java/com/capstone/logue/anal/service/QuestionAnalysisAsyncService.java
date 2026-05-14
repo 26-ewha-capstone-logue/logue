@@ -76,7 +76,13 @@ public class QuestionAnalysisAsyncService {
                     continue;
                 }
 
-                jobStateService.saveCriteriaAndMarkSuccess(jobId, response.getBody());
+                QuestionAnalysisResponse body = response.getBody();
+                if (body == null) {
+                    log.warn("[QuestionAnalysisAsyncService] 응답 body null - FAILED: jobId={}", jobId);
+                    jobStateService.markFailed(jobId, "FastAPI 응답 body가 null입니다");
+                    return;
+                }
+                jobStateService.saveCriteriaAndMarkSuccess(jobId, body);
                 log.info("[QuestionAnalysisAsyncService] 분석 기준 도출 완료: jobId={}", jobId);
                 return;
 

@@ -132,7 +132,7 @@ class QuestionCriteriaServiceTest {
                 .id(99L).conversation(conversation).analysisFlow(flow)
                 .stage(JobStage.DATA_STATUS).status(JobStatus.SUCCESS)
                 .build();
-        when(aiTaggingJobRepository.findTopByAnalysisFlowIdAndStageOrderByCreatedAtDesc(
+        when(aiTaggingJobRepository.findTopByAnalysisFlowIdAndStageOrderByCreatedAtDescIdDesc(
                 ANALYSIS_FLOW_ID, JobStage.DATA_STATUS))
                 .thenReturn(Optional.of(dataStatusJob));
 
@@ -166,7 +166,7 @@ class QuestionCriteriaServiceTest {
                 .id(99L).conversation(conversation).analysisFlow(flow)
                 .stage(JobStage.DATA_STATUS).status(JobStatus.RUNNING)
                 .build();
-        when(aiTaggingJobRepository.findTopByAnalysisFlowIdAndStageOrderByCreatedAtDesc(
+        when(aiTaggingJobRepository.findTopByAnalysisFlowIdAndStageOrderByCreatedAtDescIdDesc(
                 ANALYSIS_FLOW_ID, JobStage.DATA_STATUS))
                 .thenReturn(Optional.of(runningJob));
 
@@ -183,7 +183,7 @@ class QuestionCriteriaServiceTest {
     @DisplayName("createQuestion: DATA_STATUS Job 이 아예 없으면 DATASOURCE_NOT_READY")
     void createQuestion_noDataStatusJob() {
         stubAccess();
-        when(aiTaggingJobRepository.findTopByAnalysisFlowIdAndStageOrderByCreatedAtDesc(
+        when(aiTaggingJobRepository.findTopByAnalysisFlowIdAndStageOrderByCreatedAtDescIdDesc(
                 ANALYSIS_FLOW_ID, JobStage.DATA_STATUS))
                 .thenReturn(Optional.empty());
 
@@ -206,7 +206,7 @@ class QuestionCriteriaServiceTest {
                 .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
                 .stage(JobStage.ANALYSIS_CRITERIA).status(JobStatus.SUCCESS)
                 .build();
-        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDesc(
+        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(
                 MESSAGE_ID, JobStage.ANALYSIS_CRITERIA))
                 .thenReturn(Optional.of(job));
 
@@ -219,7 +219,7 @@ class QuestionCriteriaServiceTest {
                 .groupBy(objectMapper.valueToTree(List.of("channel")))
                 .isConfirmed(false)
                 .build();
-        when(analysisCriteriaRepository.findTopByAnalysisFlowIdOrderByCreatedAtDesc(ANALYSIS_FLOW_ID))
+        when(analysisCriteriaRepository.findTopByAnalysisFlowIdOrderByCreatedAtDescIdDesc(ANALYSIS_FLOW_ID))
                 .thenReturn(Optional.of(criteria));
         when(flowDataWarningRepository.findByAnalysisCriteriaId(CRITERIA_ID))
                 .thenReturn(List.of());
@@ -246,7 +246,7 @@ class QuestionCriteriaServiceTest {
                 .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
                 .stage(JobStage.ANALYSIS_CRITERIA).status(JobStatus.SUCCESS)
                 .build();
-        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDesc(
+        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(
                 MESSAGE_ID, JobStage.ANALYSIS_CRITERIA))
                 .thenReturn(Optional.of(job));
 
@@ -263,7 +263,7 @@ class QuestionCriteriaServiceTest {
                 )))
                 .isConfirmed(false)
                 .build();
-        when(analysisCriteriaRepository.findTopByAnalysisFlowIdOrderByCreatedAtDesc(ANALYSIS_FLOW_ID))
+        when(analysisCriteriaRepository.findTopByAnalysisFlowIdOrderByCreatedAtDescIdDesc(ANALYSIS_FLOW_ID))
                 .thenReturn(Optional.of(criteria));
 
         FlowDataWarning warning = FlowDataWarning.builder()
@@ -294,7 +294,7 @@ class QuestionCriteriaServiceTest {
                 .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
                 .stage(JobStage.ANALYSIS_CRITERIA).status(JobStatus.RUNNING)
                 .build();
-        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDesc(
+        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(
                 MESSAGE_ID, JobStage.ANALYSIS_CRITERIA))
                 .thenReturn(Optional.of(job));
 
@@ -319,7 +319,7 @@ class QuestionCriteriaServiceTest {
                 .groupBy(objectMapper.valueToTree(List.of("channel")))
                 .isConfirmed(false)
                 .build();
-        when(analysisCriteriaRepository.findTopByAnalysisFlowIdOrderByCreatedAtDesc(ANALYSIS_FLOW_ID))
+        when(analysisCriteriaRepository.findTopByAnalysisFlowIdOrderByCreatedAtDescIdDesc(ANALYSIS_FLOW_ID))
                 .thenReturn(Optional.of(criteria));
         when(analysisCriteriaRepository.save(any(AnalysisCriteria.class))).thenReturn(criteria);
 
@@ -351,7 +351,7 @@ class QuestionCriteriaServiceTest {
                 .groupBy(objectMapper.valueToTree(List.of("g")))
                 .isConfirmed(true)
                 .build();
-        when(analysisCriteriaRepository.findTopByAnalysisFlowIdOrderByCreatedAtDesc(ANALYSIS_FLOW_ID))
+        when(analysisCriteriaRepository.findTopByAnalysisFlowIdOrderByCreatedAtDescIdDesc(ANALYSIS_FLOW_ID))
                 .thenReturn(Optional.of(criteria));
 
         UpdateQuestionCriteriaRequest request = new UpdateQuestionCriteriaRequest(
@@ -374,7 +374,7 @@ class QuestionCriteriaServiceTest {
                 .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
                 .stage(JobStage.ANALYSIS_CRITERIA).status(JobStatus.QUEUED)
                 .build();
-        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDesc(
+        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(
                 MESSAGE_ID, JobStage.ANALYSIS_CRITERIA))
                 .thenReturn(Optional.of(job));
 
@@ -397,7 +397,7 @@ class QuestionCriteriaServiceTest {
                 .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
                 .stage(JobStage.ANALYSIS_CRITERIA).status(JobStatus.RUNNING)
                 .build();
-        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDesc(
+        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(
                 MESSAGE_ID, JobStage.ANALYSIS_CRITERIA))
                 .thenReturn(Optional.of(job));
 
@@ -421,7 +421,7 @@ class QuestionCriteriaServiceTest {
                 .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
                 .stage(JobStage.ANALYSIS_CRITERIA).status(JobStatus.SUCCESS)
                 .build();
-        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDesc(
+        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(
                 MESSAGE_ID, JobStage.ANALYSIS_CRITERIA))
                 .thenReturn(Optional.of(job));
 
@@ -443,7 +443,7 @@ class QuestionCriteriaServiceTest {
                 .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
                 .stage(JobStage.ANALYSIS_CRITERIA).status(JobStatus.RUNNING)
                 .build();
-        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDesc(
+        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(
                 MESSAGE_ID, JobStage.ANALYSIS_CRITERIA))
                 .thenReturn(Optional.of(job));
 

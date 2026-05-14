@@ -79,7 +79,7 @@ public class FastApiClient {
                 QuestionAnalysisResponse.class
         );
 
-        if (response.getBody() == null) {
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() == null) {
             throw new IllegalStateException("FastAPI 응답 body가 null입니다.");
         }
         return response;

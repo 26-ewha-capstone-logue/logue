@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface MessageRepository extends JpaRepository<Message, Long> {
 
-    List<Message> findByAnalysisFlowIdOrderByCreatedAtAsc(Long analysisFlowId);
+    List<Message> findByAnalysisFlowIdOrderByCreatedAtAscIdAsc(Long analysisFlowId);
 }

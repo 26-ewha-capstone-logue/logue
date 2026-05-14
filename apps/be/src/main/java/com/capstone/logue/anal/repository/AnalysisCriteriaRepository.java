@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface AnalysisCriteriaRepository extends JpaRepository<AnalysisCriteria, Long> {
 
-    Optional<AnalysisCriteria> findTopByAnalysisFlowIdOrderByCreatedAtDesc(Long analysisFlowId);
+    Optional<AnalysisCriteria> findTopByAnalysisFlowIdOrderByCreatedAtDescIdDesc(Long analysisFlowId);
 
     List<AnalysisCriteria> findByAnalysisFlowIdOrderByCreatedAtDesc(Long analysisFlowId);
 }

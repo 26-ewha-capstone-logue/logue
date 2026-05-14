@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface AnalysisFlowColumnRepository extends JpaRepository<AnalysisFlowColumn, Long> {
 
-    List<AnalysisFlowColumn> findByAnalysisFlowId(Long analysisFlowId);
+    List<AnalysisFlowColumn> findByAnalysisFlowIdOrderByIdAsc(Long analysisFlowId);
 }

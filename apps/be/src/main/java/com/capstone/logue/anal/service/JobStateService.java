@@ -214,16 +214,19 @@ public class JobStateService {
         job.markRunning();
 
         Message currentMessage = job.getMessage();
+        if (currentMessage == null) {
+            throw new LogueException(ErrorCode.MESSAGE_NOT_FOUND);
+        }
         AnalysisFlow flow = job.getAnalysisFlow();
         DataSource dataSource = flow.getDataSource();
 
         List<DataSourceColumn> columns = dataSourceColumnRepository.findByDataSourceId(dataSource.getId());
-        List<AnalysisFlowColumn> flowColumns = analysisFlowColumnRepository.findByAnalysisFlowId(flow.getId());
+        List<AnalysisFlowColumn> flowColumns = analysisFlowColumnRepository.findByAnalysisFlowIdOrderByIdAsc(flow.getId());
 
         List<Message> previousMessages = messageRepository
-                .findByAnalysisFlowIdOrderByCreatedAtAsc(flow.getId())
+                .findByAnalysisFlowIdOrderByCreatedAtAscIdAsc(flow.getId())
                 .stream()
-                .filter(m -> currentMessage == null || !m.getId().equals(currentMessage.getId()))
+                .filter(m -> !m.getId().equals(currentMessage.getId()))
                 .collect(Collectors.toList());
 
         return new CriteriaJobContext(currentMessage, flow, dataSource, columns, flowColumns, previousMessages);
