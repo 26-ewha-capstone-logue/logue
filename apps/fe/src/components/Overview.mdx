@@ -1,0 +1,444 @@
+{/* @jsxImportSource react */}
+import { Meta } from '@storybook/addon-docs/blocks';
+
+import Button from './Button/Button';
+import TextField from './TextField/TextField';
+import IconBox from './IconBox/IconBox';
+import Header from './Header/Header';
+import Card from './Card/Card';
+import FileUploadZone from './FileUploadZone/FileUploadZone';
+
+<Meta title="Components/Overview" />
+
+<style>
+  {`
+    .overview-container {
+      font-family: 'Pretendard', sans-serif;
+    }
+    .overview-header {
+      margin-bottom: 4rem;
+    }
+    .overview-header h1 {
+      font-size: 3.2rem;
+      font-weight: 800;
+      color: #111;
+      margin-bottom: 0.8rem;
+    }
+    .overview-header p {
+      font-size: 1.6rem;
+      color: #505050;
+      line-height: 1.6;
+    }
+    .overview-section {
+      margin-bottom: 4.8rem;
+    }
+    .overview-section h2 {
+      font-size: 2rem;
+      font-weight: 600;
+      color: #111;
+      margin-bottom: 0.4rem;
+    }
+    .overview-section .desc {
+      font-size: 1.4rem;
+      color: #999;
+      margin-bottom: 2rem;
+    }
+    .overview-card {
+      border: 1px solid #ECECEC;
+      border-radius: 1.6rem;
+      padding: 3.2rem;
+      background: #F7F7F7;
+    }
+    .overview-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1.6rem;
+    }
+    .overview-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1.6rem;
+    }
+    .overview-label {
+      font-size: 1.2rem;
+      font-weight: 500;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.8rem;
+    }
+    .overview-divider {
+      border: none;
+      border-top: 1px solid #ECECEC;
+      margin: 4rem 0;
+    }
+    .props-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 1.4rem;
+      margin-top: 1.6rem;
+    }
+    .props-table th {
+      text-align: left;
+      padding: 1rem 1.2rem;
+      background: #F7F7F7;
+      color: #505050;
+      font-weight: 600;
+      border-bottom: 2px solid #ECECEC;
+    }
+    .props-table td {
+      padding: 1rem 1.2rem;
+      border-bottom: 1px solid #ECECEC;
+      color: #111;
+    }
+    .props-table code {
+      background: #F7F7F7;
+      padding: 0.2rem 0.6rem;
+      border-radius: 0.4rem;
+      font-size: 1.3rem;
+      color: #FC8320;
+    }
+  `}
+</style>
+
+<div className="overview-container">
+  <div className="overview-header">
+    <h1>Logue Design System</h1>
+    <p>프로젝트에서 사용하는 공용 UI 컴포넌트 모음입니다. 각 컴포넌트의 개별 문서에서 상세 Props와 인터랙션을 확인할 수 있습니다.</p>
+  </div>
+
+  <hr className="overview-divider" />
+
+  {/* ── Button ── */}
+  <div className="overview-section">
+    <h2>Button</h2>
+    <p className="desc">CTA · Primary(S/M/L) · 아이콘 · Disabled · Full Width</p>
+    <div className="overview-card">
+      <p className="overview-label">CTA</p>
+      <div className="overview-row" style={{ marginBottom: '2.4rem' }}>
+        <Button variant="cta">다음</Button>
+        <Button variant="cta" disabled>다음</Button>
+      </div>
+      <p className="overview-label">Primary</p>
+      <div className="overview-row">
+        <Button variant="primary" size="lg">Large</Button>
+        <Button variant="primary" size="md">Medium</Button>
+        <Button variant="primary" size="sm">Small</Button>
+        <Button variant="primary" size="md" disabled>Disabled</Button>
+      </div>
+    </div>
+
+    <table className="props-table">
+      <thead>
+        <tr>
+          <th>Prop</th>
+          <th>Type</th>
+          <th>Default</th>
+          <th>설명</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>variant</code></td>
+          <td><code>'cta' | 'primary'</code></td>
+          <td><code>'primary'</code></td>
+          <td>버튼 스타일</td>
+        </tr>
+        <tr>
+          <td><code>size</code></td>
+          <td><code>'sm' | 'md' | 'lg'</code></td>
+          <td><code>'md'</code></td>
+          <td>Primary 전용 크기</td>
+        </tr>
+        <tr>
+          <td><code>icon</code></td>
+          <td><code>ReactNode</code></td>
+          <td>—</td>
+          <td>왼쪽 아이콘</td>
+        </tr>
+        <tr>
+          <td><code>fullWidth</code></td>
+          <td><code>boolean</code></td>
+          <td><code>false</code></td>
+          <td>전체 너비</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr className="overview-divider" />
+
+  {/* ── TextField ── */}
+  <div className="overview-section">
+    <h2>TextField</h2>
+    <p className="desc">채팅 프롬프트 입력창 · 파일 첨부 · 전송 버튼 · Enter 전송</p>
+    <div className="overview-card">
+      <div className="overview-col">
+        <TextField
+          placeholder="이번달이랑 지난달 비교해서 지역별 매출 높은 순으로 5개 보여줘"
+        />
+        <TextField
+          placeholder="메시지를 입력하세요"
+          submitDisabled
+        />
+      </div>
+    </div>
+
+    <table className="props-table">
+      <thead>
+        <tr>
+          <th>Prop</th>
+          <th>Type</th>
+          <th>Default</th>
+          <th>설명</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>onSubmit</code></td>
+          <td><code>() =&gt; void</code></td>
+          <td>—</td>
+          <td>전송 버튼 / Enter 콜백</td>
+        </tr>
+        <tr>
+          <td><code>onFileAttach</code></td>
+          <td><code>() =&gt; void</code></td>
+          <td>—</td>
+          <td>파일 추가 클릭 콜백</td>
+        </tr>
+        <tr>
+          <td><code>submitDisabled</code></td>
+          <td><code>boolean</code></td>
+          <td><code>false</code></td>
+          <td>전송 버튼 비활성화</td>
+        </tr>
+        <tr>
+          <td><code>fileLabel</code></td>
+          <td><code>string</code></td>
+          <td><code>'파일 추가하기'</code></td>
+          <td>파일 버튼 텍스트</td>
+        </tr>
+        <tr>
+          <td><code>fullWidth</code></td>
+          <td><code>boolean</code></td>
+          <td><code>false</code></td>
+          <td>전체 너비</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr className="overview-divider" />
+
+  {/* ── IconBox ── */}
+  <div className="overview-section">
+    <h2>IconBox</h2>
+    <p className="desc">아이콘 컨테이너 · Orange / Blue / Gray · S / M / L</p>
+    <div className="overview-card">
+      <p className="overview-label">Variants</p>
+      <div className="overview-row" style={{ marginBottom: '2.4rem' }}>
+        <IconBox icon={<svg viewBox="0 0 24 24" fill="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="currentColor"/></svg>} variant="orange" />
+        <IconBox icon={<svg viewBox="0 0 24 24" fill="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="currentColor"/></svg>} variant="blue" />
+        <IconBox icon={<svg viewBox="0 0 24 24" fill="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="currentColor"/></svg>} variant="gray" />
+      </div>
+      <p className="overview-label">Sizes</p>
+      <div className="overview-row">
+        <IconBox icon={<svg viewBox="0 0 24 24" fill="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="currentColor"/></svg>} size="sm" />
+        <IconBox icon={<svg viewBox="0 0 24 24" fill="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="currentColor"/></svg>} size="md" />
+        <IconBox icon={<svg viewBox="0 0 24 24" fill="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="currentColor"/></svg>} size="lg" />
+      </div>
+    </div>
+
+    <table className="props-table">
+      <thead>
+        <tr>
+          <th>Prop</th>
+          <th>Type</th>
+          <th>Default</th>
+          <th>설명</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>icon</code></td>
+          <td><code>ReactNode</code></td>
+          <td>—</td>
+          <td>아이콘 (필수)</td>
+        </tr>
+        <tr>
+          <td><code>variant</code></td>
+          <td><code>'orange' | 'blue' | 'gray'</code></td>
+          <td><code>'orange'</code></td>
+          <td>배경색</td>
+        </tr>
+        <tr>
+          <td><code>size</code></td>
+          <td><code>'sm' | 'md' | 'lg'</code></td>
+          <td><code>'md'</code></td>
+          <td>크기 (3rem / 3.8rem / 4.8rem)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr className="overview-divider" />
+
+  {/* ── Header ── */}
+  <div className="overview-section">
+    <h2>Header</h2>
+    <p className="desc">로고 · 네비게이션 메뉴 · 프로필 아이콘</p>
+    <div className="overview-card" style={{ padding: 0, overflow: 'hidden' }}>
+      <Header
+        navItems={[
+          { label: '메뉴명', href: '/1' },
+          { label: '메뉴명', href: '/2' },
+          { label: '메뉴명', href: '/3' },
+        ]}
+      />
+    </div>
+
+    <table className="props-table">
+      <thead>
+        <tr>
+          <th>Prop</th>
+          <th>Type</th>
+          <th>Default</th>
+          <th>설명</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>navItems</code></td>
+          <td><code>NavItem[]</code></td>
+          <td><code>[]</code></td>
+          <td>네비게이션 메뉴 목록</td>
+        </tr>
+        <tr>
+          <td><code>profileSlot</code></td>
+          <td><code>ReactNode</code></td>
+          <td>프로필 아이콘</td>
+          <td>우측 프로필 영역 커스텀</td>
+        </tr>
+        <tr>
+          <td><code>onLogoClick</code></td>
+          <td><code>() =&gt; void</code></td>
+          <td>—</td>
+          <td>로고 클릭 콜백</td>
+        </tr>
+        <tr>
+          <td><code>onNavClick</code></td>
+          <td><code>(href: string) =&gt; void</code></td>
+          <td>—</td>
+          <td>메뉴 클릭 콜백</td>
+        </tr>
+        <tr>
+          <td><code>onProfileClick</code></td>
+          <td><code>() =&gt; void</code></td>
+          <td>—</td>
+          <td>프로필 클릭 콜백</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr className="overview-divider" />
+
+  {/* ── Card ── */}
+  <div className="overview-section">
+    <h2>Card</h2>
+    <p className="desc">그라데이션 배경 · 분야명 · 세부 설명 · 클릭 인터랙션</p>
+    <div className="overview-card">
+      <div className="overview-row">
+        <Card title="마케팅" description="디지털 마케팅 전략 수립" />
+        <Card title="데이터 분석" description="비즈니스 인사이트 도출" />
+        <Card title="디자인" />
+      </div>
+    </div>
+
+    <table className="props-table">
+      <thead>
+        <tr>
+          <th>Prop</th>
+          <th>Type</th>
+          <th>Default</th>
+          <th>설명</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>title</code></td>
+          <td><code>string</code></td>
+          <td>—</td>
+          <td>분야명 (필수)</td>
+        </tr>
+        <tr>
+          <td><code>description</code></td>
+          <td><code>string</code></td>
+          <td>—</td>
+          <td>세부 설명 (1줄)</td>
+        </tr>
+        <tr>
+          <td><code>thumbnail</code></td>
+          <td><code>ReactNode</code></td>
+          <td>—</td>
+          <td>카드 상단 이미지/콘텐츠</td>
+        </tr>
+        <tr>
+          <td><code>onClick</code></td>
+          <td><code>() =&gt; void</code></td>
+          <td>—</td>
+          <td>클릭 콜백 (없으면 정적 카드)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr className="overview-divider" />
+
+  {/* ── FileUploadZone ── */}
+  <div className="overview-section">
+    <h2>FileUploadZone</h2>
+    <p className="desc">CSV 드래그 &amp; 드롭 업로드 · 클릭 업로드 · 확장자 검증</p>
+    <div className="overview-card">
+      <FileUploadZone />
+    </div>
+
+    <table className="props-table">
+      <thead>
+        <tr>
+          <th>Prop</th>
+          <th>Type</th>
+          <th>Default</th>
+          <th>설명</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>accept</code></td>
+          <td><code>string</code></td>
+          <td><code>'.csv'</code></td>
+          <td>허용 확장자</td>
+        </tr>
+        <tr>
+          <td><code>onFileSelect</code></td>
+          <td><code>(file: File) =&gt; void</code></td>
+          <td>—</td>
+          <td>파일 선택 완료 콜백</td>
+        </tr>
+        <tr>
+          <td><code>onError</code></td>
+          <td><code>(message: string) =&gt; void</code></td>
+          <td>—</td>
+          <td>에러 콜백</td>
+        </tr>
+        <tr>
+          <td><code>disabled</code></td>
+          <td><code>boolean</code></td>
+          <td><code>false</code></td>
+          <td>비활성화</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

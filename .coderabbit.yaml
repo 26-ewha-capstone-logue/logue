@@ -9,7 +9,8 @@ reviews:
     enabled: true
     drafts: false
     base_branches:
-      - ".*"
+      - "dev"
+      - "hotfix/.*"
   path_instructions:
     - path: "apps/fe/**"
       instructions: |

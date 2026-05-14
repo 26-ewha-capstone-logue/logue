@@ -10,8 +10,9 @@ import httpx
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from routers.file_analysis import router as anal_router
-from routers.analysis_summary import router as summary_router
+from routers.analysis_summary import router as analysis_summary_router
+from routers.file_analysis import router as file_analysis_router
+from routers.question_analysis import router as question_analysis_router
 
 
 logging.basicConfig(
@@ -55,8 +56,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="logue-ai", version="0.1.0", lifespan=lifespan)
-app.include_router(anal_router)
-app.include_router(summary_router)
+app.include_router(file_analysis_router)
+app.include_router(question_analysis_router)
+app.include_router(analysis_summary_router)
 
 
 @app.exception_handler(Exception)
