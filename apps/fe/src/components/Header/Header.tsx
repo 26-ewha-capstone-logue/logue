@@ -22,6 +22,8 @@ export type HeaderProps = {
   activeHref?: string;
   /** 프로필 영역 (커스텀 ReactNode, 기본: 프로필 아이콘) */
   profileSlot?: ReactNode;
+  /** 우측 검색 영역 (페이지별로 다를 수 있어 slot 으로 받음) */
+  searchSlot?: ReactNode;
   /** 로고 클릭 콜백 */
   onLogoClick?: () => void;
   /** 프로필 클릭 콜백 */
@@ -57,6 +59,7 @@ export default function Header({
   navItems = [],
   activeHref,
   profileSlot,
+  searchSlot,
   onLogoClick,
   onProfileClick,
   onNavClick,
@@ -111,8 +114,9 @@ export default function Header({
         })}
       </nav>
 
-      {/* 우측 프로필 */}
-      <div className="ml-auto">
+      {/* 우측 검색 + 프로필 */}
+      <div className="ml-auto flex items-center gap-16">
+        {searchSlot}
         {profileSlot ?? (
           <button type="button" onClick={onProfileClick}>
             <ProfileIcon />

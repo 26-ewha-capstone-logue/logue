@@ -61,7 +61,7 @@ export default function Modal({ open, onClose, children }: ModalProps) {
         }}
       />
       <div
-        className="relative z-10 w-full max-w-[60rem] rounded-20 p-32 "
+        className="relative z-10 w-full max-w-[60rem] rounded-20 bg-white p-32 shadow-[0_0.8rem_3.2rem_rgba(0,0,0,0.12)]"
         style={{ position: 'relative', zIndex: 10 }}
       >
         {children}
