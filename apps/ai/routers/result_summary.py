@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
-from schemas.result_summary import AnalysisSummaryRequest, AnalysisSummaryResponse
-from services.result_summary import describe_analysis_result
+from schemas.api.result_summary import AnalysisSummaryRequest, AnalysisSummaryResponse
+from services.result_summary_service import summarize_result
 
 router = APIRouter(prefix="/v1/llm", tags=["03 result summary"])
 
@@ -12,4 +12,4 @@ router = APIRouter(prefix="/v1/llm", tags=["03 result summary"])
     summary="Describe calculated analysis result",
 )
 async def describe_result(request: AnalysisSummaryRequest) -> AnalysisSummaryResponse:
-    return await describe_analysis_result(request)
+    return await summarize_result(request)

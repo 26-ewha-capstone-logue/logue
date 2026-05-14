@@ -1,99 +1,73 @@
-from fastapi.testclient import TestClient
-
-import main
+import pytest
 
 
-client = TestClient(main.app)
-
-
-def test_analyze_data_source_returns_roles_and_source_warning() -> None:
+def test_file_analysis_endpoint(client, sample_file_analysis_request):
+    """파일 분석 API 엔드포인트 테스트"""
     response = client.post(
         "/v1/llm/data-sources/analyze",
-        json={
-            "request_id": "req_file_001",
-            "data_source": {
-                "file_name": "signup.csv",
-                "row_count": 100,
-                "column_count": 3,
-                "columns": [
-                    {
-                        "column_name": "signed_at",
-                        "data_type": "datetime",
-                        "null_ratio": 0.02,
-                        "unique_ratio": 0.98,
-                        "sample_values": ["2024-01-01T00:00:00Z"],
-                    },
-                    {
-                        "column_name": "created_at",
-                        "data_type": "datetime",
-                        "null_ratio": 0.0,
-                        "unique_ratio": 0.99,
-                        "sample_values": ["2024-01-01T00:00:00Z"],
-                    },
-                    {
-                        "column_name": "channel",
-                        "data_type": "string",
-                        "null_ratio": 0.0,
-                        "unique_ratio": 0.1,
-                        "sample_values": ["organic"],
-                    },
-                ],
-            },
-            "catalog": {
-                "semantic_roles": [
-                    "DATE_CRITERIA",
-                    "MEASURE",
-                    "DIMENSION",
-                    "STATUS_CONDITION",
-                    "FLAG",
-                    "ID_CRITERIA",
-                ],
-                "source_warning_keys": [
-                    {
-                        "code": "DATE_FIELD_CONFLICT",
-                        "name": "Date field conflict",
-                        "comment": "Choose one date field.",
-                    }
-                ],
-            },
-        },
+        json=sample_file_analysis_request,
     )
 
     assert response.status_code == 200
-    body = response.json()
-    assert body["request_id"] == "req_file_001"
-    assert len(body["column_roles"]) == 3
-    assert body["data_status_summary"]["primary_candidates"]["date_fields"] == [
-        "signed_at",
-        "created_at",
-    ]
-    assert body["warnings"][0]["code"] == "DATE_FIELD_CONFLICT"
+    data = response.json()
+
+    assert data["request_id"] == sample_file_analysis_request["request_id"]
+    assert len(data["column_roles"]) == len(
+        sample_file_analysis_request["data_source"]["columns"]
+    )
+    assert data["data_status_summary"]["total_rows"] == 1000
+    assert data["data_status_summary"]["total_columns"] == 5
 
 
-def test_file_analysis_rejects_unknown_semantic_role() -> None:
+def test_file_analysis_column_roles(client, sample_file_analysis_request):
+    """컬럼 역할 추론 테스트"""
     response = client.post(
         "/v1/llm/data-sources/analyze",
-        json={
-            "request_id": "req_file_002",
-            "data_source": {
-                "file_name": "signup.csv",
-                "row_count": 1,
-                "column_count": 1,
-                "columns": [
-                    {
-                        "column_name": "signed_at",
-                        "data_type": "datetime",
-                        "null_ratio": 0.0,
-                        "unique_ratio": 1.0,
-                        "sample_values": ["2024-01-01"],
-                    }
-                ],
-            },
-            "catalog": {
-                "semantic_roles": ["UNKNOWN_ROLE"],
-                "source_warning_keys": [],
-            },
+        json=sample_file_analysis_request,
+    )
+
+    data = response.json()
+    roles = {r["column_name"]: r["semantic_role"] for r in data["column_roles"]}
+
+    assert roles["order_date"] == "DATE_CRITERIA"
+    assert roles["amount"] == "MEASURE"
+    assert roles["is_returned"] == "FLAG"
+
+
+def test_file_analysis_primary_candidates(client, sample_file_analysis_request):
+    """primary_candidates 필드 테스트"""
+    response = client.post(
+        "/v1/llm/data-sources/analyze",
+        json=sample_file_analysis_request,
+    )
+
+    data = response.json()
+    candidates = data["data_status_summary"]["primary_candidates"]
+
+    assert "order_date" in candidates["date_fields"]
+    assert "amount" in candidates["measures"]
+    assert "is_returned" in candidates["flags"]
+
+
+def test_file_analysis_validation_error(client):
+    """잘못된 요청 검증 테스트"""
+    invalid_request = {
+        "request_id": "test-invalid",
+        "data_source": {
+            "file_name": "test.csv",
+            "row_count": 100,
+            "column_count": 1,
+            "columns": [],
         },
+        "catalog": {
+            "semantic_roles": [],
+            "source_warning_keys": [],
+        },
+    }
+
+    response = client.post(
+        "/v1/llm/data-sources/analyze",
+        json=invalid_request,
     )
 
     assert response.status_code == 422

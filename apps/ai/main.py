@@ -1,5 +1,4 @@
 import logging
-import os
 import traceback
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
@@ -10,30 +9,24 @@ import httpx
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from routers.file_analysis import router as file_analysis_router
-from routers.question_analysis import router as question_analysis_router
-from routers.result_summary import router as result_summary_router
-
+from config.settings import settings
+from routers import file_analysis_router, question_analysis_router, result_summary_router
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, settings.log_level),
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
 )
 logger = logging.getLogger("logue_ai")
-
-UPSTREAM_HEALTH_URL = os.getenv("UPSTREAM_HEALTH_URL", "https://ai.logue-kr.site/health")
-UPSTREAM_TIMEOUT_SEC = float(os.getenv("UPSTREAM_TIMEOUT_SEC", "3"))
-DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
 
 KST = timezone(timedelta(hours=9))
 
 
 async def _post_discord(payload: dict) -> None:
-    if not DISCORD_WEBHOOK_URL:
+    if not settings.discord_webhook_url:
         return
     try:
         async with httpx.AsyncClient(timeout=5) as client:
-            await client.post(DISCORD_WEBHOOK_URL, json=payload)
+            await client.post(settings.discord_webhook_url, json=payload)
     except Exception:
         logger.warning("Discord 알림 전송 실패", exc_info=True)
 
@@ -104,17 +97,17 @@ def check_upstream_health(url: str, timeout_sec: float) -> tuple[bool, int | Non
 def health() -> dict[str, object]:
     logger.info("Health check requested")
     upstream_ok, upstream_status_code, upstream_error = check_upstream_health(
-        UPSTREAM_HEALTH_URL,
-        UPSTREAM_TIMEOUT_SEC,
+        settings.upstream_health_url,
+        settings.upstream_timeout_sec,
     )
 
     status = "ok" if upstream_ok else "degraded"
     if upstream_ok:
-        logger.info("Upstream health check succeeded: %s", UPSTREAM_HEALTH_URL)
+        logger.info("Upstream health check succeeded: %s", settings.upstream_health_url)
     else:
         logger.warning(
             "Upstream health check failed: %s status_code=%s error=%s",
-            UPSTREAM_HEALTH_URL,
+            settings.upstream_health_url,
             upstream_status_code,
             upstream_error,
         )
@@ -122,7 +115,7 @@ def health() -> dict[str, object]:
     return {
         "status": status,
         "upstream": {
-            "url": UPSTREAM_HEALTH_URL,
+            "url": settings.upstream_health_url,
             "ok": upstream_ok,
             "status_code": upstream_status_code,
             "error": upstream_error,

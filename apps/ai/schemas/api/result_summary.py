@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, model_validator
 
-from schemas.common import AnalysisType, SortDirection
+from schemas.enums import AnalysisType, SortDirection
 
 
 class SummaryCriteria(BaseModel):

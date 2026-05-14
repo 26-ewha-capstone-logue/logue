@@ -2,7 +2,6 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
-
 AnalysisType = Literal["COMPARISON", "RANKING"]
 DataType = Literal["string", "integer", "double", "boolean", "date", "datetime"]
 MetricType = Literal["RATIO", "COUNT", "SUM"]
