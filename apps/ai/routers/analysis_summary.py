@@ -5,10 +5,13 @@ from services.analysis_summary import summarize_analysis_result
 router = APIRouter(prefix="/v1/llm")
 
 @router.post(
-    "/analysis-results/describe",
+    "/analysis-results/describe-llm",
     response_model=AnalysisSummaryResponse,
-    summary="결과 요약",
-    description="확정된 analysis_criteria와 chart_data를 받아 한 줄 자연어 설명(강조 구간 포함)을 생성합니다.",
+    summary="결과 요약 (LLM 기반)",
+    description=(
+        "확정된 analysis_criteria와 chart_data를 받아 LLM 으로 한 줄 자연어 설명(강조 구간 포함)을 생성합니다. "
+        "기존 `/describe` (템플릿 기반, maetelson 구현) 와 별도 경로로 공존합니다."
+    ),
     responses={
         200: {"description": "요약 생성 성공"},
         422: {"description": "요청 Pydantic 검증 실패 (analysis_type별 필수 필드, rows 길이 등) — 재시도 없이 FAILED 처리됨"},

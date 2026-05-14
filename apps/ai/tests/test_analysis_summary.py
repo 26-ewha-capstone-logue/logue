@@ -40,7 +40,7 @@ def test_summarize_analysis_result() -> None:
 
     client = TestClient(app)
 
-    response = client.post("/v1/llm/analysis-results/describe", json=_valid_request_body())
+    response = client.post("/v1/llm/analysis-results/describe-llm", json=_valid_request_body())
 
     assert response.status_code == 200
     body = response.json()
@@ -94,7 +94,7 @@ def test_summarize_segments_plain_text_mismatch_returns_502() -> None:
         request_body = _valid_request_body()
         request_body["request_id"] = "req_test_002"
 
-        response = client.post("/v1/llm/analysis-results/describe", json=request_body)
+        response = client.post("/v1/llm/analysis-results/describe-llm", json=request_body)
 
     assert response.status_code == 502
     detail = response.json()["detail"]
@@ -113,7 +113,7 @@ def test_comparison_without_compare_period_returns_422() -> None:
     request_body = _valid_request_body()
     request_body["analysis_criteria"]["compare_period"] = None
 
-    response = client.post("/v1/llm/analysis-results/describe", json=request_body)
+    response = client.post("/v1/llm/analysis-results/describe-llm", json=request_body)
 
     assert response.status_code == 422
 
@@ -129,7 +129,7 @@ def test_comparison_with_blank_compare_period_returns_422() -> None:
         request_body = _valid_request_body()
         request_body["analysis_criteria"]["compare_period"] = blank
 
-        response = client.post("/v1/llm/analysis-results/describe", json=request_body)
+        response = client.post("/v1/llm/analysis-results/describe-llm", json=request_body)
 
         assert response.status_code == 422, f"blank={blank!r} 응답: {response.status_code}"
 
@@ -146,7 +146,7 @@ def test_ranking_without_limit_num_returns_422() -> None:
     request_body["analysis_criteria"]["compare_period"] = None
     request_body["analysis_criteria"]["limit_num"] = None
 
-    response = client.post("/v1/llm/analysis-results/describe", json=request_body)
+    response = client.post("/v1/llm/analysis-results/describe-llm", json=request_body)
 
     assert response.status_code == 422
 
@@ -164,6 +164,6 @@ def test_chart_data_row_length_mismatch_returns_422() -> None:
         "rows": [["only_one"]],  # columns 길이 2와 불일치
     }
 
-    response = client.post("/v1/llm/analysis-results/describe", json=request_body)
+    response = client.post("/v1/llm/analysis-results/describe-llm", json=request_body)
 
     assert response.status_code == 422
