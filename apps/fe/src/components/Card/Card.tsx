@@ -5,11 +5,22 @@ export type CardProps = {
   title: string;
   /** 세부 설명 (1줄) */
   description?: string;
-  /** 카드 상단에 표시할 이미지/콘텐츠 */
+  /** 카드 배경에 깔리는 일러스트/아이콘 (absolute fill) */
   thumbnail?: ReactNode;
   /** 클릭 콜백 */
   onClick?: () => void;
 } & Omit<HTMLAttributes<HTMLDivElement>, 'title' | 'children'>;
+
+// 디자인 시안:
+// background: linear-gradient(0deg,
+//   rgba(0,0,0,0.40) 6.82%,
+//   rgba(128,128,128,0.20) 51.23%,
+//   rgba(255,255,255,0.00) 88.38%), #FFF;
+const CARD_BACKGROUND =
+  'linear-gradient(0deg, rgba(0, 0, 0, 0.40) 6.82%, rgba(128, 128, 128, 0.20) 51.23%, rgba(255, 255, 255, 0.00) 88.38%), #FFF';
+
+const CARD_GRADIENT_OVERLAY =
+  'linear-gradient(0deg, rgba(0, 0, 0, 0.40) 6.82%, rgba(128, 128, 128, 0.20) 51.23%, rgba(255, 255, 255, 0.00) 88.38%)';
 
 export default function Card({
   title,
@@ -36,16 +47,29 @@ export default function Card({
             }
           : undefined
       }
-      className={`group flex w-full flex-col overflow-hidden rounded-20 bg-linear-to-br from-white via-[#f0f0f0] to-[#c8c8c8] shadow-[0_0.4rem_2rem_rgba(0,0,0,0.08)] ${isClickable ? 'cursor-pointer transition-transform hover:scale-[1.02]' : ''} ${className}`.trim()}
+      // thumbnail 이 없을 때는 시안 그대로 multi-background 적용
+      // thumbnail 이 있을 때는 흰색 베이스만 두고 일러스트 → 그라데이션 순서로 레이어링
+      style={{ background: thumbnail ? '#FFF' : CARD_BACKGROUND }}
+      className={`relative h-[18.5rem] w-full overflow-hidden rounded-[2.4rem] ${isClickable ? 'cursor-pointer transition-transform hover:scale-[1.02]' : ''} ${className}`.trim()}
       {...rest}
     >
-      {/* 썸네일 영역 */}
-      <div className="flex h-[20rem] w-full items-center justify-center">
-        {thumbnail}
-      </div>
+      {thumbnail && (
+        <>
+          {/* 일러스트 layer */}
+          <div className="pointer-events-none absolute inset-0 z-0">
+            {thumbnail}
+          </div>
+          {/* 그라데이션 오버레이 layer */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 z-10"
+            style={{ background: CARD_GRADIENT_OVERLAY }}
+          />
+        </>
+      )}
 
-      {/* 텍스트 영역 */}
-      <div className="flex flex-col gap-4 px-24 pb-24 pt-8">
+      {/* 텍스트 layer (좌하단) */}
+      <div className="relative z-20 flex h-full flex-col items-start justify-end gap-2 pt-[11.2rem] pr-[15.4rem] pb-[2.2rem] pl-[2.2rem]">
         <h3 className="text-head2 text-white">{title}</h3>
         {description && (
           <p className="truncate text-body2 text-white/80">{description}</p>
