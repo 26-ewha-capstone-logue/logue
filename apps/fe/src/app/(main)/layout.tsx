@@ -21,7 +21,7 @@ export default function MainLayout({
   const pathname = usePathname();
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-200">
+    <div className="flex h-screen flex-col overflow-hidden bg-gray-200">
       <Header
         navItems={NAV_ITEMS}
         activeHref={pathname}

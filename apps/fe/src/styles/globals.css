@@ -221,6 +221,11 @@
 
 /* ========== Icon Sizing Utilities ========== */
 
+@utility icon-12 {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
 @utility icon-16 {
   width: 1.6rem;
   height: 1.6rem;
@@ -254,4 +259,16 @@
 @utility icon-44 {
   width: 4.4rem;
   height: 4.4rem;
+}
+
+/* ========== Scrollbar Utilities ========== */
+
+/* 스크롤은 가능하지만 스크롤바 UI 는 숨김 */
+@utility scrollbar-hide {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }

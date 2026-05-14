@@ -77,7 +77,7 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
           ref={textareaRef}
           rows={rows}
           placeholder={placeholder}
-          className="w-full resize-none bg-transparent text-body1 text-gray-900 outline-none placeholder:text-gray-500"
+          className="scrollbar-hide w-full resize-none bg-transparent text-body1 text-gray-900 outline-none placeholder:text-gray-500"
           onKeyDown={handleKeyDown}
           {...rest}
         />

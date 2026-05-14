@@ -73,7 +73,7 @@ export default function Card({
        * 텍스트에 그대로 적용하면 가용 폭이 좁아 잘리므로
        * 텍스트 div 자체는 좌우 동일 패딩으로 두고 일러스트(thumbnail)는 별도 layer 로 처리한다.
        */}
-      <div className="relative z-20 flex h-full flex-col items-start justify-end gap-2 px-[2.2rem] pt-[11.2rem] pb-[2.2rem]">
+      <div className="relative z-20 flex h-full flex-col items-start justify-end gap-2 px-[2.2rem] pt-[11.2rem] pb-[1.2rem]">
         <h3 className="text-head2 text-white">{title}</h3>
         {description && (
           <p className="line-clamp-1 w-full text-body2 text-white/80">
