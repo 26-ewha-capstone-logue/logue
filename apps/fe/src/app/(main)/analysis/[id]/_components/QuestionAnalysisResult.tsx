@@ -121,6 +121,11 @@ export default function QuestionAnalysisResult({
     onEdit?.();
   };
 
+  const handleCancelEdit = () => {
+    setMode('normal');
+    setValues(INITIAL_VALUES);
+  };
+
   const handleContinue = () => {
     onContinue?.(values);
   };
@@ -212,16 +217,35 @@ export default function QuestionAnalysisResult({
           </button>
         </div>
       ) : (
-        <div className="flex flex-col gap-8">
-          <div className="inline-flex items-center gap-4 text-body2 font-semibold text-orange-500">
-            <AlertIcon aria-hidden className="icon-16 text-orange-500" />
-            <span>데이터 경고</span>
+        <div className="flex flex-col gap-16">
+          <div className="flex flex-col gap-8">
+            <div className="inline-flex items-center gap-4 text-body2 font-semibold text-orange-500">
+              <AlertIcon aria-hidden className="icon-16 text-orange-500" />
+              <span>데이터 경고</span>
+            </div>
+            <ul className="ml-20 flex list-disc flex-col gap-8 text-body2 text-gray-900">
+              {warnings.map((w, i) => (
+                <li key={i}>{w}</li>
+              ))}
+            </ul>
           </div>
-          <ul className="ml-20 flex list-disc flex-col gap-8 text-body2 text-gray-900">
-            {warnings.map((w, i) => (
-              <li key={i}>{w}</li>
-            ))}
-          </ul>
+          {/* edit 모드에서도 진행 경로 유지: 취소 / 계속 */}
+          <div className="flex justify-end gap-8">
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              className="rounded-20 bg-gray-300 px-16 py-8 text-body2 text-gray-700 transition-colors hover:bg-gray-400"
+            >
+              취소
+            </button>
+            <button
+              type="button"
+              onClick={handleContinue}
+              className="rounded-20 bg-orange-500 px-16 py-8 text-body2 text-white transition-colors hover:bg-orange-600"
+            >
+              이 기준으로 계속 할게요
+            </button>
+          </div>
         </div>
       )}
     </div>

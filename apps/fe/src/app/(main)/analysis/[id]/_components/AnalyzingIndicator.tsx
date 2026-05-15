@@ -12,7 +12,12 @@ export default function AnalyzingIndicator({
   message = 'Logue가 분석 중이에요',
 }: AnalyzingIndicatorProps) {
   return (
-    <div className="flex flex-col gap-16">
+    <div
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      className="flex flex-col gap-16"
+    >
       <div className="flex items-center gap-12">
         <Image
           src={loadingSpinner}

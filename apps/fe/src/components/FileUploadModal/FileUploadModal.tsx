@@ -2,6 +2,7 @@
 
 import {
   useCallback,
+  useEffect,
   useRef,
   useState,
   type ChangeEvent,
@@ -25,6 +26,27 @@ type Stage = 'idle' | 'uploading';
 const SIM_TICK_MS = 200;
 const SIM_INCREMENT = 10;
 
+/** accept 문자열("." prefix, mime type 모두 허용)에 매칭되는지 검사 */
+function matchesAccept(file: File, accept: string): boolean {
+  const tokens = accept
+    .split(',')
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean);
+  if (tokens.length === 0) return true;
+
+  const lowerName = file.name.toLowerCase();
+  const lowerType = file.type.toLowerCase();
+
+  return tokens.some((token) => {
+    if (token.startsWith('.')) return lowerName.endsWith(token);
+    if (token.endsWith('/*')) {
+      const prefix = token.slice(0, -1); // "image/"
+      return lowerType.startsWith(prefix);
+    }
+    return lowerType === token;
+  });
+}
+
 export default function FileUploadModal({
   open,
   onClose,
@@ -35,16 +57,22 @@ export default function FileUploadModal({
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const clearTimer = () => {
+  const clearTimer = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-  };
+  }, []);
+
+  // unmount 시 타이머 정리 (모달을 업로드 중에 닫는 경우 등)
+  useEffect(() => {
+    return () => clearTimer();
+  }, [clearTimer]);
 
   const reset = useCallback(() => {
     clearTimer();
@@ -52,7 +80,8 @@ export default function FileUploadModal({
     setFile(null);
     setProgress(0);
     setIsDragOver(false);
-  }, []);
+    setError(null);
+  }, [clearTimer]);
 
   const handleClose = useCallback(() => {
     reset();
@@ -61,6 +90,13 @@ export default function FileUploadModal({
 
   const startUpload = useCallback(
     (selected: File) => {
+      // 런타임 파일 타입 검증 (accept 는 UI 필터일 뿐 우회 가능)
+      if (!matchesAccept(selected, accept)) {
+        setError(`허용되지 않은 파일 형식입니다. (${accept})`);
+        return;
+      }
+
+      setError(null);
       setFile(selected);
       setStage('uploading');
       setProgress(0);
@@ -75,7 +111,7 @@ export default function FileUploadModal({
         }
       }, SIM_TICK_MS);
     },
-    [onUpload],
+    [accept, clearTimer, onUpload],
   );
 
   const pickFile = () => inputRef.current?.click();
@@ -162,6 +198,11 @@ export default function FileUploadModal({
               className="hidden"
               aria-label="파일 업로드"
             />
+            {error && (
+              <p role="alert" className="text-body4 text-error-500">
+                {error}
+              </p>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-12 rounded-12 border border-gray-300 bg-white px-16 py-16">

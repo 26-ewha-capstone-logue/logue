@@ -179,8 +179,7 @@ export default function VerificationResult({
               <YAxis
                 axisLine={false}
                 tickLine={false}
-                ticks={[0, 50, 100, 150, 200]}
-                domain={[0, 200]}
+                domain={[0, 'auto']}
                 tick={{ fontSize: 12, fill: '#999999' }}
               />
               <Bar dataKey="value" radius={20} maxBarSize={40}>

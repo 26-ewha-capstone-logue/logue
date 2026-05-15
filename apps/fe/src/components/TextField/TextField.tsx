@@ -1,13 +1,14 @@
 import {
   forwardRef,
-  useRef,
   useCallback,
-  type TextareaHTMLAttributes,
-  type ReactNode,
+  useImperativeHandle,
+  useRef,
   type MouseEvent,
+  type ReactNode,
+  type TextareaHTMLAttributes,
 } from 'react';
-import PlusIcon from '@/assets/icons/plus.svg';
 import ArrowUpIcon from '@/assets/icons/arrow-up.svg';
+import PlusIcon from '@/assets/icons/plus.svg';
 
 export type TextFieldProps = {
   /** 파일 추가 버튼 클릭 콜백 */
@@ -40,9 +41,10 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
     },
     ref,
   ) {
+    // 내부에서는 항상 안전한 RefObject 를 들고 있고, 외부 ref(callback/RefObject)
+    // 는 useImperativeHandle 로 동일한 인스턴스를 노출시켜 양쪽이 모두 동작하도록 함.
     const innerRef = useRef<HTMLTextAreaElement>(null);
-    const textareaRef =
-      (ref as React.RefObject<HTMLTextAreaElement>) ?? innerRef;
+    useImperativeHandle(ref, () => innerRef.current as HTMLTextAreaElement, []);
 
     const handleContainerClick = useCallback(
       (e: MouseEvent<HTMLDivElement>) => {
@@ -51,9 +53,9 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
           (e.target as HTMLElement).closest('[data-toolbar]')
         )
           return;
-        textareaRef.current?.focus();
+        innerRef.current?.focus();
       },
-      [textareaRef],
+      [],
     );
 
     const handleKeyDown = useCallback(
@@ -74,7 +76,7 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
       >
         {/* textarea */}
         <textarea
-          ref={textareaRef}
+          ref={innerRef}
           rows={rows}
           placeholder={placeholder}
           className="scrollbar-hide w-full resize-none bg-transparent text-body1 text-gray-900 outline-none placeholder:text-gray-500"

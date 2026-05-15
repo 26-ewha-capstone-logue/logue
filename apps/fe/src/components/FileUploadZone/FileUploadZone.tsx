@@ -111,7 +111,7 @@ export default function FileUploadZone({
       />
       <div className="flex flex-col items-center gap-4">
         <p className="text-head4 font-semibold text-gray-900">
-          Csv 파일을 업로드해주세요
+          CSV 파일을 업로드해주세요
         </p>
         <p className="text-body2 text-gray-600">
           드래그 &amp; 드롭을 통해 파일을 업로드 하고 대화를 시작해보세요.

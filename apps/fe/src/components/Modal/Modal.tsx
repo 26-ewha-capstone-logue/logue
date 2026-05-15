@@ -7,9 +7,22 @@ export type ModalProps = {
   open: boolean;
   onClose: () => void;
   children: ReactNode;
+  /** 보조 기기에 모달의 의미를 알려주는 라벨 텍스트 (간단한 한 줄) */
+  ariaLabel?: string;
+  /** 라벨 역할을 하는 요소 id (모달 내부 heading 등). ariaLabel 보다 우선 적용 */
+  ariaLabelledBy?: string;
+  /** 모달 내부 설명 영역 id */
+  ariaDescribedBy?: string;
 };
 
-export default function Modal({ open, onClose, children }: ModalProps) {
+export default function Modal({
+  open,
+  onClose,
+  children,
+  ariaLabel,
+  ariaLabelledBy,
+  ariaDescribedBy,
+}: ModalProps) {
   useEffect(() => {
     if (!open) return;
     const handleKey = (e: KeyboardEvent) => {
@@ -61,6 +74,11 @@ export default function Modal({ open, onClose, children }: ModalProps) {
         }}
       />
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={ariaLabelledBy ? undefined : ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
         className="relative z-10 w-full max-w-[60rem] rounded-20 bg-white p-32 shadow-[0_0.8rem_3.2rem_rgba(0,0,0,0.12)]"
         style={{ position: 'relative', zIndex: 10 }}
       >

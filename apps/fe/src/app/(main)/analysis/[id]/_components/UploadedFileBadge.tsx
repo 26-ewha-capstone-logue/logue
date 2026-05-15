@@ -9,8 +9,13 @@ export default function UploadedFileBadge({
   status = 'uploaded',
 }: UploadedFileBadgeProps) {
   return (
-    <div className="inline-flex flex-col items-end gap-4 rounded-12 bg-white px-16 py-12 shadow-[0_0.2rem_0.8rem_rgba(0,0,0,0.06)]">
-      <span className="text-body4 text-gray-900">{fileName}</span>
+    <div className="inline-flex max-w-sm flex-col items-end gap-4 rounded-12 bg-white px-16 py-12 shadow-[0_0.2rem_0.8rem_rgba(0,0,0,0.06)]">
+      <span
+        title={fileName}
+        className="block max-w-full truncate text-body4 text-gray-900"
+      >
+        {fileName}
+      </span>
       <div className="flex items-center gap-4">
         <span
           aria-hidden
