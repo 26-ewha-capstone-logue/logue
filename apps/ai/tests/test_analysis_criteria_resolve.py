@@ -1,4 +1,4 @@
-"""POST /v1/llm/analysis-criteria/resolve-llm 통합 테스트.
+"""POST /v1/llm/analysis-criteria/resolve 통합 테스트.
 
 - 정상 200 (mock 경로)
 - 입력 검증 422: 필수 누락 / enum 위반 / cross-field 위반
@@ -18,7 +18,7 @@ from schemas.analysis_criteria import (
 from services import analysis_criteria_service as svc
 
 
-ENDPOINT = "/v1/llm/analysis-criteria/resolve-llm"
+ENDPOINT = "/v1/llm/analysis-criteria/resolve"
 client = TestClient(main.app)
 
 

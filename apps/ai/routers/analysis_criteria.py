@@ -1,10 +1,8 @@
 """분석 기준 도출 라우터 (LLM 기반).
 
-`POST /v1/llm/analysis-criteria/resolve-llm` — Spring 으로부터 질문/카탈로그/데이터 소스를
+`POST /v1/llm/analysis-criteria/resolve` — Spring 으로부터 질문/카탈로그/데이터 소스를
 받아 LLM 기반으로 구조화된 분석 기준을 반환한다. 서비스는 `Depends` 로 주입되어
 테스트에서 `app.dependency_overrides` 로 교체 가능하다.
-
-별도 경로 `/resolve` 는 dev 의 로컬 키워드 매칭 구현(maetelson) 이 점유한다.
 """
 
 from __future__ import annotations
@@ -44,13 +42,10 @@ _ERROR_RESPONSES: dict[int | str, dict] = {
 
 
 @router.post(
-    "/resolve-llm",
+    "/resolve",
     response_model=QuestionAnalysisResponse,
     summary="질문 분석 — 분석 기준 도출 (LLM 기반)",
-    description=(
-        "LLM 기반 분석 기준 도출 변형입니다. "
-        "기존 `/resolve` (로컬 키워드 매칭, maetelson 구현) 와 별도 경로로 공존합니다."
-    ),
+    description="LLM 기반으로 질문/카탈로그/데이터 소스에서 구조화된 분석 기준을 도출합니다.",
     responses=_ERROR_RESPONSES,
 )
 def resolve_endpoint(
