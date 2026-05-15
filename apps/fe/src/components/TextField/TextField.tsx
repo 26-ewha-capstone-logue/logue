@@ -1,11 +1,14 @@
 import {
   forwardRef,
-  useRef,
   useCallback,
-  type TextareaHTMLAttributes,
-  type ReactNode,
+  useImperativeHandle,
+  useRef,
   type MouseEvent,
+  type ReactNode,
+  type TextareaHTMLAttributes,
 } from 'react';
+import ArrowUpIcon from '@/assets/icons/arrow-up.svg';
+import PlusIcon from '@/assets/icons/plus.svg';
 
 export type TextFieldProps = {
   /** 파일 추가 버튼 클릭 콜백 */
@@ -21,33 +24,6 @@ export type TextFieldProps = {
   /** 전체 너비 */
   fullWidth?: boolean;
 } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'children'>;
-
-function SendIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 18 18"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
-    >
-      <path
-        d="M9 15V3m0 0l-5.5 5.5M9 3l5.5 5.5"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function DefaultFileIcon() {
-  return (
-    <span className="inline-block h-[1.4rem] w-[1.4rem] shrink-0 rounded-[0.3rem] bg-mint-400" />
-  );
-}
 
 const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
   function TextField(
@@ -65,8 +41,10 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
     },
     ref,
   ) {
+    // 내부에서는 항상 안전한 RefObject 를 들고 있고, 외부 ref(callback/RefObject)
+    // 는 useImperativeHandle 로 동일한 인스턴스를 노출시켜 양쪽이 모두 동작하도록 함.
     const innerRef = useRef<HTMLTextAreaElement>(null);
-    const textareaRef = (ref as React.RefObject<HTMLTextAreaElement>) ?? innerRef;
+    useImperativeHandle(ref, () => innerRef.current as HTMLTextAreaElement, []);
 
     const handleContainerClick = useCallback(
       (e: MouseEvent<HTMLDivElement>) => {
@@ -75,9 +53,9 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
           (e.target as HTMLElement).closest('[data-toolbar]')
         )
           return;
-        textareaRef.current?.focus();
+        innerRef.current?.focus();
       },
-      [textareaRef],
+      [],
     );
 
     const handleKeyDown = useCallback(
@@ -94,14 +72,14 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
     return (
       <div
         onClick={handleContainerClick}
-        className={`inline-flex cursor-text flex-col items-start gap-[1rem] rounded-20 bg-white p-[2.9rem_2.6rem] shadow-[0_0.2rem_1.2rem_rgba(0,0,0,0.06)] ${fullWidth ? 'w-full' : ''} ${className}`.trim()}
+        className={`inline-flex cursor-text flex-col items-start gap-[3.8rem] rounded-20 bg-white p-[2.9rem_2.6rem] shadow-[0_0.2rem_1.2rem_rgba(0,0,0,0.06)] ${fullWidth ? 'w-full' : ''} ${className}`.trim()}
       >
         {/* textarea */}
         <textarea
-          ref={textareaRef}
+          ref={innerRef}
           rows={rows}
           placeholder={placeholder}
-          className="w-full resize-none bg-transparent text-body1 text-gray-900 outline-none placeholder:text-gray-500"
+          className="scrollbar-hide w-full resize-none bg-transparent text-body1 text-gray-900 outline-none placeholder:text-gray-500"
           onKeyDown={handleKeyDown}
           {...rest}
         />
@@ -114,7 +92,9 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
             onClick={onFileAttach}
             className="inline-flex items-center gap-[0.6rem] rounded-20 border border-gray-300 px-12 py-[0.6rem] text-body4 text-gray-700 transition-colors hover:bg-gray-100"
           >
-            {fileIcon ?? <DefaultFileIcon />}
+            {fileIcon ?? (
+              <PlusIcon aria-hidden className="icon-16 text-gray-800" />
+            )}
             {fileLabel}
           </button>
 
@@ -123,9 +103,9 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
             type="button"
             onClick={onSubmit}
             disabled={submitDisabled}
-            className="inline-flex h-[3.8rem] w-[3.8rem] shrink-0 items-center justify-center rounded-12 bg-orange-500 text-white transition-colors hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="inline-flex h-[3.8rem] w-[3.8rem] shrink-0 items-center justify-center rounded-12 bg-orange-500 transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-400"
           >
-            <SendIcon />
+            <ArrowUpIcon aria-hidden className="icon-20 text-[#000000]" />
           </button>
         </div>
       </div>
