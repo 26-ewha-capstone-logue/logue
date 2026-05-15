@@ -32,7 +32,17 @@ const nextConfig: NextConfig = {
   turbopack: {
     rules: {
       '*.svg': {
-        loaders: [{ loader: '@svgr/webpack', options: svgrOptions }],
+        // Turbopack 의 TurbopackLoaderOptions 는 JSON 직렬화 가능한 값만 허용해서
+        // svgo plugin union 추론과 호환되지 않음. 런타임 형태는 동일하므로 캐스팅.
+        loaders: [
+          {
+            loader: '@svgr/webpack',
+            // Turbopack 의 TurbopackLoaderOptions 는 JSONValue 만 허용해서 svgo plugin union
+            // 추론과 정확히 매칭되지 않음. 런타임 형태는 동일하므로 any 로 캐스팅.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            options: svgrOptions as any,
+          },
+        ],
         as: '*.js',
       },
     },
