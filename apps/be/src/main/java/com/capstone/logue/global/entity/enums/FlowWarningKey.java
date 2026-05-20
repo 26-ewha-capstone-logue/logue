@@ -12,6 +12,23 @@ package com.capstone.logue.global.entity.enums;
  * </ul>
  */
 public enum FlowWarningKey {
-    QUESTION_DATA_MISMATCH,
-    CRITICAL_NULL_DETECTED
+    QUESTION_DATA_MISMATCH(
+            "필요한 항목이 없어요",
+            "없는 항목은 다른 기준으로 바꿔서 계속할 수 있어요."
+    ),
+    CRITICAL_NULL_DETECTED(
+            "분석에 필요한 값이 일부 비어 있어요",
+            "비어 있는 값이 많아 결과가 부정확할 수 있어요."
+    );
+
+    private final String name;
+    private final String comment;
+
+    FlowWarningKey(String name, String comment) {
+        this.name = name;
+        this.comment = comment;
+    }
+
+    public String getName() { return name; }
+    public String getComment() { return comment; }
 }
