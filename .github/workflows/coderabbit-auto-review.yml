@@ -11,7 +11,7 @@ on:
 
 permissions:
   issues: write
-  pull-requests: read
+  pull-requests: write
 
 jobs:
   sync-review-label:
@@ -28,16 +28,15 @@ jobs:
           set -euo pipefail
 
           if [[ "$BASE_REF" == "dev" || "$BASE_REF" == hotfix/* ]]; then
-            gh label create "$LABEL" \
-              --repo "$GITHUB_REPOSITORY" \
-              --color "B2D6D0" \
-              --description "Opt in to CodeRabbit automatic review" \
-              --force
-            gh api \
+            if gh api \
               --method POST \
               "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" \
               -f "labels[]=$LABEL" \
-              --silent
+              --silent; then
+              echo "Added $LABEL label to PR #$PR_NUMBER."
+            else
+              echo "::warning::Failed to add $LABEL label to PR #$PR_NUMBER. Check workflow token permissions."
+            fi
           else
             gh api \
               --method DELETE \
