@@ -11,7 +11,7 @@ on:
 
 permissions:
   issues: write
-  pull-requests: write
+  pull-requests: read
 
 jobs:
   sync-review-label:
@@ -33,7 +33,14 @@ jobs:
               --color "B2D6D0" \
               --description "Opt in to CodeRabbit automatic review" \
               --force
-            gh pr edit "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --add-label "$LABEL"
+            gh api \
+              --method POST \
+              "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" \
+              -f "labels[]=$LABEL" \
+              --silent
           else
-            gh pr edit "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --remove-label "$LABEL" || true
+            gh api \
+              --method DELETE \
+              "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels/$LABEL" \
+              --silent || true
           fi
