@@ -12,8 +12,8 @@ from fastapi.responses import JSONResponse
 
 from core.exception_handlers import register_exception_handlers
 from routers.analysis_criteria import router as analysis_criteria_router
+from routers.analysis_summary import router as analysis_summary_router
 from routers.file_analysis import router as file_analysis_router
-from routers.result_summary import router as result_summary_router
 
 
 logging.basicConfig(
@@ -61,7 +61,7 @@ app = FastAPI(title="logue-ai", version="0.1.0", lifespan=lifespan)
 register_exception_handlers(app)
 app.include_router(file_analysis_router)
 app.include_router(analysis_criteria_router)
-app.include_router(result_summary_router)
+app.include_router(analysis_summary_router)
 
 
 @app.exception_handler(Exception)
