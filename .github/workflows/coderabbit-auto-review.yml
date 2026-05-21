@@ -1,0 +1,39 @@
+name: CodeRabbit Auto Review
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - ready_for_review
+      - edited
+      - synchronize
+
+permissions:
+  issues: write
+  pull-requests: read
+
+jobs:
+  sync-review-label:
+    name: Sync review label
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync CodeRabbit opt-in label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LABEL: coderabbit-review
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$BASE_REF" == "dev" || "$BASE_REF" == hotfix/* ]]; then
+            gh label create "$LABEL" \
+              --repo "$GITHUB_REPOSITORY" \
+              --color "B2D6D0" \
+              --description "Opt in to CodeRabbit automatic review" \
+              --force
+            gh pr edit "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --add-label "$LABEL"
+          else
+            gh pr edit "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --remove-label "$LABEL" || true
+          fi
