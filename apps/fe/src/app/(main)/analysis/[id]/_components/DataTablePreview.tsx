@@ -40,9 +40,7 @@ export default function DataTablePreview({
   className = '',
 }: DataTablePreviewProps) {
   return (
-    <div
-      className={`scrollbar-hide h-full overflow-auto ${className}`.trim()}
-    >
+    <div className={`scrollbar-hide h-full overflow-auto ${className}`.trim()}>
       <table className="min-w-full border-collapse text-body4 text-gray-900">
         <thead className="sticky top-0 z-10">
           <tr>

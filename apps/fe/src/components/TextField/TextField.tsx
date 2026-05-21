@@ -48,11 +48,7 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
 
     const handleContainerClick = useCallback(
       (e: MouseEvent<HTMLDivElement>) => {
-        if (
-          e.target === e.currentTarget ||
-          (e.target as HTMLElement).closest('[data-toolbar]')
-        )
-          return;
+        if ((e.target as HTMLElement).closest('[data-toolbar]')) return;
         innerRef.current?.focus();
       },
       [],

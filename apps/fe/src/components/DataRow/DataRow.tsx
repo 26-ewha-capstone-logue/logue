@@ -26,7 +26,9 @@ export default function DataRow({
         <span className="flex-1 text-body3 text-gray-800">파일명</span>
         <span className="w-[8rem] text-body3 text-gray-800">파일 크기</span>
         <span className="w-[10rem] text-body3 text-gray-800">최근 업로드</span>
-        <span className="w-[8rem] text-right text-body3 text-gray-800">액션</span>
+        <span className="w-[8rem] text-right text-body3 text-gray-800">
+          액션
+        </span>
       </div>
     );
   }
@@ -43,7 +45,9 @@ export default function DataRow({
         onChange={(e) => onSelect?.(e.target.checked)}
         className="h-20 w-20 shrink-0 cursor-pointer accent-orange-500"
       />
-      <span className="flex-1 truncate text-body2 text-gray-900">{fileName}</span>
+      <span className="flex-1 truncate text-body2 text-gray-900">
+        {fileName}
+      </span>
       <span className="w-[8rem] text-body2 text-gray-600">{fileSize}</span>
       <span className="w-[10rem] text-body2 text-gray-600">{uploadedAt}</span>
       <div className="flex w-[8rem] justify-end">

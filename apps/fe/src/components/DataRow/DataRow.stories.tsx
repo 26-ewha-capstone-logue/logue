@@ -1,11 +1,17 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import DataRow from './DataRow';
 
 const meta: Meta<typeof DataRow> = {
   title: 'Components/DataRow',
   component: DataRow,
   tags: ['autodocs'],
-  decorators: [(Story) => <div className="w-[80rem]"><Story /></div>],
+  decorators: [
+    (Story) => (
+      <div className="w-[80rem]">
+        <Story />
+      </div>
+    ),
+  ],
 };
 export default meta;
 
@@ -20,5 +26,10 @@ export const Default: Story = {
 };
 
 export const Selected: Story = {
-  args: { fileName: '파일명.csv', fileSize: '50MB', uploadedAt: '5분 전', selected: true },
+  args: {
+    fileName: '파일명.csv',
+    fileSize: '50MB',
+    uploadedAt: '5분 전',
+    selected: true,
+  },
 };

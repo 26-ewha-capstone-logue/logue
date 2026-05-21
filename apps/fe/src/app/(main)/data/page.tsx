@@ -94,6 +94,17 @@ export default function DataPage() {
     router.push(`/data/${id}`);
   };
 
+  const handleRowKeyDown = (
+    e: React.KeyboardEvent<HTMLTableRowElement>,
+    id: string,
+  ) => {
+    if (e.target !== e.currentTarget) return;
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+
+    e.preventDefault();
+    goToDetail(id);
+  };
+
   return (
     <main className="scrollbar-hide flex min-h-0 flex-1 flex-col overflow-y-auto px-40 pt-32 pb-40">
       <h1 className="mb-24 text-head2 font-semibold text-gray-900">
@@ -158,6 +169,10 @@ export default function DataPage() {
                 <tr
                   key={row.id}
                   onClick={() => goToDetail(row.id)}
+                  onKeyDown={(e) => handleRowKeyDown(e, row.id)}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Open ${row.fileName} details`}
                   className="cursor-pointer border-t border-gray-200 transition-colors hover:bg-gray-100"
                 >
                   <td
