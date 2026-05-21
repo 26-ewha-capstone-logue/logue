@@ -55,8 +55,8 @@ call_once() {
   : >"$body_file"
   : >"$status_file"
   local http_status curl_exit
-  set +e
   http_status="$(
+    set +e
     curl --silent --show-error --location \
       --max-time 120 \
       --output "$body_file" \
@@ -65,10 +65,11 @@ call_once() {
       --header 'Content-Type: application/json' \
       --data "$payload" \
       "$endpoint" 2>"$tmpdir/curl_err"
+    echo "__exit:$?"
   )"
-  curl_exit=$?
-  set -e
-  if [[ $curl_exit -ne 0 ]]; then
+  curl_exit="${http_status##*__exit:}"
+  http_status="${http_status%__exit:*}"
+  if [[ "$curl_exit" -ne 0 ]]; then
     http_status="000"
   fi
   echo "$http_status" >"$status_file"
