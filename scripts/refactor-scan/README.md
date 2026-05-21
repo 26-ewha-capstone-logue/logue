@@ -95,6 +95,24 @@ Claude Sonnet 가격 기준 1회 발사당 \$0.03~0.10 예상. \$60 예산이면
 
 > ⚠️ LiteLLM 엔드포인트가 HTTP 평문이다 (`http://43.201.226.184:4000`). Actions runner 의 아웃바운드는 동적 IP 라 화이트리스트 비현실적. HTTPS 전환 또는 OIDC 게이트웨이 옵션을 운영자와 검토 권장.
 
+## `LAST_SCAN_SHA_*` 분실 시 복구
+
+Repository Variables 가 실수로 삭제되거나 PAT 미설정 기간이 길어 갱신이 안 됐을 때 — 가장 최근 자동 발행 이슈의 본문 푸터에 `<!-- last_sha: ... -->` 가 박혀 있다.
+
+```bash
+# 가장 최근 fe 자동 이슈에서 last_sha 추출
+gh issue list --repo 26-ewha-capstone-logue/logue \
+  --label "auto-generated" --label "fe" --state all --limit 1 --json body \
+  | jq -r '.[0].body' | grep -oE 'last_sha: [a-f0-9]+' | awk '{print $2}'
+
+# 추출한 SHA 로 변수 복구 (PAT 필요)
+GH_TOKEN=$REFACTOR_SCAN_VARS_TOKEN \
+  gh variable set LAST_SCAN_SHA_FE \
+  --repo 26-ewha-capstone-logue/logue --body "<추출한 SHA>"
+```
+
+자동 이슈가 한 번도 없으면 그냥 비워두고 다음 푸시에서 첫 발사를 새 baseline 으로 삼아도 된다.
+
 ## 트러블슈팅
 
 | 증상 | 원인 / 대응 |
