@@ -34,9 +34,7 @@ export default function FileUploadZone({
 
   const validateAndEmit = useCallback(
     (file: File) => {
-      const extensions = accept
-        .split(',')
-        .map((s) => s.trim().toLowerCase());
+      const extensions = accept.split(',').map((s) => s.trim().toLowerCase());
       const fileName = file.name.toLowerCase();
       const valid = extensions.some((ext) => fileName.endsWith(ext));
       if (!valid) {

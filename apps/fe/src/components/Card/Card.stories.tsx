@@ -76,9 +76,21 @@ export const AllVariants: Story = {
       <section>
         <h3 className="mb-12 text-head4 text-gray-900">카드 목록</h3>
         <div className="grid grid-cols-4 gap-24">
-          <Card title="마케팅" description="디지털 마케팅 전략" onClick={fn()} />
-          <Card title="데이터 분석" description="비즈니스 인사이트 도출" onClick={fn()} />
-          <Card title="디자인" description="UI/UX 디자인 시스템" onClick={fn()} />
+          <Card
+            title="마케팅"
+            description="디지털 마케팅 전략"
+            onClick={fn()}
+          />
+          <Card
+            title="데이터 분석"
+            description="비즈니스 인사이트 도출"
+            onClick={fn()}
+          />
+          <Card
+            title="디자인"
+            description="UI/UX 디자인 시스템"
+            onClick={fn()}
+          />
           <Card title="개발" onClick={fn()} />
         </div>
       </section>

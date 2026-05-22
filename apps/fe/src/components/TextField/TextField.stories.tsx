@@ -10,7 +10,8 @@ const meta = {
   parameters: { layout: 'centered' },
   tags: ['autodocs'],
   args: {
-    placeholder: '이번달이랑 지난달 비교해서 지역별 매출 높은 순으로 5개 보여줘',
+    placeholder:
+      '이번달이랑 지난달 비교해서 지역별 매출 높은 순으로 5개 보여줘',
     onSubmit: fn(),
     onFileAttach: fn(),
   },
