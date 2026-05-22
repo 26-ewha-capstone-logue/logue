@@ -64,6 +64,13 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
 
     const handleKeyDown = useCallback(
       (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+          e.preventDefault();
+          e.currentTarget.select();
+          onKeyDown?.(e);
+          return;
+        }
+
         if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
           e.preventDefault();
           if (!submitDisabled) onSubmit?.();
@@ -94,7 +101,7 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
         className={`inline-flex cursor-text bg-white shadow-[0_0.2rem_1.2rem_rgba(0,0,0,0.06)] ${
           isCompact
             ? 'min-w-[41.8rem] flex-row items-center rounded-16 px-24 py-12'
-            : 'min-w-[29rem] flex-col items-start gap-[5.9rem] rounded-20 px-[2.6rem] py-[2.9rem]'
+            : 'w-[115.5rem] max-w-full flex-col items-start gap-[5.9rem] rounded-20 px-[2.6rem] py-[2.9rem]'
         } ${fullWidth ? 'w-full' : ''} ${className}`.trim()}
       >
         <textarea
@@ -112,7 +119,7 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
             onBlur?.(e);
           }}
           onKeyDown={handleKeyDown}
-          className={`scrollbar-hide min-w-0 flex-1 resize-none bg-transparent outline-none ${
+          className={`scrollbar-hide min-w-0 w-full flex-1 resize-none bg-transparent outline-none ${
             isCompact ? 'text-body2' : 'text-head3'
           } ${toneClass}`}
           {...textareaProps}
