@@ -168,7 +168,7 @@ export default function IntroPage() {
         <div className="ml-auto flex items-center gap-20">
           <button
             type="button"
-            onClick={() => router.push('/login')}
+            onClick={() => window.location.assign('/login')}
             className={`text-body2 underline underline-offset-2 transition-colors ${
               scrolled
                 ? 'text-gray-900 hover:text-gray-700'
