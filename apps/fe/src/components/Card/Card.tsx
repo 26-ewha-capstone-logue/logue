@@ -1,5 +1,7 @@
 import { type HTMLAttributes, type ReactNode } from 'react';
 
+type CardVariant = 'dash' | 'intro' | 'news';
+
 export type CardProps = {
   /** 분야명 (굵은 제목) */
   title: string;
@@ -9,6 +11,8 @@ export type CardProps = {
   thumbnail?: ReactNode;
   /** 클릭 콜백 */
   onClick?: () => void;
+  variant?: CardVariant;
+  label?: string;
 } & Omit<HTMLAttributes<HTMLDivElement>, 'title' | 'children'>;
 
 export default function Card({
@@ -16,10 +20,18 @@ export default function Card({
   description,
   thumbnail,
   onClick,
+  variant = 'dash',
+  label,
   className = '',
   ...rest
 }: CardProps) {
   const isClickable = !!onClick;
+  const isDash = variant === 'dash';
+  const sizeClass = {
+    dash: 'h-[18.5rem] w-[28.1rem] rounded-[2.4rem]',
+    intro: 'h-[30rem] w-[30rem] rounded-20',
+    news: 'h-[32rem] w-[60rem] rounded-20',
+  } satisfies Record<CardVariant, string>;
 
   return (
     <div
@@ -36,19 +48,39 @@ export default function Card({
             }
           : undefined
       }
-      className={`group flex w-full flex-col overflow-hidden rounded-20 bg-linear-to-br from-white via-[#f0f0f0] to-[#c8c8c8] shadow-[0_0.4rem_2rem_rgba(0,0,0,0.08)] ${isClickable ? 'cursor-pointer transition-transform hover:scale-[1.02]' : ''} ${className}`.trim()}
+      className={`group relative flex overflow-hidden bg-linear-to-br from-white via-[#d6d6d6] to-[#8f8f8f] ${sizeClass[variant]} ${
+        isClickable
+          ? 'cursor-pointer transition-transform hover:scale-[1.02]'
+          : ''
+      } ${className}`.trim()}
       {...rest}
     >
-      {/* 썸네일 영역 */}
-      <div className="flex h-[20rem] w-full items-center justify-center">
-        {thumbnail}
-      </div>
+      {thumbnail && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          {thumbnail}
+        </div>
+      )}
 
-      {/* 텍스트 영역 */}
-      <div className="flex flex-col gap-4 px-24 pb-24 pt-8">
-        <h3 className="text-head2 text-white">{title}</h3>
+      {label && (
+        <span className="absolute left-32 top-[17.3rem] rounded-[22.2rem] bg-orange-500 px-12 py-8 text-body2 text-white">
+          {label}
+        </span>
+      )}
+
+      <div
+        className={`relative z-10 mt-auto flex flex-col ${
+          isDash ? 'gap-4 px-[2.2rem] pb-[2.2rem]' : 'gap-8 p-32'
+        }`}
+      >
+        <h3
+          className={`${isDash ? 'text-head3' : 'text-head2 font-extrabold'} text-white`}
+        >
+          {title}
+        </h3>
         {description && (
-          <p className="truncate text-body2 text-white/80">{description}</p>
+          <p className={`${isDash ? 'truncate' : ''} text-body2 text-white`}>
+            {description}
+          </p>
         )}
       </div>
     </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, type ReactNode } from 'react';
+import DropdownDetails from '../DropdownDetails/DropdownDetails';
 
 export type DropdownOption = {
   label: string;
@@ -14,6 +15,7 @@ export type DropdownProps = {
   placeholder?: string;
   icon?: ReactNode;
   className?: string;
+  helperText?: string;
 };
 
 export default function Dropdown({
@@ -23,6 +25,7 @@ export default function Dropdown({
   placeholder = '선택',
   icon,
   className = '',
+  helperText,
 }: DropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -44,7 +47,7 @@ export default function Dropdown({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="inline-flex items-center gap-8 rounded-8 border border-gray-300 bg-white px-12 py-8 text-body2 text-gray-800 transition-colors hover:border-gray-400"
+        className="inline-flex h-[3.4rem] items-center justify-center gap-12 rounded-8 border border-gray-800 bg-white pl-16 pr-12 text-body2 text-gray-800 transition-colors hover:border-gray-900"
       >
         {icon && <span className="shrink-0 [&>svg]:icon-16">{icon}</span>}
         <span>{selected?.label ?? placeholder}</span>
@@ -67,29 +70,17 @@ export default function Dropdown({
       </button>
 
       {open && (
-        <ul className="absolute left-0 top-full z-10 mt-4 min-w-full overflow-hidden rounded-12 border border-gray-300 bg-white py-4 shadow-[0_0.4rem_1.6rem_rgba(0,0,0,0.08)]">
-          {options.map((option) => (
-            <li key={option.value}>
-              <button
-                type="button"
-                onClick={() => {
-                  onChange?.(option.value);
-                  setOpen(false);
-                }}
-                className={`flex w-full items-center gap-8 px-16 py-8 text-body2 transition-colors hover:bg-gray-100 ${
-                  option.value === value
-                    ? 'font-semibold text-orange-500'
-                    : 'text-gray-800'
-                }`}
-              >
-                {option.value === value && (
-                  <span className="h-8 w-8 rounded-full bg-orange-500" />
-                )}
-                {option.label}
-              </button>
-            </li>
-          ))}
-        </ul>
+        <DropdownDetails
+          type="radio"
+          options={options}
+          selectedValues={value ? [value] : []}
+          helperText={helperText}
+          onSelect={(nextValue) => {
+            onChange?.(nextValue);
+            setOpen(false);
+          }}
+          className="absolute left-0 top-full z-10 mt-4"
+        />
       )}
     </div>
   );

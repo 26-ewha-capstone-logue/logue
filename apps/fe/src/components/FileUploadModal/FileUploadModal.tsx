@@ -54,7 +54,13 @@ export default function FileUploadModal({
             onClick={handleClose}
             className="text-gray-500 hover:text-gray-800"
           >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              fill="none"
+              aria-hidden
+            >
               <path
                 d="M5 5l10 10M15 5L5 15"
                 stroke="currentColor"
@@ -69,7 +75,9 @@ export default function FileUploadModal({
           <div className="flex items-center gap-12 rounded-12 border border-gray-300 px-16 py-12">
             <span className="inline-block h-24 w-24 rounded-4 bg-orange-400" />
             <div className="flex flex-1 flex-col gap-4">
-              <span className="truncate text-body2 text-gray-900">{file.name}</span>
+              <span className="truncate text-body2 text-gray-900">
+                {file.name}
+              </span>
               {uploading && (
                 <div className="h-4 w-full overflow-hidden rounded-full bg-gray-200">
                   <div
@@ -88,7 +96,13 @@ export default function FileUploadModal({
               }}
               className="text-gray-500 hover:text-error-500"
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                aria-hidden
+              >
                 <path
                   d="M4 4l8 8M12 4l-8 8"
                   stroke="currentColor"

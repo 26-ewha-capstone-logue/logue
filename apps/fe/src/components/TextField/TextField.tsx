@@ -2,10 +2,14 @@ import {
   forwardRef,
   useRef,
   useCallback,
+  useImperativeHandle,
+  useState,
   type TextareaHTMLAttributes,
   type ReactNode,
   type MouseEvent,
 } from 'react';
+
+type TextFieldSize = 'lg' | 'md';
 
 export type TextFieldProps = {
   /** 파일 추가 버튼 클릭 콜백 */
@@ -20,22 +24,23 @@ export type TextFieldProps = {
   fileLabel?: string;
   /** 전체 너비 */
   fullWidth?: boolean;
+  /** Figma text filed size */
+  size?: TextFieldSize;
 } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'children'>;
 
-function SendIcon() {
+function ArrowUpIcon() {
   return (
     <svg
-      width="18"
-      height="18"
-      viewBox="0 0 18 18"
+      className="icon-24"
+      viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
     >
       <path
-        d="M9 15V3m0 0l-5.5 5.5M9 3l5.5 5.5"
+        d="M12 19V5m0 0L6 11m6-6 6 6"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -43,9 +48,22 @@ function SendIcon() {
   );
 }
 
+function PlusIcon() {
+  return (
+    <svg className="icon-24" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M12 5v14M5 12h14"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 function DefaultFileIcon() {
   return (
-    <span className="inline-block h-[1.4rem] w-[1.4rem] shrink-0 rounded-[0.3rem] bg-mint-400" />
+    <span className="inline-block h-[1.4rem] w-[1.4rem] shrink-0 rounded-[0.2rem] bg-mint-400" />
   );
 }
 
@@ -58,6 +76,7 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
       fileIcon,
       fileLabel = '파일 추가하기',
       fullWidth = false,
+      size = 'lg',
       className = '',
       placeholder = '메시지를 입력하세요',
       rows = 1,
@@ -66,7 +85,9 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
     ref,
   ) {
     const innerRef = useRef<HTMLTextAreaElement>(null);
-    const textareaRef = (ref as React.RefObject<HTMLTextAreaElement>) ?? innerRef;
+    const [focused, setFocused] = useState(false);
+
+    useImperativeHandle(ref, () => innerRef.current as HTMLTextAreaElement);
 
     const handleContainerClick = useCallback(
       (e: MouseEvent<HTMLDivElement>) => {
@@ -75,9 +96,9 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
           (e.target as HTMLElement).closest('[data-toolbar]')
         )
           return;
-        textareaRef.current?.focus();
+        innerRef.current?.focus();
       },
-      [textareaRef],
+      [],
     );
 
     const handleKeyDown = useCallback(
@@ -91,41 +112,76 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
       [onSubmit, submitDisabled, rest],
     );
 
+    const hasValue = String(rest.value ?? rest.defaultValue ?? '').length > 0;
+    const toneClass = hasValue
+      ? 'text-gray-900'
+      : focused
+        ? 'text-gray-800'
+        : 'text-gray-700 placeholder:text-gray-700';
+    const isCompact = size === 'md';
+
     return (
       <div
         onClick={handleContainerClick}
-        className={`inline-flex cursor-text flex-col items-start gap-[1rem] rounded-20 bg-white p-[2.9rem_2.6rem] shadow-[0_0.2rem_1.2rem_rgba(0,0,0,0.06)] ${fullWidth ? 'w-full' : ''} ${className}`.trim()}
+        className={`inline-flex cursor-text bg-white ${
+          isCompact
+            ? 'min-w-[41.8rem] flex-row items-center rounded-16 px-24 py-12'
+            : 'min-w-[29rem] flex-col items-start gap-[5.9rem] rounded-20 px-[2.6rem] py-[2.9rem]'
+        } ${fullWidth ? 'w-full' : ''} ${className}`.trim()}
       >
-        {/* textarea */}
         <textarea
-          ref={textareaRef}
+          ref={innerRef}
           rows={rows}
           placeholder={placeholder}
-          className="w-full resize-none bg-transparent text-body1 text-gray-900 outline-none placeholder:text-gray-500"
+          onFocus={(e) => {
+            setFocused(true);
+            rest.onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            rest.onBlur?.(e);
+          }}
           onKeyDown={handleKeyDown}
+          className={`min-w-0 flex-1 resize-none bg-transparent outline-none ${
+            isCompact ? 'text-body2' : 'text-head3'
+          } ${toneClass}`}
           {...rest}
         />
 
-        {/* toolbar */}
-        <div data-toolbar className="flex w-full items-center justify-between">
-          {/* 파일 추가 버튼 */}
-          <button
-            type="button"
-            onClick={onFileAttach}
-            className="inline-flex items-center gap-[0.6rem] rounded-20 border border-gray-300 px-12 py-[0.6rem] text-body4 text-gray-700 transition-colors hover:bg-gray-100"
-          >
-            {fileIcon ?? <DefaultFileIcon />}
-            {fileLabel}
-          </button>
+        <div
+          data-toolbar
+          className={`flex shrink-0 items-center ${
+            isCompact ? 'gap-[1rem]' : 'w-full justify-between'
+          }`}
+        >
+          {isCompact ? (
+            <button
+              type="button"
+              onClick={onFileAttach}
+              aria-label={fileLabel}
+              className="inline-flex h-[3.8rem] w-[3.8rem] items-center justify-center rounded-12 text-gray-900 transition-colors hover:bg-gray-300"
+            >
+              {fileIcon ?? <PlusIcon />}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onFileAttach}
+              className="inline-flex items-center gap-2 rounded-[22.2rem] border border-gray-500 bg-white px-16 py-8 text-body1 text-gray-900 transition-colors hover:bg-gray-100"
+            >
+              {fileIcon ?? <DefaultFileIcon />}
+              {fileLabel}
+            </button>
+          )}
 
-          {/* 전송 버튼 */}
           <button
             type="button"
             onClick={onSubmit}
             disabled={submitDisabled}
-            className="inline-flex h-[3.8rem] w-[3.8rem] shrink-0 items-center justify-center rounded-12 bg-orange-500 text-white transition-colors hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            aria-label="전송"
+            className="inline-flex h-[3.8rem] w-[3.8rem] shrink-0 items-center justify-center rounded-12 bg-orange-500 text-white transition-colors hover:bg-orange-400 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-600"
           >
-            <SendIcon />
+            <ArrowUpIcon />
           </button>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import KeywordInput from './KeywordInput';
 
 const meta: Meta<typeof KeywordInput> = {
@@ -10,22 +10,18 @@ export default meta;
 
 type Story = StoryObj<typeof KeywordInput>;
 
-export const Text: Story = {
-  args: { mode: 'text', placeholder: '키워드입력' },
+export const SmallDefault: Story = {
+  args: { width: 'sm', children: '키워드입력', selected: false },
 };
 
-export const RadioDefault: Story = {
-  args: { mode: 'radio', value: '키워드입력', selected: false },
+export const SmallSelected: Story = {
+  args: { width: 'sm', children: '키워드입력', selected: true },
 };
 
-export const RadioSelected: Story = {
-  args: { mode: 'radio', value: '키워드입력', selected: true },
+export const LargeDefault: Story = {
+  args: { width: 'lg', children: '키워드입력', selected: false },
 };
 
-export const CheckboxDefault: Story = {
-  args: { mode: 'checkbox', value: '키워드입력', selected: false },
-};
-
-export const CheckboxSelected: Story = {
-  args: { mode: 'checkbox', value: '키워드입력', selected: true },
+export const LargeSelected: Story = {
+  args: { width: 'lg', children: '키워드입력', selected: true },
 };
