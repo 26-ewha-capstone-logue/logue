@@ -1,15 +1,24 @@
-export type ApiResponse<T> = {
-  success: boolean;
+export type ApiSuccessResponse<T> = {
+  success: true;
   code?: string | null;
   message?: string | null;
   data: T;
 };
 
+export type ApiFailureResponse<T = unknown> = {
+  success: false;
+  code?: string | null;
+  message?: string | null;
+  data?: T | null;
+};
+
+export type ApiResponse<T> = ApiSuccessResponse<T> | ApiFailureResponse<T>;
+
 export class ApiResponseError<T = unknown> extends Error {
   code?: string | null;
-  response: ApiResponse<T>;
+  response: ApiFailureResponse<T>;
 
-  constructor(response: ApiResponse<T>) {
+  constructor(response: ApiFailureResponse<T>) {
     super(response.message || 'API request failed');
     this.name = 'ApiResponseError';
     this.code = response.code;

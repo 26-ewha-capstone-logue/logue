@@ -40,7 +40,9 @@ function removeTokenParamsFromCurrentUrl(url: URL) {
 }
 
 export default function AuthProvider({ children }: { children: ReactNode }) {
-  const [hasAccessToken, setHasAccessToken] = useState(false);
+  const [hasAccessToken, setHasAccessToken] = useState(
+    () => typeof window !== 'undefined' && Boolean(getAccessToken()),
+  );
 
   useEffect(() => {
     const syncAccessToken = () => {

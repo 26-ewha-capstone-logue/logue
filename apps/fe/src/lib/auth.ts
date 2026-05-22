@@ -67,10 +67,10 @@ export function setAuthTokens(tokens: AuthTokens) {
   const accessToken = tokens.accessToken.trim();
   const refreshToken = tokens.refreshToken?.trim();
 
-  if (accessToken) {
-    setStorageItem(ACCESS_TOKEN_STORAGE_KEY, accessToken);
-    setStorageItem(LEGACY_ACCESS_TOKEN_STORAGE_KEY, accessToken);
-  }
+  if (!accessToken) return;
+
+  setStorageItem(ACCESS_TOKEN_STORAGE_KEY, accessToken);
+  setStorageItem(LEGACY_ACCESS_TOKEN_STORAGE_KEY, accessToken);
 
   if (refreshToken) {
     setStorageItem(REFRESH_TOKEN_STORAGE_KEY, refreshToken);

@@ -40,6 +40,11 @@ export default function AnalysisPage() {
     router.push(`/analysis/${tempId}${qs ? `?${qs}` : ''}`);
   };
 
+  const handlePromptError = (message: string) => {
+    // TODO: Replace alert with toast/snackbar when shared feedback UI is ready.
+    alert(message);
+  };
+
   return (
     <main className="scrollbar-hide mx-auto flex min-h-0 w-full max-w-[128rem] flex-1 flex-col items-center overflow-y-auto px-40 pt-[8rem] pb-40">
       <div className="mb-40">
@@ -59,10 +64,7 @@ export default function AnalysisPage() {
         )}
       </div>
 
-      <PromptInput
-        onSubmit={handleSubmit}
-        onError={(message) => alert(message)}
-      />
+      <PromptInput onSubmit={handleSubmit} onError={handlePromptError} />
 
       <SampleDataSection />
     </main>
