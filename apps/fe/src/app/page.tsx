@@ -179,7 +179,7 @@ export default function IntroPage() {
           </button>
           <button
             type="button"
-            onClick={() => router.push('/onboarding')}
+            onClick={() => window.location.assign('/login')}
             className={`rounded-full px-20 py-8 text-body2 font-medium transition-colors ${
               scrolled
                 ? 'bg-orange-500 text-white hover:bg-orange-600'
