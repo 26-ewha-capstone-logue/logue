@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { Header, type NavItem } from '@/components';
+import { useAuthSession } from '@/providers/AuthProvider';
 import FileIcon from '@/assets/icons/file.svg';
 import GTapIcon from '@/assets/icons/G-tap.svg';
 import GHistoryIcon from '@/assets/icons/G-history.svg';
@@ -34,8 +35,15 @@ export default function MainLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { hasAccessToken } = useAuthSession();
 
   const showDataSearch = pathname.startsWith('/data');
+
+  const handleProfileClick = () => {
+    if (!hasAccessToken) {
+      window.location.assign('/login');
+    }
+  };
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-gray-200">
@@ -45,6 +53,7 @@ export default function MainLayout({
         searchSlot={showDataSearch ? <DataSourceSearchInput /> : undefined}
         onLogoClick={() => router.push('/analysis')}
         onNavClick={(href) => router.push(href)}
+        onProfileClick={handleProfileClick}
       />
       {children}
     </div>
