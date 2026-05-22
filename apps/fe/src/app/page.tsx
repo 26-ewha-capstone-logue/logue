@@ -102,6 +102,10 @@ export default function IntroPage() {
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
 
+  const goToLogin = () => {
+    window.location.assign('/login');
+  };
+
   // hero(=뷰포트 1개) 만큼 스크롤되면 헤더가 흰 배경 + 그림자로 전환됨
   useEffect(() => {
     const update = () => {
@@ -168,7 +172,7 @@ export default function IntroPage() {
         <div className="ml-auto flex items-center gap-20">
           <button
             type="button"
-            onClick={() => router.push('/login')}
+            onClick={goToLogin}
             className={`text-body2 underline underline-offset-2 transition-colors ${
               scrolled
                 ? 'text-gray-900 hover:text-gray-700'
@@ -179,7 +183,7 @@ export default function IntroPage() {
           </button>
           <button
             type="button"
-            onClick={() => router.push('/onboarding')}
+            onClick={goToLogin}
             className={`rounded-full px-20 py-8 text-body2 font-medium transition-colors ${
               scrolled
                 ? 'bg-orange-500 text-white hover:bg-orange-600'
