@@ -6,7 +6,7 @@ export type GetUserInfoResponse = {
   email: string;
   name: string;
   provider: string;
-  profileImageUrl?: string | null;
+  profileImageUrl: string | null;
 };
 
 export async function getMyInfo() {

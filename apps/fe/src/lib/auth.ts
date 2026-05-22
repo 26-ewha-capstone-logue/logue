@@ -8,7 +8,7 @@ export const REFRESH_TOKEN_STORAGE_KEY = 'refreshToken';
 export const LEGACY_ACCESS_TOKEN_STORAGE_KEY = 'token';
 export const AUTH_TOKENS_CHANGED_EVENT = 'logue:auth-tokens-changed';
 
-function getLocalStorage() {
+function getOptionalLocalStorage() {
   if (typeof window === 'undefined') return null;
 
   try {
@@ -18,13 +18,21 @@ function getLocalStorage() {
   }
 }
 
+function getRequiredLocalStorage() {
+  if (typeof window === 'undefined') {
+    throw new Error('localStorage is not available outside the browser');
+  }
+
+  return window.localStorage;
+}
+
 function notifyAuthTokensChanged() {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new Event(AUTH_TOKENS_CHANGED_EVENT));
 }
 
 function getStorageItem(key: string) {
-  const storage = getLocalStorage();
+  const storage = getOptionalLocalStorage();
   if (!storage) return null;
 
   try {
@@ -35,25 +43,13 @@ function getStorageItem(key: string) {
 }
 
 function setStorageItem(key: string, value: string) {
-  const storage = getLocalStorage();
-  if (!storage) return;
-
-  try {
-    storage.setItem(key, value);
-  } catch {
-    // Ignore storage failures so auth redirects do not break rendering.
-  }
+  const storage = getRequiredLocalStorage();
+  storage.setItem(key, value);
 }
 
 function removeStorageItem(key: string) {
-  const storage = getLocalStorage();
-  if (!storage) return;
-
-  try {
-    storage.removeItem(key);
-  } catch {
-    // Ignore storage failures so logout/error handling remains best-effort.
-  }
+  const storage = getRequiredLocalStorage();
+  storage.removeItem(key);
 }
 
 export function getAccessToken() {
@@ -78,6 +74,8 @@ export function setAuthTokens(tokens: AuthTokens) {
 
   if (refreshToken) {
     setStorageItem(REFRESH_TOKEN_STORAGE_KEY, refreshToken);
+  } else {
+    removeStorageItem(REFRESH_TOKEN_STORAGE_KEY);
   }
 
   notifyAuthTokensChanged();
