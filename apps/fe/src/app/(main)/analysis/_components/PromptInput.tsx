@@ -12,6 +12,7 @@ export type PromptInputValue = {
 export type PromptInputProps = {
   /** textarea placeholder */
   placeholder?: string;
+  validateFile?: (file: File) => string | null;
   /** 전송 콜백 */
   onSubmit?: (value: PromptInputValue) => void;
   /** 파일 업로드 에러 콜백 */
@@ -23,6 +24,7 @@ const DEFAULT_PLACEHOLDER =
 
 export default function PromptInput({
   placeholder = DEFAULT_PLACEHOLDER,
+  validateFile,
   onSubmit,
   onError,
 }: PromptInputProps) {
@@ -62,10 +64,16 @@ export default function PromptInput({
         onFileAttach={() => setIsUploadOpen((prev) => !prev)}
       />
 
-      <Modal open={isUploadOpen} onClose={() => setIsUploadOpen(false)}>
+      <Modal
+        open={isUploadOpen}
+        onClose={() => setIsUploadOpen(false)}
+        contentClassName="relative z-10 w-full max-w-[64.8rem] rounded-16 bg-transparent p-0 shadow-none"
+      >
         <FileUploadZone
+          validateFile={validateFile}
           onFileSelect={handleFileSelect}
           onError={handleFileError}
+          onClose={() => setIsUploadOpen(false)}
         />
       </Modal>
 
