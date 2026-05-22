@@ -7,14 +7,13 @@ reviews:
   high_level_summary_placeholder: "@coderabbitai summary"
   auto_review:
     # CodeRabbit uses the base branch configuration for PRs.
-    # Keep automatic reviews label-based so dev -> main release PRs stay quiet.
+    # Keep reviews label-based so only dev-base PRs are opted in by workflow.
     enabled: false
     drafts: false
     labels:
       - "coderabbit-review"
     base_branches:
       - "dev"
-      - "hotfix/.*"
   path_instructions:
     - path: "apps/fe/**"
       instructions: |
