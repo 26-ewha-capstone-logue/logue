@@ -44,7 +44,9 @@ export default function KeywordInput({
             selected ? 'border-orange-500' : 'border-gray-400'
           }`}
         >
-          {selected && <span className="h-12 w-12 rounded-full bg-orange-500" />}
+          {selected && (
+            <span className="h-12 w-12 rounded-full bg-orange-500" />
+          )}
         </span>
       )}
       {mode === 'checkbox' && (
@@ -56,7 +58,13 @@ export default function KeywordInput({
           }`}
         >
           {selected && (
-            <svg width="12" height="10" viewBox="0 0 12 10" fill="none" aria-hidden>
+            <svg
+              width="12"
+              height="10"
+              viewBox="0 0 12 10"
+              fill="none"
+              aria-hidden
+            >
               <path
                 d="M1 5l3.5 3.5L11 1"
                 stroke="white"
