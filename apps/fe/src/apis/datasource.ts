@@ -40,6 +40,10 @@ export type UploadFileResponse = {
   dataSourceId: number;
 };
 
+function serializeDataSourceIds(dataSourceIds: number[]) {
+  return `id=${dataSourceIds.join(',')}`;
+}
+
 export const dataSourceKeys = {
   all: ['dataSources'] as const,
   lists: () => [...dataSourceKeys.all, 'list'] as const,
@@ -78,8 +82,9 @@ export async function deleteDataSources(dataSourceIds: number[]) {
     '/api/datasources',
     {
       params: {
-        id: dataSourceIds.join(','),
+        id: dataSourceIds,
       },
+      paramsSerializer: () => serializeDataSourceIds(dataSourceIds),
     },
   );
 

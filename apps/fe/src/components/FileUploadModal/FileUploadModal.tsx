@@ -74,12 +74,18 @@ export default function FileUploadModal({
           setProgress(100);
 
           void Promise.resolve(onUpload?.(selected))
-            .catch(() => undefined)
+            .catch((error) => {
+              onError?.(
+                error instanceof Error
+                  ? error.message
+                  : '파일 업로드에 실패했습니다.',
+              );
+            })
             .finally(reset);
         }
       }, SIM_TICK_MS);
     },
-    [clearTimer, onUpload, reset],
+    [clearTimer, onError, onUpload, reset],
   );
 
   const handleCancelFile = useCallback(() => {

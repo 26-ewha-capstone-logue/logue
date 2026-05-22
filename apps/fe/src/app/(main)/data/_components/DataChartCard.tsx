@@ -34,9 +34,9 @@ function DataPreviewTable({ preview }: { preview?: FilePreview | null }) {
         <table className="min-w-full border-collapse text-body4">
           <thead>
             <tr className="bg-white text-gray-900">
-              {headers.map((header) => (
+              {headers.map((header, index) => (
                 <th
-                  key={header}
+                  key={`${header}-${index}`}
                   className="whitespace-nowrap border-b border-gray-200 px-16 py-12 text-left font-semibold"
                 >
                   {header}
@@ -57,15 +57,19 @@ function DataPreviewTable({ preview }: { preview?: FilePreview | null }) {
             ) : (
               rows.map((row, rowIndex) => (
                 <tr key={rowIndex} className="border-b border-gray-100">
-                  {headers.map((header, columnIndex) => (
-                    <td
-                      key={`${rowIndex}-${header}`}
-                      className="max-w-[24rem] truncate whitespace-nowrap px-16 py-12 text-gray-800"
-                      title={row[columnIndex] ?? '-'}
-                    >
-                      {row[columnIndex] || '-'}
-                    </td>
-                  ))}
+                  {headers.map((_, columnIndex) => {
+                    const cell = row[columnIndex] ?? '-';
+
+                    return (
+                      <td
+                        key={`${rowIndex}-${columnIndex}`}
+                        className="max-w-[24rem] truncate whitespace-nowrap px-16 py-12 text-gray-800"
+                        title={cell}
+                      >
+                        {cell}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))
             )}
