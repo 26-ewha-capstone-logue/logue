@@ -116,7 +116,12 @@ export const AllVariants: Story = {
         <div className="flex flex-wrap items-center gap-16">
           {(['orange', 'blue', 'gray'] as const).map((v) =>
             (['sm', 'md', 'lg'] as const).map((s) => (
-              <IconBox key={`${v}-${s}`} icon={<StarIcon />} variant={v} size={s} />
+              <IconBox
+                key={`${v}-${s}`}
+                icon={<StarIcon />}
+                variant={v}
+                size={s}
+              />
             )),
           )}
         </div>

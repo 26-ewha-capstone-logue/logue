@@ -11,29 +11,31 @@
   --font-pretendard: 'Pretendard', sans-serif;
 
   /* Orange */
-  --color-orange-100: #FFEEC7;
-  --color-orange-200: #FFE7B2;
-  --color-orange-300: #FFD365;
-  --color-orange-400: #FFA947;
-  --color-orange-500: #FC8320;
-  --color-orange-600: #E85D00;
-  --color-orange-700: #BE3C00;
-  --color-orange-800: #7C1F05;
-  --color-orange-900: #510F01;
+  --color-orange-100: #ffeec7;
+  --color-orange-200: #ffe7b2;
+  --color-orange-300: #ffd365;
+  --color-orange-400: #ffa947;
+  --color-orange-500: #fc8320;
+  --color-orange-600: #e85d00;
+  --color-orange-700: #be3c00;
+  --color-orange-800: #7c1f05;
+  --color-orange-900: #510f01;
 
   /* Blue */
   --color-blue-100: #edeeff;
-  --color-blue-200: #DBDDFF;
-  --color-blue-300: #C5C8FF;
-  --color-blue-400: #9398F9;
-  --color-blue-500: #4951FA;
-  --color-blue-600: #373dbc;
-  --color-blue-700: #2c3196;
+  --color-blue-200: #dbddff;
+  --color-blue-300: #c5c8ff;
+  --color-blue-400: #9398f9;
+  --color-blue-500: #4951fa;
+  --color-blue-600: #242cca;
+  --color-blue-700: #191f9e;
   --color-blue-800: #212470;
-  --color-blue-900: #1a1c58;
+  --color-blue-900: #0a0c4a;
 
   /* Error */
-  --color-error-500: #FD312E;
+  --color-red-500: #fd312e;
+  --color-error-500: #fd312e;
+  --color-green-500: #7cef3d;
 
   /* Mint — 피그마 아이콘 자리(플레이스홀더)용 */
   --color-mint-100: #ecfdf5;
@@ -43,12 +45,12 @@
   --color-mint-500: #34d399;
 
   /* Gray */
-  --color-gray-100: #FBFBFB;
-  --color-gray-200: #F7F7F7;
-  --color-gray-300: #ECECEC;
-  --color-gray-400: #DDDDDD;
-  --color-gray-500: #BFBFBF;
-  --color-gray-600: #ADADAD;
+  --color-gray-100: #fbfbfb;
+  --color-gray-200: #f7f7f7;
+  --color-gray-300: #ececec;
+  --color-gray-400: #dddddd;
+  --color-gray-500: #bfbfbf;
+  --color-gray-600: #adadad;
   --color-gray-700: #999999;
 
   /* Disabled surface (CTA 등) */
@@ -59,6 +61,26 @@
   /* W&B */
   --color-white: #ffffff;
   --color-black: #111111;
+
+  /* Semantic */
+  --color-typo-primary: var(--color-gray-900);
+  --color-typo-secondary: var(--color-gray-800);
+  --color-typo-tertiary: var(--color-gray-700);
+  --color-typo-quaternary: var(--color-gray-600);
+  --color-typo-error: var(--color-red-500);
+  --color-typo-disabled: var(--color-gray-500);
+  --color-typo-white: var(--color-white);
+  --color-border-primary: var(--color-gray-300);
+  --color-border-secondary: var(--color-gray-400);
+  --color-border-tertiary: var(--color-gray-500);
+  --color-border-error: var(--color-red-500);
+  --color-divider-primary: var(--color-gray-400);
+  --color-background-secondary: var(--color-gray-200);
+  --color-background-tertiary: var(--color-gray-300);
+  --color-background-quaternary: var(--color-gray-400);
+  --color-background-quinary: var(--color-gray-500);
+  --color-background-error: var(--color-red-500);
+  --color-background-white: var(--color-white);
 
   /* Spacing */
   --spacing-2: 0.2rem;
@@ -81,6 +103,7 @@
   --radius-12: 1.2rem;
   --radius-16: 1.6rem;
   --radius-20: 2rem;
+  --radius-222: 22.2rem;
 }
 
 :root {
@@ -148,37 +171,37 @@
 
 /* PC / TITLE */
 @utility text-head1 {
-  font-size: 4.8rem;
-  line-height: 1.4;
-  letter-spacing: -0.02em;
-  font-weight: 800;
+  font-size: 3.2rem;
+  line-height: 1.5;
+  letter-spacing: -0.025em;
+  font-weight: 600;
 }
 
 @utility text-head2 {
   font-size: 2.6rem;
   line-height: 1.4;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   font-weight: 600;
 }
 
 @utility text-head3 {
   font-size: 2rem;
   line-height: 1.4;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   font-weight: 500;
 }
 
 @utility text-head4 {
   font-size: 1.8rem;
   line-height: 1.4;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   font-weight: 500;
 }
 
 @utility text-head5 {
   font-size: 1.8rem;
   line-height: 1.4;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   font-weight: 600;
 }
 
@@ -186,40 +209,52 @@
 @utility text-body1 {
   font-size: 1.8rem;
   line-height: 1.4;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   font-weight: 400;
 }
 
 @utility text-body2 {
   font-size: 1.5rem;
   line-height: 1.4;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   font-weight: 400;
 }
 
 @utility text-body3 {
   font-size: 1.5rem;
   line-height: 1.4;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   font-weight: 600;
 }
 
 @utility text-body4 {
   font-size: 1.2rem;
   line-height: 2rem;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   font-weight: 400;
+}
+
+@utility text-body5 {
+  font-size: 1.3rem;
+  line-height: 1.4;
+  letter-spacing: -0.025em;
+  font-weight: 500;
 }
 
 /* PC / CAPTION */
 @utility text-caption {
   font-size: 1.5rem;
   line-height: 1.4;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   font-weight: 400;
 }
 
 /* ========== Icon Sizing Utilities ========== */
+
+@utility icon-12 {
+  width: 1.2rem;
+  height: 1.2rem;
+}
 
 @utility icon-16 {
   width: 1.6rem;
@@ -254,4 +289,21 @@
 @utility icon-44 {
   width: 4.4rem;
   height: 4.4rem;
+}
+
+@utility icon-60 {
+  width: 6rem;
+  height: 6rem;
+}
+
+/* ========== Scrollbar Utilities ========== */
+
+/* 스크롤은 가능하지만 스크롤바 UI 는 숨김 */
+@utility scrollbar-hide {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }

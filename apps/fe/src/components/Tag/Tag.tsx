@@ -27,7 +27,9 @@ export default function Tag({
       className={`inline-flex items-center gap-4 rounded-[22.2rem] px-12 py-4 text-body4 font-semibold ${variantClass[variant]} ${className}`.trim()}
       {...rest}
     >
-      {icon && <span className="inline-flex shrink-0 [&>svg]:icon-16">{icon}</span>}
+      {icon && (
+        <span className="inline-flex shrink-0 [&>svg]:icon-16">{icon}</span>
+      )}
       {children}
     </span>
   );

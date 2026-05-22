@@ -1,18 +1,35 @@
 package com.capstone.logue.anal.service;
 
+import com.capstone.logue.anal.dto.fastapi.response.AnalysisCriteriaInfo;
 import com.capstone.logue.anal.dto.fastapi.response.ColumnRoleInfo;
+import com.capstone.logue.anal.dto.fastapi.response.FlowColumnInfo;
+import com.capstone.logue.anal.dto.fastapi.response.FlowWarningInfo;
+import com.capstone.logue.anal.dto.fastapi.response.QuestionAnalysisResponse;
 import com.capstone.logue.anal.dto.fastapi.response.WarningInfo;
 import com.capstone.logue.anal.dto.fastapi.request.ColumnMetaInfo;
 import com.capstone.logue.anal.dto.fastapi.request.FileAnalysisRequest;
 import com.capstone.logue.anal.repository.AiTaggingJobRepository;
+import com.capstone.logue.anal.repository.AnalysisCriteriaRepository;
+import com.capstone.logue.anal.repository.AnalysisFlowColumnRepository;
 import com.capstone.logue.anal.repository.DataSourceColumnRepository;
+import com.capstone.logue.anal.repository.FlowDataWarningRepository;
+import com.capstone.logue.anal.repository.MessageRepository;
 import com.capstone.logue.anal.repository.SourceDataWarningRepository;
 import com.capstone.logue.data.repository.DataSourceRepository;
 import com.capstone.logue.global.entity.AiTaggingJob;
+import com.capstone.logue.global.entity.AnalysisCriteria;
+import com.capstone.logue.global.entity.AnalysisFlow;
+import com.capstone.logue.global.entity.AnalysisFlowColumn;
 import com.capstone.logue.global.entity.DataSource;
 import com.capstone.logue.global.entity.DataSourceColumn;
+import com.capstone.logue.global.entity.FlowDataWarning;
+import com.capstone.logue.global.entity.Message;
 import com.capstone.logue.global.entity.SourceDataWarning;
+import com.capstone.logue.global.entity.enums.AnalysisType;
+import com.capstone.logue.global.entity.enums.FlowWarningKey;
 import com.capstone.logue.global.entity.enums.JobStatus;
+import com.capstone.logue.global.entity.enums.MetricType;
+import com.capstone.logue.global.entity.enums.SemanticRoleType;
 import com.capstone.logue.global.entity.enums.SourceWarningKey;
 import com.capstone.logue.global.exception.ErrorCode;
 import com.capstone.logue.global.exception.LogueException;
@@ -22,7 +39,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -43,6 +62,10 @@ public class JobStateService {
     private final DataSourceColumnRepository dataSourceColumnRepository;
     private final DataSourceRepository dataSourceRepository;
     private final SourceDataWarningRepository sourceDataWarningRepository;
+    private final MessageRepository messageRepository;
+    private final AnalysisCriteriaRepository analysisCriteriaRepository;
+    private final AnalysisFlowColumnRepository analysisFlowColumnRepository;
+    private final FlowDataWarningRepository flowDataWarningRepository;
     private final ObjectMapper objectMapper;
 
     /**
@@ -173,5 +196,136 @@ public class JobStateService {
 
         job.markRetrying(errorMessage);
         log.info("[JobStateService] RETRYING: jobId={}, retryCount={}", jobId, job.getRetryCount());
+    }
+
+    /**
+     * 분석 기준 도출 작업을 RUNNING 으로 변경하고, FastAPI 요청에 필요한 컨텍스트를 묶어 반환합니다.
+     *
+     * <p>현재 사용자 메시지, 같은 플로우의 이전 메시지, 데이터 소스 및 컬럼 메타데이터,
+     * 컬럼별 시맨틱 역할 매핑을 한 번에 로드합니다.</p>
+     *
+     * @param jobId 분석 기준 도출 작업 ID
+     * @return FastAPI 요청 빌드용 {@link CriteriaJobContext}
+     */
+    @Transactional
+    public CriteriaJobContext markCriteriaRunningAndGetContext(Long jobId) {
+        AiTaggingJob job = aiTaggingJobRepository.findById(jobId)
+                .orElseThrow(() -> new LogueException(ErrorCode.JOB_NOT_FOUND));
+        job.markRunning();
+
+        Message currentMessage = job.getMessage();
+        if (currentMessage == null) {
+            throw new LogueException(ErrorCode.MESSAGE_NOT_FOUND);
+        }
+        AnalysisFlow flow = job.getAnalysisFlow();
+        DataSource dataSource = flow.getDataSource();
+
+        List<DataSourceColumn> columns = dataSourceColumnRepository.findByDataSourceId(dataSource.getId());
+        List<AnalysisFlowColumn> flowColumns = analysisFlowColumnRepository.findByAnalysisFlowIdOrderByIdAsc(flow.getId());
+
+        List<Message> previousMessages = messageRepository
+                .findByAnalysisFlowIdOrderByCreatedAtAscIdAsc(flow.getId())
+                .stream()
+                .filter(m -> !m.getId().equals(currentMessage.getId()))
+                .collect(Collectors.toList());
+
+        return new CriteriaJobContext(currentMessage, flow, dataSource, columns, flowColumns, previousMessages);
+    }
+
+    /**
+     * FastAPI 가 반환한 분석 기준 + 플로우 컬럼 + 경고를 영속화하고 작업을 SUCCESS 로 변경합니다.
+     *
+     * <p>{@code unsupportedQuestion} 이 존재하면 분석 기준을 저장하지 않고 즉시 FAILED 로 마킹합니다.
+     * CANCELED 상태인 경우 저장을 skip 합니다.
+     * {@code flowColumns} 에 데이터 소스에 없는 컬럼명이 포함되면 {@link ErrorCode#COLUMN_NOT_FOUND} 예외가 발생하며
+     * 트랜잭션이 롤백됩니다.</p>
+     *
+     * @param jobId    분석 기준 도출 작업 ID
+     * @param response FastAPI 응답
+     */
+    @Transactional
+    public void saveCriteriaAndMarkSuccess(Long jobId, QuestionAnalysisResponse response) {
+        AiTaggingJob job = aiTaggingJobRepository.findById(jobId).orElseThrow();
+
+        if (job.getStatus() == JobStatus.CANCELED) {
+            log.info("[JobStateService] 이미 취소된 분석 기준 작업 - 결과 저장 skip: jobId={}", jobId);
+            return;
+        }
+
+        if (response.unsupportedQuestion() != null) {
+            log.info("[JobStateService] 지원하지 않는 질문 유형: jobId={}, reason={}", jobId, response.unsupportedQuestion().reason());
+            job.markFailed("UNSUPPORTED_QUESTION: " + response.unsupportedQuestion().reason());
+            return;
+        }
+
+        AnalysisCriteriaInfo criteriaInfo = response.analysisCriteria();
+        if (criteriaInfo == null) {
+            throw new LogueException(ErrorCode.LLM_CALL_FAILED);
+        }
+
+        AnalysisFlow flow = job.getAnalysisFlow();
+
+        AnalysisCriteria criteria = AnalysisCriteria.builder()
+                .analysisFlow(flow)
+                .analysisType(AnalysisType.valueOf(criteriaInfo.analysisType()))
+                .metricName(criteriaInfo.metricName())
+                .metricType(MetricType.valueOf(criteriaInfo.metricType()))
+                .formulaNumerator(criteriaInfo.formulaNumerator())
+                .formulaDenominator(criteriaInfo.formulaDenominator())
+                .baseDateColumn(criteriaInfo.baseDateColumn())
+                .standardPeriod(criteriaInfo.standardPeriod())
+                .comparePeriod(criteriaInfo.comparePeriod())
+                .sortBy(criteriaInfo.sortBy())
+                .sortDirection(criteriaInfo.sortDirection())
+                .groupBy(objectMapper.valueToTree(criteriaInfo.groupBy()))
+                .limitNum(criteriaInfo.limitNum())
+                .filters(criteriaInfo.filters() == null ? null : objectMapper.valueToTree(criteriaInfo.filters()))
+                .dataWarnings(response.warnings() == null || response.warnings().isEmpty()
+                        ? null
+                        : objectMapper.valueToTree(response.warnings()))
+                .isConfirmed(false)
+                .build();
+
+        AnalysisCriteria savedCriteria = analysisCriteriaRepository.save(criteria);
+
+        List<FlowColumnInfo> flowColumns = response.flowColumns() == null ? List.of() : response.flowColumns();
+        if (!flowColumns.isEmpty()) {
+            Map<String, DataSourceColumn> columnByName = new HashMap<>();
+            for (DataSourceColumn col : dataSourceColumnRepository.findByDataSourceId(flow.getDataSource().getId())) {
+                columnByName.put(col.getColumnName(), col);
+            }
+            for (FlowColumnInfo fc : flowColumns) {
+                DataSourceColumn dsColumn = columnByName.get(fc.columnName());
+                if (dsColumn == null) {
+                    throw new LogueException(ErrorCode.COLUMN_NOT_FOUND);
+                }
+                AnalysisFlowColumn afc = AnalysisFlowColumn.builder()
+                        .analysisFlow(flow)
+                        .dataSourceColumn(dsColumn)
+                        .semanticRole(SemanticRoleType.valueOf(fc.semanticRole()))
+                        .build();
+                analysisFlowColumnRepository.save(afc);
+            }
+        }
+
+        List<FlowWarningInfo> warnings = response.warnings() == null ? List.of() : response.warnings();
+        for (FlowWarningInfo w : warnings) {
+            FlowWarningKey key;
+            try {
+                key = FlowWarningKey.valueOf(w.code());
+            } catch (IllegalArgumentException e) {
+                log.warn("[JobStateService] 알 수 없는 FlowWarningKey 무시: code={}", w.code());
+                continue;
+            }
+            FlowDataWarning warning = FlowDataWarning.builder()
+                    .analysisCriteria(savedCriteria)
+                    .code(key)
+                    .name(key.getName())
+                    .comment(key.getComment())
+                    .build();
+            flowDataWarningRepository.save(warning);
+        }
+
+        job.markSuccess();
     }
 }

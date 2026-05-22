@@ -1,53 +1,27 @@
 import {
   forwardRef,
-  useRef,
   useCallback,
-  type TextareaHTMLAttributes,
-  type ReactNode,
+  useImperativeHandle,
+  useRef,
+  useState,
   type MouseEvent,
+  type ReactNode,
+  type TextareaHTMLAttributes,
 } from 'react';
+import ArrowUpIcon from '@/assets/icons/arrow-up.svg';
+import PlusIcon from '@/assets/icons/plus.svg';
+
+type TextFieldSize = 'lg' | 'md';
 
 export type TextFieldProps = {
-  /** 파일 추가 버튼 클릭 콜백 */
   onFileAttach?: () => void;
-  /** 전송 버튼 클릭 콜백 */
   onSubmit?: () => void;
-  /** 전송 버튼 비활성화 (값이 비어있을 때 등) */
   submitDisabled?: boolean;
-  /** 파일 추가 버튼 커스텀 아이콘 */
   fileIcon?: ReactNode;
-  /** 파일 추가 버튼 텍스트 */
   fileLabel?: string;
-  /** 전체 너비 */
   fullWidth?: boolean;
+  size?: TextFieldSize;
 } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'children'>;
-
-function SendIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 18 18"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
-    >
-      <path
-        d="M9 15V3m0 0l-5.5 5.5M9 3l5.5 5.5"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function DefaultFileIcon() {
-  return (
-    <span className="inline-block h-[1.4rem] w-[1.4rem] shrink-0 rounded-[0.3rem] bg-mint-400" />
-  );
-}
 
 const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
   function TextField(
@@ -58,15 +32,23 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
       fileIcon,
       fileLabel = '파일 추가하기',
       fullWidth = false,
+      size = 'lg',
       className = '',
       placeholder = '메시지를 입력하세요',
       rows = 1,
-      ...rest
+      onKeyDown,
+      onFocus,
+      onBlur,
+      value,
+      defaultValue,
+      ...textareaProps
     },
     ref,
   ) {
     const innerRef = useRef<HTMLTextAreaElement>(null);
-    const textareaRef = (ref as React.RefObject<HTMLTextAreaElement>) ?? innerRef;
+    const [focused, setFocused] = useState(false);
+
+    useImperativeHandle(ref, () => innerRef.current as HTMLTextAreaElement, []);
 
     const handleContainerClick = useCallback(
       (e: MouseEvent<HTMLDivElement>) => {
@@ -75,9 +57,9 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
           (e.target as HTMLElement).closest('[data-toolbar]')
         )
           return;
-        textareaRef.current?.focus();
+        innerRef.current?.focus();
       },
-      [textareaRef],
+      [],
     );
 
     const handleKeyDown = useCallback(
@@ -86,46 +68,87 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
           e.preventDefault();
           if (!submitDisabled) onSubmit?.();
         }
-        rest.onKeyDown?.(e);
+        onKeyDown?.(e);
       },
-      [onSubmit, submitDisabled, rest],
+      [onKeyDown, onSubmit, submitDisabled],
     );
+
+    const hasValue = String(value ?? defaultValue ?? '').length > 0;
+    const toneClass = hasValue
+      ? 'text-gray-900'
+      : focused
+        ? 'text-gray-800'
+        : 'text-gray-700 placeholder:text-gray-700';
+    const isCompact = size === 'md';
 
     return (
       <div
         onClick={handleContainerClick}
-        className={`inline-flex cursor-text flex-col items-start gap-[1rem] rounded-20 bg-white p-[2.9rem_2.6rem] shadow-[0_0.2rem_1.2rem_rgba(0,0,0,0.06)] ${fullWidth ? 'w-full' : ''} ${className}`.trim()}
+        className={`inline-flex cursor-text bg-white shadow-[0_0.2rem_1.2rem_rgba(0,0,0,0.06)] ${
+          isCompact
+            ? 'min-w-[41.8rem] flex-row items-center rounded-16 px-24 py-12'
+            : 'min-w-[29rem] flex-col items-start gap-[5.9rem] rounded-20 px-[2.6rem] py-[2.9rem]'
+        } ${fullWidth ? 'w-full' : ''} ${className}`.trim()}
       >
-        {/* textarea */}
         <textarea
-          ref={textareaRef}
+          ref={innerRef}
           rows={rows}
           placeholder={placeholder}
-          className="w-full resize-none bg-transparent text-body1 text-gray-900 outline-none placeholder:text-gray-500"
+          value={value}
+          defaultValue={defaultValue}
+          onFocus={(e) => {
+            setFocused(true);
+            onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            onBlur?.(e);
+          }}
           onKeyDown={handleKeyDown}
-          {...rest}
+          className={`scrollbar-hide min-w-0 flex-1 resize-none bg-transparent outline-none ${
+            isCompact ? 'text-body2' : 'text-head3'
+          } ${toneClass}`}
+          {...textareaProps}
         />
 
-        {/* toolbar */}
-        <div data-toolbar className="flex w-full items-center justify-between">
-          {/* 파일 추가 버튼 */}
-          <button
-            type="button"
-            onClick={onFileAttach}
-            className="inline-flex items-center gap-[0.6rem] rounded-20 border border-gray-300 px-12 py-[0.6rem] text-body4 text-gray-700 transition-colors hover:bg-gray-100"
-          >
-            {fileIcon ?? <DefaultFileIcon />}
-            {fileLabel}
-          </button>
+        <div
+          data-toolbar
+          className={`flex shrink-0 items-center ${
+            isCompact ? 'gap-[1rem]' : 'w-full justify-between'
+          }`}
+        >
+          {isCompact ? (
+            <button
+              type="button"
+              onClick={onFileAttach}
+              aria-label={fileLabel}
+              className="inline-flex h-[3.8rem] w-[3.8rem] items-center justify-center rounded-12 text-gray-900 transition-colors hover:bg-gray-300"
+            >
+              {fileIcon ?? (
+                <PlusIcon aria-hidden className="icon-24 text-gray-900" />
+              )}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onFileAttach}
+              className="inline-flex items-center gap-2 rounded-222 border border-gray-500 bg-white px-16 py-8 text-body1 text-gray-900 transition-colors hover:bg-gray-100"
+            >
+              {fileIcon ?? (
+                <PlusIcon aria-hidden className="icon-16 text-gray-800" />
+              )}
+              {fileLabel}
+            </button>
+          )}
 
-          {/* 전송 버튼 */}
           <button
             type="button"
             onClick={onSubmit}
             disabled={submitDisabled}
-            className="inline-flex h-[3.8rem] w-[3.8rem] shrink-0 items-center justify-center rounded-12 bg-orange-500 text-white transition-colors hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            aria-label="전송"
+            className="inline-flex h-[3.8rem] w-[3.8rem] shrink-0 items-center justify-center rounded-12 bg-orange-500 text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:text-gray-600"
           >
-            <SendIcon />
+            <ArrowUpIcon aria-hidden className="icon-20" />
           </button>
         </div>
       </div>

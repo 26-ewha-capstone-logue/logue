@@ -1,114 +1,104 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { TextField, Card } from '@/components';
-import FileUploadZone from '@/components/FileUploadZone/FileUploadZone';
+import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { getMyInfo } from '@/apis/user';
+import { ToastAlert } from '@/components';
+import { validateCsvFile } from '@/lib/fileValidation';
+import { useAuthSession } from '@/providers/AuthProvider';
+import GreetingSection from './_components/GreetingSection';
+import PromptInput, { type PromptInputValue } from './_components/PromptInput';
+import SampleDataSection from './_components/SampleDataSection';
 
-const SAMPLE_CARDS = [
-  { title: '분야명', description: '세부 설명 1줄 이내' },
-  { title: '분야명', description: '세부 설명 1줄 이내' },
-  { title: '분야명', description: '세부 설명 1줄 이내' },
-  { title: '분야명', description: '세부 설명 1줄 이내' },
-];
+const FALLBACK_USER_NAME = '사용자';
+const USER_INFO_STALE_TIME = 5 * 60 * 1000;
+const TOAST_DURATION_MS = 2500;
 
-const userName = '손하늘';
-
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 6) return '좋은 새벽이에요';
-  if (hour < 12) return '좋은 아침이에요';
-  if (hour < 18) return '좋은 오후예요';
-  return '좋은 저녁이에요';
-}
+const ANALYSIS_FILE_MESSAGES = {
+  invalidType: 'Logue는 CSV 형식의 파일만 지원해요',
+  tooLarge: '파일이 너무 커요. 50MB까지만 업로드 가능해요',
+};
 
 export default function AnalysisPage() {
-  const [prompt, setPrompt] = useState('');
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [showUpload, setShowUpload] = useState(false);
+  const router = useRouter();
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const { hasAccessToken } = useAuthSession();
+  const {
+    data: myInfo,
+    isError: isUserInfoError,
+    isLoading: isUserInfoLoading,
+  } = useQuery({
+    queryKey: ['user', 'me'],
+    queryFn: getMyInfo,
+    enabled: hasAccessToken,
+    staleTime: USER_INFO_STALE_TIME,
+  });
 
-  const handleSubmit = useCallback(() => {
-    if (!prompt.trim()) return;
-    setPrompt('');
-  }, [prompt]);
+  const shouldShowUserInfoLoading = hasAccessToken && isUserInfoLoading;
+  const shouldShowUserInfoError = hasAccessToken && isUserInfoError;
+  const shouldUseFetchedUserName =
+    hasAccessToken && !isUserInfoLoading && !isUserInfoError;
+  const userName = shouldUseFetchedUserName
+    ? (myInfo?.name ?? FALLBACK_USER_NAME)
+    : FALLBACK_USER_NAME;
 
-  const handleFileSelect = useCallback((file: File) => {
-    setUploadedFile(file);
-    setShowUpload(false);
-  }, []);
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = window.setTimeout(
+      () => setToastMessage(null),
+      TOAST_DURATION_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [toastMessage]);
+
+  const handleSubmit = (value: PromptInputValue) => {
+    // TODO: 분석 생성 API 호출 후 응답 id 로 교체
+    // e.g. const { id } = await createAnalysis({ prompt: value.prompt, file: value.file });
+    const tempId = `tmp-${Date.now()}`;
+    const params = new URLSearchParams();
+    if (value.prompt) params.set('q', value.prompt);
+    if (value.file?.name) params.set('file', value.file.name);
+    const qs = params.toString();
+    router.push(`/analysis/${tempId}${qs ? `?${qs}` : ''}`);
+  };
+
+  const handlePromptError = (message: string) => {
+    setToastMessage(message);
+  };
 
   return (
-    <main className="flex flex-1 flex-col items-center px-40 pt-[8rem] pb-40">
-      <div className="mb-40 text-center">
-        <h1 className="text-head1 text-gray-900">
-          {getGreeting()}, {userName}님
-        </h1>
-        <p className="mt-4 text-head2 text-gray-900">분석을 시작해볼까요?</p>
-      </div>
-
-      <div className="w-full">
-        <TextField
-          fullWidth
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="이번달이랑 지난달 비교해서 지역별 매출 높은 순으로 5개 보여줘"
-          submitDisabled={prompt.trim().length === 0}
-          onSubmit={handleSubmit}
-          onFileAttach={() => setShowUpload((prev) => !prev)}
-        />
-
-        {showUpload && (
-          <div className="mt-16">
-            <FileUploadZone
-              onFileSelect={handleFileSelect}
-              onError={(msg) => alert(msg)}
-            />
-          </div>
-        )}
-
-        {uploadedFile && (
-          <div className="mt-12 flex items-center gap-8 rounded-12 bg-white px-16 py-12 shadow-[0_0.1rem_0.4rem_rgba(0,0,0,0.06)]">
-            <span className="inline-block h-20 w-20 rounded-4 bg-orange-400" />
-            <span className="text-body2 text-gray-900">
-              {uploadedFile.name}
-            </span>
-            <span className="text-body4 text-gray-600">
-              ({(uploadedFile.size / 1024).toFixed(1)} KB)
-            </span>
-            <button
-              type="button"
-              onClick={() => setUploadedFile(null)}
-              className="ml-auto text-body4 text-gray-500 hover:text-error-500"
-            >
-              삭제
-            </button>
-          </div>
-        )}
-      </div>
-
-      <section className="mt-40 w-full">
-        <div className="mb-16 flex items-center justify-between">
-          <p className="text-body3 text-gray-900">
-            예시 데이터로 Logue를 경험해보세요.
+    <main className="scrollbar-hide mx-auto flex min-h-0 w-full max-w-[128rem] flex-1 flex-col items-center overflow-y-auto px-40 pt-[8rem] pb-40">
+      <div className="mb-40">
+        <GreetingSection userName={userName} />
+        {shouldShowUserInfoLoading && (
+          <p className="mt-12 text-center text-body4 text-gray-500">
+            사용자 정보를 불러오는 중입니다.
           </p>
-          <button
-            type="button"
-            className="text-body4 text-gray-600 hover:text-orange-500"
+        )}
+        {shouldShowUserInfoError && (
+          <p
+            role="alert"
+            className="mt-12 text-center text-body4 text-error-500"
           >
-            더보기
-          </button>
-        </div>
+            사용자 정보를 불러오지 못했어요.
+          </p>
+        )}
+      </div>
 
-        <div className="grid grid-cols-1 gap-16 sm:grid-cols-2 lg:grid-cols-4">
-          {SAMPLE_CARDS.map((card, i) => (
-            <Card
-              key={i}
-              title={card.title}
-              description={card.description}
-              onClick={() => {}}
-            />
-          ))}
+      <PromptInput
+        validateFile={(file) => validateCsvFile(file, ANALYSIS_FILE_MESSAGES)}
+        onSubmit={handleSubmit}
+        onError={handlePromptError}
+      />
+
+      <SampleDataSection />
+
+      {toastMessage && (
+        <div className="pointer-events-none fixed bottom-[4.4rem] left-1/2 z-[60] -translate-x-1/2">
+          <ToastAlert role="alert">{toastMessage}</ToastAlert>
         </div>
-      </section>
+      )}
     </main>
   );
 }
