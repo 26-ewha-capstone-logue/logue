@@ -13,6 +13,7 @@ type FileUploadState = 'default' | 'drag' | 'upload';
 
 export type FileUploadZoneProps = {
   accept?: string;
+  validateFile?: (file: File) => string | null;
   onFileSelect?: (file: File) => void;
   onError?: (message: string) => void;
   disabled?: boolean;
@@ -58,6 +59,7 @@ function CloseIcon() {
 
 export default function FileUploadZone({
   accept = '.csv',
+  validateFile,
   onFileSelect,
   onError,
   disabled = false,
@@ -76,6 +78,12 @@ export default function FileUploadZone({
 
   const validateAndEmit = useCallback(
     (file: File) => {
+      const validationError = validateFile?.(file);
+      if (validationError) {
+        onError?.(validationError);
+        return;
+      }
+
       const extensions = accept.split(',').map((s) => s.trim().toLowerCase());
       const lowerFileName = file.name.toLowerCase();
       const valid = extensions.some((ext) => lowerFileName.endsWith(ext));
@@ -85,7 +93,7 @@ export default function FileUploadZone({
       }
       onFileSelect?.(file);
     },
-    [accept, onFileSelect, onError],
+    [accept, onFileSelect, onError, validateFile],
   );
 
   const handleDragOver = useCallback(

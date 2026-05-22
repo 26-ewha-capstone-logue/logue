@@ -1,15 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ChatIcon from '@/assets/icons/chat.svg';
-import { FileUploadModal, Modal } from '@/components';
+import SuccessIcon from '@/assets/icons/success.svg';
+import { FileUploadModal, Modal, ToastAlert } from '@/components';
+import { formatFileSize, validateCsvFile } from '@/lib/fileValidation';
 import Checkbox from './_components/Checkbox';
 import SortDropdown from './_components/SortDropdown';
 
 const DELETE_ILLUST_SRC = '/illusts/delete.svg';
+const TOAST_DURATION_MS = 2500;
 
 type SortKey = 'usage' | 'latest';
+type ToastState = {
+  message: string;
+  tone: 'error' | 'success';
+};
 
 type DataSource = {
   id: string;
@@ -23,6 +30,11 @@ const SORT_OPTIONS = [
   { value: 'latest', label: '최근 업로드 순' },
 ];
 
+const DATA_FILE_MESSAGES = {
+  invalidType: '파일 형식이 맞지 않습니다.',
+  tooLarge: '파일이 너무 커요. 50MB까지만 업로드 가능해요',
+};
+
 // TODO: API 연동
 const DUMMY_DATA: DataSource[] = Array.from({ length: 8 }, (_, i) => ({
   id: `data-${i}`,
@@ -34,13 +46,24 @@ const DUMMY_DATA: DataSource[] = Array.from({ length: 8 }, (_, i) => ({
 export default function DataPage() {
   const router = useRouter();
   const [sortKey, setSortKey] = useState<SortKey>('latest');
+  const [data, setData] = useState<DataSource[]>(DUMMY_DATA);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [toast, setToast] = useState<ToastState | null>(null);
 
   // TODO: 실제 정렬/필터 로직 (현재는 더미)
-  const data = DUMMY_DATA;
   void sortKey;
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(null), TOAST_DURATION_MS);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  const showToast = (message: string, tone: ToastState['tone']) => {
+    setToast({ message, tone });
+  };
 
   const allSelected =
     data.length > 0 && data.every((d) => selectedIds.has(d.id));
@@ -70,8 +93,17 @@ export default function DataPage() {
 
   const handleUploaded = (uploaded: File) => {
     // TODO: 업로드된 파일을 서버에 보내고 목록 갱신
-    void uploaded;
+    setData((prev) => [
+      {
+        id: `data-${Date.now()}`,
+        fileName: uploaded.name,
+        fileSize: formatFileSize(uploaded.size),
+        uploadedAt: '방금 전',
+      },
+      ...prev,
+    ]);
     setUploadOpen(false);
+    showToast('파일이 업로드 되었습니다.', 'success');
   };
 
   const handleDeleteClick = () => {
@@ -81,8 +113,10 @@ export default function DataPage() {
 
   const handleDeleteConfirm = () => {
     // TODO: 선택된 데이터 삭제 API 호출
+    setData((prev) => prev.filter((row) => !selectedIds.has(row.id)));
     setSelectedIds(new Set());
     setDeleteOpen(false);
+    showToast('파일이 삭제되었습니다', 'success');
   };
 
   const handleChat = (id: string) => {
@@ -199,6 +233,8 @@ export default function DataPage() {
       <FileUploadModal
         open={uploadOpen}
         onClose={() => setUploadOpen(false)}
+        validateFile={(file) => validateCsvFile(file, DATA_FILE_MESSAGES)}
+        onError={(message) => showToast(message, 'error')}
         onUpload={handleUploaded}
       />
 
@@ -238,6 +274,21 @@ export default function DataPage() {
           </div>
         </div>
       </Modal>
+
+      {toast && (
+        <div className="pointer-events-none fixed bottom-44 left-1/2 z-[60] -translate-x-1/2">
+          <ToastAlert
+            role={toast.tone === 'error' ? 'alert' : 'status'}
+            icon={
+              toast.tone === 'success' ? (
+                <SuccessIcon aria-hidden className="icon-24" />
+              ) : undefined
+            }
+          >
+            {toast.message}
+          </ToastAlert>
+        </div>
+      )}
     </main>
   );
 }

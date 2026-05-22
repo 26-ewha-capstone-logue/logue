@@ -16,6 +16,8 @@ export type FileUploadModalProps = {
   open: boolean;
   onClose: () => void;
   onUpload?: (file: File) => void;
+  validateFile?: (file: File) => string | null;
+  onError?: (message: string) => void;
   /** 허용 확장자 (기본 .csv) */
   accept?: string;
 };
@@ -51,6 +53,8 @@ export default function FileUploadModal({
   open,
   onClose,
   onUpload,
+  validateFile,
+  onError,
   accept = '.csv',
 }: FileUploadModalProps) {
   const [stage, setStage] = useState<Stage>('idle');
@@ -90,9 +94,18 @@ export default function FileUploadModal({
 
   const startUpload = useCallback(
     (selected: File) => {
+      const validationError = validateFile?.(selected);
+      if (validationError) {
+        setError(validationError);
+        onError?.(validationError);
+        return;
+      }
+
       // 런타임 파일 타입 검증 (accept 는 UI 필터일 뿐 우회 가능)
       if (!matchesAccept(selected, accept)) {
-        setError(`허용되지 않은 파일 형식입니다. (${accept})`);
+        const message = `허용되지 않은 파일 형식입니다. (${accept})`;
+        setError(message);
+        onError?.(message);
         return;
       }
 
@@ -106,12 +119,12 @@ export default function FileUploadModal({
         p += SIM_INCREMENT;
         setProgress(Math.min(p, 100));
         if (p >= 100) {
-          clearTimer();
+          reset();
           onUpload?.(selected);
         }
       }, SIM_TICK_MS);
     },
-    [accept, clearTimer, onUpload],
+    [accept, clearTimer, onError, onUpload, reset, validateFile],
   );
 
   const pickFile = () => inputRef.current?.click();
