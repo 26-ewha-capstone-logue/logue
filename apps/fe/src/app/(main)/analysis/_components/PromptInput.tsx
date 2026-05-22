@@ -64,11 +64,16 @@ export default function PromptInput({
         onFileAttach={() => setIsUploadOpen((prev) => !prev)}
       />
 
-      <Modal open={isUploadOpen} onClose={() => setIsUploadOpen(false)}>
+      <Modal
+        open={isUploadOpen}
+        onClose={() => setIsUploadOpen(false)}
+        contentClassName="relative z-10 w-full max-w-[64.8rem] rounded-16 bg-transparent p-0 shadow-none"
+      >
         <FileUploadZone
           validateFile={validateFile}
           onFileSelect={handleFileSelect}
           onError={handleFileError}
+          onClose={() => setIsUploadOpen(false)}
         />
       </Modal>
 

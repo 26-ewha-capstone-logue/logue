@@ -1,15 +1,7 @@
 'use client';
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type DragEvent,
-} from 'react';
-import CancelIcon from '@/assets/icons/cancel.svg';
-import PlusIcon from '@/assets/icons/plus.svg';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import FileUploadZone from '../FileUploadZone/FileUploadZone';
 import Modal from '../Modal/Modal';
 
 export type FileUploadModalProps = {
@@ -18,36 +10,15 @@ export type FileUploadModalProps = {
   onUpload?: (file: File) => void;
   validateFile?: (file: File) => string | null;
   onError?: (message: string) => void;
-  /** 허용 확장자 (기본 .csv) */
   accept?: string;
 };
 
 type Stage = 'idle' | 'uploading';
 
-// TODO: 실제 업로드 진행률은 API 진척률로 교체. 현재는 시뮬레이션용.
 const SIM_TICK_MS = 200;
 const SIM_INCREMENT = 10;
-
-/** accept 문자열("." prefix, mime type 모두 허용)에 매칭되는지 검사 */
-function matchesAccept(file: File, accept: string): boolean {
-  const tokens = accept
-    .split(',')
-    .map((t) => t.trim().toLowerCase())
-    .filter(Boolean);
-  if (tokens.length === 0) return true;
-
-  const lowerName = file.name.toLowerCase();
-  const lowerType = file.type.toLowerCase();
-
-  return tokens.some((token) => {
-    if (token.startsWith('.')) return lowerName.endsWith(token);
-    if (token.endsWith('/*')) {
-      const prefix = token.slice(0, -1); // "image/"
-      return lowerType.startsWith(prefix);
-    }
-    return lowerType === token;
-  });
-}
+const UPLOAD_MODAL_CONTENT_CLASS_NAME =
+  'relative z-10 w-full max-w-[64.8rem] rounded-16 bg-transparent p-0 shadow-none';
 
 export default function FileUploadModal({
   open,
@@ -60,10 +31,7 @@ export default function FileUploadModal({
   const [stage, setStage] = useState<Stage>('idle');
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const inputRef = useRef<HTMLInputElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const clearTimer = useCallback(() => {
@@ -73,7 +41,6 @@ export default function FileUploadModal({
     }
   }, []);
 
-  // unmount 시 타이머 정리 (모달을 업로드 중에 닫는 경우 등)
   useEffect(() => {
     return () => clearTimer();
   }, [clearTimer]);
@@ -83,8 +50,6 @@ export default function FileUploadModal({
     setStage('idle');
     setFile(null);
     setProgress(0);
-    setIsDragOver(false);
-    setError(null);
   }, [clearTimer]);
 
   const handleClose = useCallback(() => {
@@ -94,173 +59,49 @@ export default function FileUploadModal({
 
   const startUpload = useCallback(
     (selected: File) => {
-      const validationError = validateFile?.(selected);
-      if (validationError) {
-        setError(validationError);
-        onError?.(validationError);
-        return;
-      }
-
-      // 런타임 파일 타입 검증 (accept 는 UI 필터일 뿐 우회 가능)
-      if (!matchesAccept(selected, accept)) {
-        const message = `허용되지 않은 파일 형식입니다. (${accept})`;
-        setError(message);
-        onError?.(message);
-        return;
-      }
-
-      setError(null);
       setFile(selected);
       setStage('uploading');
       setProgress(0);
       clearTimer();
+
       let p = 0;
       intervalRef.current = setInterval(() => {
         p += SIM_INCREMENT;
         setProgress(Math.min(p, 100));
+
         if (p >= 100) {
           reset();
           onUpload?.(selected);
         }
       }, SIM_TICK_MS);
     },
-    [accept, clearTimer, onError, onUpload, reset, validateFile],
+    [clearTimer, onUpload, reset],
   );
 
-  const pickFile = () => inputRef.current?.click();
-
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) startUpload(f);
-    e.target.value = '';
-  };
-
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  };
-
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    const f = e.dataTransfer.files[0];
-    if (f) startUpload(f);
-  };
-
-  const handleCancelFile = () => {
+  const handleCancelFile = useCallback(() => {
     clearTimer();
     setFile(null);
     setProgress(0);
     setStage('idle');
-  };
+  }, [clearTimer]);
 
   return (
-    <Modal open={open} onClose={handleClose}>
-      <div className="flex flex-col gap-20">
-        {/* 헤더 */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-head4 font-semibold text-gray-900">
-            CSV 파일 업로드
-          </h2>
-          <button
-            type="button"
-            onClick={handleClose}
-            aria-label="닫기"
-            className="text-gray-500 transition-colors hover:text-gray-900"
-          >
-            <CancelIcon aria-hidden className="icon-20 text-gray-500" />
-          </button>
-        </div>
-
-        {/* idle: 점선 dropzone / uploading: 파일 카드 */}
-        {stage === 'idle' ? (
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            className={`flex flex-col items-center justify-center gap-24 rounded-12 border-2 border-dashed px-40 py-20 transition-colors ${
-              isDragOver
-                ? 'border-orange-500 bg-orange-100/40'
-                : 'border-gray-400 bg-white'
-            }`}
-          >
-            <div className="flex h-40 w-40 items-center justify-center rounded-full bg-gray-300">
-              <PlusIcon aria-hidden className="icon-20 text-gray-700" />
-            </div>
-            <div className="flex flex-col items-center gap-8">
-              <p className="text-body2 text-gray-700">파일 드롭하기</p>
-              <p className="text-body4 text-gray-500">or</p>
-              <button
-                type="button"
-                onClick={pickFile}
-                className="rounded-full bg-orange-500 px-20 py-8 text-body4 font-medium text-white transition-colors hover:bg-orange-600"
-              >
-                파일 업로드
-              </button>
-            </div>
-            <input
-              ref={inputRef}
-              type="file"
-              accept={accept}
-              onChange={handleInputChange}
-              className="hidden"
-              aria-label="파일 업로드"
-            />
-            {error && (
-              <p role="alert" className="text-body4 text-error-500">
-                {error}
-              </p>
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-12 rounded-12 border border-gray-300 bg-white px-16 py-16">
-            <div className="flex items-center gap-12">
-              <CsvFileIcon />
-              <div className="flex min-w-0 flex-1 flex-col gap-2">
-                <span className="truncate text-body4 text-gray-900">
-                  {file?.name}
-                </span>
-                <span className="text-body4 text-gray-500">
-                  {progress >= 100
-                    ? '업로드 완료'
-                    : `업로드 중... ${progress}%`}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={handleCancelFile}
-                aria-label="업로드 취소"
-                className="shrink-0 text-gray-500 transition-colors hover:text-error-500"
-              >
-                <CancelIcon aria-hidden className="icon-16 text-gray-500" />
-              </button>
-            </div>
-            <div className="h-[0.6rem] w-full overflow-hidden rounded-full bg-gray-300">
-              <div
-                className="h-full rounded-full bg-orange-500 transition-[width] duration-200"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-    </Modal>
-  );
-}
-
-/** 파일 카드 좌측의 작은 CSV 아이콘 */
-function CsvFileIcon() {
-  return (
-    <div
-      aria-hidden
-      className="relative flex h-32 w-28 shrink-0 items-center justify-center rounded-4 bg-orange-400"
+    <Modal
+      open={open}
+      onClose={handleClose}
+      contentClassName={UPLOAD_MODAL_CONTENT_CLASS_NAME}
     >
-      <span className="text-[0.9rem] font-bold text-white">CSV</span>
-    </div>
+      <FileUploadZone
+        accept={accept}
+        validateFile={validateFile}
+        onError={onError}
+        onFileSelect={startUpload}
+        state={stage === 'uploading' ? 'upload' : undefined}
+        fileName={file?.name}
+        progress={progress}
+        onClose={handleClose}
+        onRemove={handleCancelFile}
+      />
+    </Modal>
   );
 }

@@ -13,7 +13,11 @@ export type ModalProps = {
   ariaLabelledBy?: string;
   /** 모달 내부 설명 영역 id */
   ariaDescribedBy?: string;
+  contentClassName?: string;
 };
+
+const DEFAULT_CONTENT_CLASS_NAME =
+  'relative z-10 w-full max-w-[60rem] rounded-20 bg-white p-32 shadow-[0_0.8rem_3.2rem_rgba(0,0,0,0.12)]';
 
 export default function Modal({
   open,
@@ -22,6 +26,7 @@ export default function Modal({
   ariaLabel,
   ariaLabelledBy,
   ariaDescribedBy,
+  contentClassName = DEFAULT_CONTENT_CLASS_NAME,
 }: ModalProps) {
   useEffect(() => {
     if (!open) return;
@@ -79,7 +84,7 @@ export default function Modal({
         aria-label={ariaLabelledBy ? undefined : ariaLabel}
         aria-labelledby={ariaLabelledBy}
         aria-describedby={ariaDescribedBy}
-        className="relative z-10 w-full max-w-[60rem] rounded-20 bg-white p-32 shadow-[0_0.8rem_3.2rem_rgba(0,0,0,0.12)]"
+        className={contentClassName}
         style={{ position: 'relative', zIndex: 10 }}
       >
         {children}

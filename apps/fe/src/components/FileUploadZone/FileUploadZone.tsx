@@ -30,23 +30,22 @@ const CSV_GRAPHIC_SRC = '/illusts/csv-graphic.svg';
 
 function UploadIcon() {
   return (
-    <span className="inline-flex h-[2.2rem] w-[2.2rem] items-center justify-center rounded-full bg-gray-400 text-white">
-      <svg className="icon-16" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <span className="inline-flex h-[3rem] w-[3rem] items-center justify-center rounded-full bg-gray-400 text-white">
+      <svg className="icon-20" viewBox="0 0 24 24" fill="none" aria-hidden>
         <path
-          d="M12 17V7m0 0L8 11m4-4 4 4"
+          d="M12 5v14M5 12h14"
           stroke="currentColor"
           strokeWidth="2"
           strokeLinecap="round"
-          strokeLinejoin="round"
         />
       </svg>
     </span>
   );
 }
 
-function CloseIcon() {
+function CloseIcon({ className = 'icon-20' }: { className?: string }) {
   return (
-    <svg className="icon-20" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
       <path
         d="m6 6 12 12M18 6 6 18"
         stroke="currentColor"
@@ -139,27 +138,27 @@ export default function FileUploadZone({
 
   return (
     <div
-      className={`relative w-full max-w-[64.8rem] overflow-hidden rounded-16 bg-white p-20 ${
+      className={`relative w-full max-w-[64.8rem] overflow-hidden rounded-16 bg-white px-20 pt-16 pb-20 ${
         isUpload ? 'h-[16.7rem]' : 'h-[25.8rem]'
       } ${disabled ? 'opacity-50' : ''} ${className}`.trim()}
       {...rest}
     >
-      <div className="mb-12 flex items-center justify-between">
+      <div className="mb-12 flex items-center">
         <p className="text-head3 text-gray-900 opacity-80">{title}</p>
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-gray-800 hover:text-gray-900"
-            aria-label="닫기"
-          >
-            <CloseIcon />
-          </button>
-        )}
       </div>
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-[1.4rem] right-[1.5rem] flex h-28 w-28 items-center justify-center text-gray-800 hover:text-gray-900"
+          aria-label="닫기"
+        >
+          <CloseIcon />
+        </button>
+      )}
 
       {isUpload ? (
-        <div className="relative h-[9.1rem] rounded-8 border border-gray-400">
+        <div className="relative h-[9.1rem] rounded-8 border-[1.5px] border-gray-400">
           <div className="absolute left-[0.95rem] top-[0.85rem]">
             {uploadIcon ?? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -171,10 +170,10 @@ export default function FileUploadZone({
               />
             )}
           </div>
-          <p className="absolute left-[6.7rem] top-[1.15rem] max-w-[42rem] truncate text-body3 text-gray-900 opacity-80">
+          <p className="absolute left-[6.3rem] top-[1.15rem] max-w-[42rem] truncate text-body3 text-gray-900 opacity-80">
             {fileName}
           </p>
-          <p className="absolute left-[6.8rem] top-[3.25rem] text-body4 text-gray-800 opacity-80">
+          <p className="absolute left-[6.4rem] top-[3.25rem] text-body4 text-gray-800 opacity-80">
             uploading...
           </p>
           <button
@@ -185,7 +184,7 @@ export default function FileUploadZone({
           >
             <CloseIcon />
           </button>
-          <div className="absolute bottom-[1.85rem] left-[1.85rem] h-[0.6rem] w-[54rem] max-w-[calc(100%-6.8rem)] rounded-222 bg-gray-300">
+          <div className="absolute bottom-[1.8rem] left-20 h-[0.6rem] w-[54rem] max-w-[calc(100%-6.8rem)] rounded-222 bg-gray-300">
             <div
               className="h-full rounded-222 bg-orange-500"
               style={{ width: `${Math.max(0, Math.min(progress, 100))}%` }}
