@@ -1,19 +1,24 @@
 import axios from 'axios';
+import { clearAuthTokens, getAccessToken } from './auth';
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'https://api-stg.asklogue.co';
 
 const instance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
-    'Content-Type': 'application/json',
+    Accept: 'application/json',
   },
 });
 
 instance.interceptors.request.use((config) => {
-  const token =
-    typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const token = getAccessToken();
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
   return config;
 });
 
@@ -21,8 +26,9 @@ instance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // TODO: 토큰 만료 처리 (리다이렉트 등)
+      clearAuthTokens();
     }
+
     return Promise.reject(error);
   },
 );
