@@ -95,7 +95,7 @@ export default function DataPage() {
     // TODO: 업로드된 파일을 서버에 보내고 목록 갱신
     setData((prev) => [
       {
-        id: `data-${Date.now()}`,
+        id: `data-${crypto.randomUUID()}`,
         fileName: uploaded.name,
         fileSize: formatFileSize(uploaded.size),
         uploadedAt: '방금 전',

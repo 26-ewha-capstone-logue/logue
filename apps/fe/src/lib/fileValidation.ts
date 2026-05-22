@@ -13,7 +13,7 @@ export function validateCsvFile(
 ) {
   const isCsv = file.name.toLowerCase().endsWith('.csv');
   if (!isCsv) return messages.invalidType;
-  if (file.size > CSV_MAX_FILE_SIZE_BYTES) return messages.tooLarge;
+  if (file.size >= CSV_MAX_FILE_SIZE_BYTES) return messages.tooLarge;
   return null;
 }
 
