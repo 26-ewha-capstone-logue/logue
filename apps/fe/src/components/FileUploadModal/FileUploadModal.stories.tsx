@@ -24,7 +24,7 @@ export const Open: Story = {};
 
 export const Interactive: Story = {
   render: (args) => {
-    const [open, setOpen] = useState(true);
+    const [open, setOpen] = useState(false);
 
     return (
       <div className="flex min-h-[48rem] items-center justify-center bg-gray-200 p-40">

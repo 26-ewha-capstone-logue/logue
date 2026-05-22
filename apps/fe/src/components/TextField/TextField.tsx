@@ -4,6 +4,8 @@ import {
   useImperativeHandle,
   useRef,
   useState,
+  type ChangeEvent,
+  type KeyboardEvent,
   type MouseEvent,
   type ReactNode,
   type TextareaHTMLAttributes,
@@ -23,6 +25,17 @@ export type TextFieldProps = {
   size?: TextFieldSize;
 } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'children'>;
 
+function getSubmitToneClass(
+  isCompact: boolean,
+  hasValue: boolean,
+  focused: boolean,
+) {
+  if (isCompact) return 'bg-orange-500 text-white hover:bg-orange-600';
+  if (hasValue) return 'bg-orange-400 text-white hover:bg-orange-500';
+  if (focused) return 'bg-orange-500 text-white hover:bg-orange-600';
+  return 'bg-gray-300 text-gray-900 hover:bg-gray-400';
+}
+
 const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
   function TextField(
     {
@@ -39,6 +52,7 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
       onKeyDown,
       onFocus,
       onBlur,
+      onChange,
       value,
       defaultValue,
       ...textareaProps
@@ -47,6 +61,10 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
   ) {
     const innerRef = useRef<HTMLTextAreaElement>(null);
     const [focused, setFocused] = useState(false);
+    const [internalHasValue, setInternalHasValue] = useState(
+      () => String(defaultValue ?? '').length > 0,
+    );
+    const isControlled = value !== undefined;
 
     useImperativeHandle(ref, () => innerRef.current as HTMLTextAreaElement, []);
 
@@ -63,7 +81,7 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
     );
 
     const handleKeyDown = useCallback(
-      (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      (e: KeyboardEvent<HTMLTextAreaElement>) => {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
           e.preventDefault();
           e.currentTarget.select();
@@ -80,20 +98,24 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
       [onKeyDown, onSubmit, submitDisabled],
     );
 
-    const hasValue = String(value ?? defaultValue ?? '').length > 0;
+    const handleChange = useCallback(
+      (e: ChangeEvent<HTMLTextAreaElement>) => {
+        if (!isControlled) {
+          setInternalHasValue(e.currentTarget.value.length > 0);
+        }
+        onChange?.(e);
+      },
+      [isControlled, onChange],
+    );
+
+    const hasValue = isControlled ? String(value).length > 0 : internalHasValue;
     const toneClass = hasValue
       ? 'text-gray-900'
       : focused
         ? 'text-gray-800'
         : 'text-gray-700 placeholder:text-gray-700';
     const isCompact = size === 'md';
-    const submitToneClass = isCompact
-      ? 'bg-orange-500 text-white hover:bg-orange-600'
-      : hasValue
-        ? 'bg-orange-400 text-white hover:bg-orange-500'
-        : focused
-          ? 'bg-orange-500 text-white hover:bg-orange-600'
-          : 'bg-gray-300 text-gray-900 hover:bg-gray-400';
+    const submitToneClass = getSubmitToneClass(isCompact, hasValue, focused);
 
     return (
       <div
@@ -119,6 +141,7 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
             onBlur?.(e);
           }}
           onKeyDown={handleKeyDown}
+          onChange={handleChange}
           className={`scrollbar-hide min-w-0 w-full flex-1 resize-none bg-transparent outline-none ${
             isCompact ? 'text-body2' : 'text-head3'
           } ${toneClass}`}

@@ -68,7 +68,7 @@
   --color-typo-tertiary: var(--color-gray-700);
   --color-typo-quaternary: var(--color-gray-600);
   --color-typo-error: var(--color-red-500);
-  --color-typo-disabled: var(--color-gray-300);
+  --color-typo-disabled: var(--color-gray-500);
   --color-typo-white: var(--color-white);
   --color-border-primary: var(--color-gray-800);
   --color-border-secondary: var(--color-gray-300);
