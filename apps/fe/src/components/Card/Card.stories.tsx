@@ -25,7 +25,24 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Dash: Story = {};
+
+export const Intro: Story = {
+  args: {
+    variant: 'intro',
+    title: 'Logue의 최신 소식\n을 확인하세요.',
+    description: 'Logue의 최신 소식을 확인하세요.',
+  },
+};
+
+export const News: Story = {
+  args: {
+    variant: 'news',
+    label: '라벨라벨',
+    title: '[업데이트] Logue 정식 서비스 런칭\n및 신규 시각화 차트 추가',
+    description: undefined,
+  },
+};
 
 export const LongDescription: Story = {
   args: {

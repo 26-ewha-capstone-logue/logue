@@ -1,36 +1,39 @@
 import { type HTMLAttributes, type ReactNode } from 'react';
 
-export type CardProps = {
-  /** 분야명 (굵은 제목) */
-  title: string;
-  /** 세부 설명 (1줄) */
-  description?: string;
-  /** 카드 배경에 깔리는 일러스트/아이콘 (absolute fill) */
-  thumbnail?: ReactNode;
-  /** 클릭 콜백 */
-  onClick?: () => void;
-} & Omit<HTMLAttributes<HTMLDivElement>, 'title' | 'children'>;
+type CardVariant = 'dash' | 'intro' | 'news';
 
-// 디자인 시안:
-// background: linear-gradient(0deg,
-//   rgba(0,0,0,0.40) 6.82%,
-//   rgba(128,128,128,0.20) 51.23%,
-//   rgba(255,255,255,0.00) 88.38%), #FFF;
-const CARD_BACKGROUND =
-  'linear-gradient(0deg, rgba(0, 0, 0, 0.40) 6.82%, rgba(128, 128, 128, 0.20) 51.23%, rgba(255, 255, 255, 0.00) 88.38%), #FFF';
+export type CardProps = {
+  title: string;
+  description?: string;
+  thumbnail?: ReactNode;
+  onClick?: () => void;
+  variant?: CardVariant;
+  label?: string;
+} & Omit<HTMLAttributes<HTMLDivElement>, 'title' | 'children'>;
 
 const CARD_GRADIENT_OVERLAY =
   'linear-gradient(0deg, rgba(0, 0, 0, 0.40) 6.82%, rgba(128, 128, 128, 0.20) 51.23%, rgba(255, 255, 255, 0.00) 88.38%)';
+
+const CARD_BACKGROUND = `${CARD_GRADIENT_OVERLAY}, #FFF`;
+
+const variantClass: Record<CardVariant, string> = {
+  dash: 'h-[18.5rem] w-full rounded-[2.4rem]',
+  intro: 'h-[30rem] w-[30rem] rounded-20',
+  news: 'h-[32rem] w-[60rem] rounded-20',
+};
 
 export default function Card({
   title,
   description,
   thumbnail,
   onClick,
+  variant = 'dash',
+  label,
   className = '',
   ...rest
 }: CardProps) {
   const isClickable = !!onClick;
+  const isDash = variant === 'dash';
 
   return (
     <div
@@ -47,19 +50,19 @@ export default function Card({
             }
           : undefined
       }
-      // thumbnail 이 없을 때는 시안 그대로 multi-background 적용
-      // thumbnail 이 있을 때는 흰색 베이스만 두고 일러스트 → 그라데이션 순서로 레이어링
       style={{ background: thumbnail ? '#FFF' : CARD_BACKGROUND }}
-      className={`relative h-[18.5rem] w-full overflow-hidden rounded-[2.4rem] ${isClickable ? 'cursor-pointer transition-transform hover:scale-[1.02]' : ''} ${className}`.trim()}
+      className={`relative overflow-hidden ${variantClass[variant]} ${
+        isClickable
+          ? 'cursor-pointer transition-transform hover:scale-[1.02]'
+          : ''
+      } ${className}`.trim()}
       {...rest}
     >
       {thumbnail && (
         <>
-          {/* 일러스트 layer */}
           <div className="pointer-events-none absolute inset-0 z-0">
             {thumbnail}
           </div>
-          {/* 그라데이션 오버레이 layer */}
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 z-10"
@@ -68,15 +71,30 @@ export default function Card({
         </>
       )}
 
-      {/* 텍스트 layer (좌하단)
-       * 시안의 padding-right 15.4rem 은 일러스트 영역을 위한 여백이지만,
-       * 텍스트에 그대로 적용하면 가용 폭이 좁아 잘리므로
-       * 텍스트 div 자체는 좌우 동일 패딩으로 두고 일러스트(thumbnail)는 별도 layer 로 처리한다.
-       */}
-      <div className="relative z-20 flex h-full flex-col items-start justify-end gap-2 px-[2.2rem] pt-[11.2rem] pb-[1.2rem]">
-        <h3 className="text-head2 text-white">{title}</h3>
+      {label && (
+        <span className="absolute left-32 top-[17.3rem] z-20 rounded-222 bg-orange-500 px-12 py-8 text-body2 text-white">
+          {label}
+        </span>
+      )}
+
+      <div
+        className={`relative z-20 flex h-full flex-col items-start justify-end ${
+          isDash ? 'gap-2 px-[2.2rem] pt-[11.2rem] pb-[1.2rem]' : 'gap-8 p-32'
+        }`}
+      >
+        <h3
+          className={`${
+            isDash ? 'text-head2' : 'text-head2 font-extrabold'
+          } text-white`}
+        >
+          {title}
+        </h3>
         {description && (
-          <p className="line-clamp-1 w-full text-body2 text-white/80">
+          <p
+            className={`${
+              isDash ? 'line-clamp-1 w-full text-white/80' : 'text-white'
+            } text-body2`}
+          >
             {description}
           </p>
         )}

@@ -7,7 +7,7 @@ const meta: Meta<typeof DataRow> = {
   tags: ['autodocs'],
   decorators: [
     (Story) => (
-      <div className="w-[80rem]">
+      <div className="w-[60rem] bg-gray-300 p-20">
         <Story />
       </div>
     ),
@@ -17,19 +17,14 @@ export default meta;
 
 type Story = StoryObj<typeof DataRow>;
 
-export const Header: Story = {
-  args: { isHeader: true, fileName: '', fileSize: '', uploadedAt: '' },
-};
-
 export const Default: Story = {
-  args: { fileName: '파일명.csv', fileSize: '50MB', uploadedAt: '5분 전' },
+  args: { title: '날짜 기준', contents: '데이터 내용 입력' },
 };
 
 export const Selected: Story = {
   args: {
-    fileName: '파일명.csv',
-    fileSize: '50MB',
-    uploadedAt: '5분 전',
-    selected: true,
+    title: '날짜 기준',
+    state: 'selected',
+    dropdownValue: 'internal_test',
   },
 };

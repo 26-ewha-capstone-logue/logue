@@ -60,6 +60,14 @@ export const FullWidth: Story = {
   },
 };
 
+export const Compact: Story = {
+  args: {
+    size: 'md',
+    fullWidth: true,
+  },
+  parameters: { layout: 'padded' },
+};
+
 /* ── Interactive: 입력 상태에 따라 전송 버튼 활성화 ── */
 
 export const Interactive: Story = {
@@ -119,6 +127,17 @@ export const AllVariants: Story = {
         <h3 className="mb-12 text-head4 text-gray-900">Full Width</h3>
         <TextField
           placeholder="전체 너비 입력"
+          fullWidth
+          onSubmit={fn()}
+          onFileAttach={fn()}
+        />
+      </section>
+
+      <section>
+        <h3 className="mb-12 text-head4 text-gray-900">Compact</h3>
+        <TextField
+          size="md"
+          placeholder="이번달이랑 지난달 비교해서 지역별 매출 높은 순으로 5개 보여줘"
           fullWidth
           onSubmit={fn()}
           onFileAttach={fn()}
