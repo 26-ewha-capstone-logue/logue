@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
   pull-requests: read
 
 jobs:
@@ -20,17 +21,12 @@ jobs:
     steps:
       - name: Sync CodeRabbit opt-in label
         env:
-          GH_TOKEN: ${{ secrets.CODERABBIT_LABEL_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           LABEL: coderabbit-review
           PR_NUMBER: ${{ github.event.pull_request.number }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
           set -euo pipefail
-
-          if [[ -z "${GH_TOKEN:-}" ]]; then
-            echo "::warning::CODERABBIT_LABEL_TOKEN is not configured; skipping CodeRabbit label sync."
-            exit 0
-          fi
 
           if [[ "$BASE_REF" == "dev" ]]; then
             if gh api \
