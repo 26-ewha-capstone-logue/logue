@@ -25,9 +25,13 @@ export default function AnalysisPage() {
     staleTime: USER_INFO_STALE_TIME,
   });
 
-  const userName = myInfo?.name ?? FALLBACK_USER_NAME;
   const shouldShowUserInfoLoading = hasAccessToken && isUserInfoLoading;
   const shouldShowUserInfoError = hasAccessToken && isUserInfoError;
+  const shouldUseFetchedUserName =
+    hasAccessToken && !isUserInfoLoading && !isUserInfoError;
+  const userName = shouldUseFetchedUserName
+    ? (myInfo?.name ?? FALLBACK_USER_NAME)
+    : FALLBACK_USER_NAME;
 
   const handleSubmit = (value: PromptInputValue) => {
     // TODO: 분석 생성 API 호출 후 응답 id 로 교체
