@@ -1,0 +1,182 @@
+name: Refactor Scan
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - 'apps/fe/**'
+      - 'apps/be/**'
+      - 'apps/ai/**'
+  workflow_dispatch:
+    inputs:
+      part:
+        description: '강제 실행할 파트 (all | fe | be | ai)'
+        type: choice
+        options: [all, fe, be, ai]
+        default: all
+      dry_run:
+        description: '이슈 생성 안 하고 아티팩트만 (변수 갱신도 스킵)'
+        type: boolean
+        default: false
+      force:
+        description: '임계치 무시하고 무조건 발사'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+  actions: write
+
+concurrency:
+  group: refactor-scan
+  cancel-in-progress: false
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      parts: ${{ steps.compute.outputs.parts }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute parts to scan
+        id: compute
+        env:
+          LAST_SCAN_SHA_FE: ${{ vars.LAST_SCAN_SHA_FE }}
+          LAST_SCAN_SHA_BE: ${{ vars.LAST_SCAN_SHA_BE }}
+          LAST_SCAN_SHA_AI: ${{ vars.LAST_SCAN_SHA_AI }}
+          THRESHOLD_FE: ${{ vars.LITELLM_THRESHOLD_FE || 20 }}
+          THRESHOLD_BE: ${{ vars.LITELLM_THRESHOLD_BE || 15 }}
+          THRESHOLD_AI: ${{ vars.LITELLM_THRESHOLD_AI || 10 }}
+          INPUT_PART: ${{ inputs.part || 'all' }}
+          INPUT_FORCE: ${{ inputs.force || 'false' }}
+        run: |
+          set -euo pipefail
+          parts=()
+          for p in fe be ai; do
+            if [[ "$INPUT_PART" != "all" && "$INPUT_PART" != "$p" ]]; then
+              continue
+            fi
+
+            up="$(echo "$p" | tr '[:lower:]' '[:upper:]')"
+            last_var="LAST_SCAN_SHA_${up}"
+            thr_var="THRESHOLD_${up}"
+            last_sha="${!last_var:-}"
+            threshold="${!thr_var}"
+
+            if [[ -n "$last_sha" ]] && git rev-parse --verify --quiet "$last_sha^{commit}" >/dev/null; then
+              count="$(git diff --name-only "$last_sha..HEAD" -- "apps/$p/" | wc -l | tr -d ' ')"
+            else
+              count="$(git ls-files "apps/$p/" | wc -l | tr -d ' ')"
+              echo "warn: LAST_SCAN_SHA_${up} missing or invalid — using full tree count"
+            fi
+
+            echo "part=$p last=${last_sha:-<none>} threshold=$threshold changed=$count"
+
+            if [[ "$INPUT_FORCE" == "true" || "$count" -ge "$threshold" ]]; then
+              parts+=("\"$p\"")
+            fi
+          done
+
+          if [[ ${#parts[@]} -eq 0 ]]; then
+            echo "parts=[]" >> "$GITHUB_OUTPUT"
+          else
+            printf -v joined '%s,' "${parts[@]}"
+            echo "parts=[${joined%,}]" >> "$GITHUB_OUTPUT"
+          fi
+
+  scan:
+    needs: detect
+    if: needs.detect.outputs.parts != '[]' && needs.detect.outputs.parts != ''
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        part: ${{ fromJson(needs.detect.outputs.parts) }}
+    env:
+      LITELLM_BASE_URL: ${{ vars.LITELLM_BASE_URL }}
+      LITELLM_MODEL: ${{ vars.LITELLM_MODEL }}
+      LITELLM_MAX_TOKENS: ${{ vars.LITELLM_MAX_TOKENS || 2048 }}
+      LITELLM_API_KEY_1: ${{ secrets.LITELLM_API_KEY_1 }}
+      LITELLM_API_KEY_2: ${{ secrets.LITELLM_API_KEY_2 }}
+      LITELLM_API_KEY_3: ${{ secrets.LITELLM_API_KEY_3 }}
+      DRY_RUN: ${{ inputs.dry_run == true && '1' || '0' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Resolve LAST_SHA for ${{ matrix.part }}
+        id: last
+        env:
+          LAST_SCAN_SHA_FE: ${{ vars.LAST_SCAN_SHA_FE }}
+          LAST_SCAN_SHA_BE: ${{ vars.LAST_SCAN_SHA_BE }}
+          LAST_SCAN_SHA_AI: ${{ vars.LAST_SCAN_SHA_AI }}
+        run: |
+          set -euo pipefail
+          up="$(echo '${{ matrix.part }}' | tr '[:lower:]' '[:upper:]')"
+          var_name="LAST_SCAN_SHA_${up}"
+          val="${!var_name:-}"
+          echo "last_sha=$val" >> "$GITHUB_OUTPUT"
+
+      - name: Collect context
+        run: |
+          set -euo pipefail
+          bash scripts/refactor-scan/collect_context.sh \
+            '${{ matrix.part }}' \
+            '${{ steps.last.outputs.last_sha }}' \
+            > /tmp/ctx.md
+          wc -l /tmp/ctx.md
+
+      - name: Build prompt
+        run: |
+          set -euo pipefail
+          cat scripts/refactor-scan/prompts/${{ matrix.part }}.md /tmp/ctx.md > /tmp/prompt.md
+          wc -c /tmp/prompt.md
+
+      - name: Call LiteLLM
+        run: |
+          set -euo pipefail
+          bash scripts/refactor-scan/call_litellm.sh < /tmp/prompt.md > /tmp/llm.md
+          wc -c /tmp/llm.md
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: refactor-scan-${{ matrix.part }}-${{ github.run_id }}
+          path: |
+            /tmp/ctx.md
+            /tmp/prompt.md
+            /tmp/llm.md
+          retention-days: 14
+
+      - name: Create issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          bash scripts/refactor-scan/create_issue.sh \
+            '${{ matrix.part }}' \
+            /tmp/llm.md \
+            '${{ github.sha }}'
+
+      - name: Update LAST_SCAN_SHA variable
+        if: env.DRY_RUN != '1'
+        env:
+          GH_TOKEN: ${{ secrets.REFACTOR_SCAN_VARS_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo "::warning::REFACTOR_SCAN_VARS_TOKEN secret 미설정 — LAST_SCAN_SHA_${{ matrix.part }} 갱신 스킵됨. scripts/refactor-scan/README.md 참고."
+            exit 0
+          fi
+          up="$(echo '${{ matrix.part }}' | tr '[:lower:]' '[:upper:]')"
+          var_name="LAST_SCAN_SHA_${up}"
+          gh variable set "$var_name" --repo "${{ github.repository }}" --body "${{ github.sha }}"
