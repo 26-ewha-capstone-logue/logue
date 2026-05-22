@@ -95,7 +95,7 @@ export default function AnalysisPage() {
       <SampleDataSection />
 
       {toastMessage && (
-        <div className="pointer-events-none fixed bottom-44 left-1/2 z-[60] -translate-x-1/2">
+        <div className="pointer-events-none fixed bottom-[4.4rem] left-1/2 z-[60] -translate-x-1/2">
           <ToastAlert role="alert">{toastMessage}</ToastAlert>
         </div>
       )}

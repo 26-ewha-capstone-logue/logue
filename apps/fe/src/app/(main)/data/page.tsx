@@ -276,7 +276,7 @@ export default function DataPage() {
       </Modal>
 
       {toast && (
-        <div className="pointer-events-none fixed bottom-44 left-1/2 z-[60] -translate-x-1/2">
+        <div className="pointer-events-none fixed bottom-[4.4rem] left-1/2 z-[60] -translate-x-1/2">
           <ToastAlert
             role={toast.tone === 'error' ? 'alert' : 'status'}
             icon={
