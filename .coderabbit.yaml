@@ -7,8 +7,9 @@ reviews:
   high_level_summary_placeholder: "@coderabbitai summary"
   auto_review:
     # CodeRabbit uses the base branch configuration for PRs.
-    # Keep reviews label-based so only dev-base PRs are opted in by workflow.
-    enabled: false
+    # Keep automatic reviews label-gated; workflow applies the label only to dev-base PRs.
+    enabled: true
+    auto_incremental_review: true
     drafts: false
     labels:
       - "coderabbit-review"
