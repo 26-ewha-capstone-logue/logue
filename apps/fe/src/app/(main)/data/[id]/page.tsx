@@ -1,8 +1,4 @@
-export default function DataDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function DataDetailPage() {
   return (
     <main className="flex flex-1 flex-col px-40 pt-40 pb-40">
       {/* TODO: 파일명 + 용량 + 업로드 시간 헤더 */}

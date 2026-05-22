@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Header } from '@/components';
 
 const NAV_ITEMS = [
@@ -15,7 +15,6 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const pathname = usePathname();
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-200">

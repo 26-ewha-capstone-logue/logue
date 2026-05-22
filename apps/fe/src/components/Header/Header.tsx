@@ -64,10 +64,7 @@ function ProfileIcon() {
     >
       <circle cx="18" cy="18" r="17" stroke="#BFBFBF" strokeWidth="2" />
       <circle cx="18" cy="14" r="5" fill="#BFBFBF" />
-      <path
-        d="M8 28c0-5.523 4.477-10 10-10s10 4.477 10 10"
-        fill="#BFBFBF"
-      />
+      <path d="M8 28c0-5.523 4.477-10 10-10s10 4.477 10 10" fill="#BFBFBF" />
     </svg>
   );
 }

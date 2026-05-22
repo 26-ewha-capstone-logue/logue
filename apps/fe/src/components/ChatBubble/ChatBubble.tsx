@@ -57,7 +57,9 @@ export default function ChatBubble({
         {loading ? (
           <div className="flex items-center gap-8">
             <LoadingDots />
-            <span className="text-body2 text-gray-600">Logue가 분석 중이에요</span>
+            <span className="text-body2 text-gray-600">
+              Logue가 분석 중이에요
+            </span>
           </div>
         ) : (
           children
