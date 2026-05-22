@@ -68,17 +68,17 @@
   --color-typo-tertiary: var(--color-gray-700);
   --color-typo-quaternary: var(--color-gray-600);
   --color-typo-error: var(--color-red-500);
-  --color-typo-disabled: var(--color-gray-500);
+  --color-typo-disabled: var(--color-gray-300);
   --color-typo-white: var(--color-white);
-  --color-border-primary: var(--color-gray-300);
-  --color-border-secondary: var(--color-gray-400);
+  --color-border-primary: var(--color-gray-800);
+  --color-border-secondary: var(--color-gray-300);
   --color-border-tertiary: var(--color-gray-500);
   --color-border-error: var(--color-red-500);
-  --color-divider-primary: var(--color-gray-400);
-  --color-background-secondary: var(--color-gray-200);
-  --color-background-tertiary: var(--color-gray-300);
-  --color-background-quaternary: var(--color-gray-400);
-  --color-background-quinary: var(--color-gray-500);
+  --color-divider-primary: var(--color-gray-300);
+  --color-background-secondary: var(--color-gray-300);
+  --color-background-tertiary: var(--color-gray-400);
+  --color-background-quaternary: var(--color-gray-900);
+  --color-background-quinary: var(--color-gray-200);
   --color-background-error: var(--color-red-500);
   --color-background-white: var(--color-white);
 

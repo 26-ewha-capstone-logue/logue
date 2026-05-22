@@ -80,6 +80,13 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
         ? 'text-gray-800'
         : 'text-gray-700 placeholder:text-gray-700';
     const isCompact = size === 'md';
+    const submitToneClass = isCompact
+      ? 'bg-orange-500 text-white hover:bg-orange-600'
+      : hasValue
+        ? 'bg-orange-400 text-white hover:bg-orange-500'
+        : focused
+          ? 'bg-orange-500 text-white hover:bg-orange-600'
+          : 'bg-gray-300 text-gray-900 hover:bg-gray-400';
 
     return (
       <div
@@ -146,7 +153,7 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
             onClick={onSubmit}
             disabled={submitDisabled}
             aria-label="전송"
-            className="inline-flex h-[3.8rem] w-[3.8rem] shrink-0 items-center justify-center rounded-12 bg-orange-500 text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:text-gray-600"
+            className={`inline-flex h-[3.8rem] w-[3.8rem] shrink-0 items-center justify-center rounded-12 transition-colors disabled:cursor-not-allowed disabled:bg-gray-400 disabled:text-gray-600 ${submitToneClass}`}
           >
             <ArrowUpIcon aria-hidden className="icon-20" />
           </button>

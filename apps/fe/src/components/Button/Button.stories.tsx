@@ -98,6 +98,64 @@ export const Primary = {
 
 /* ── Docs 전용: 모든 종류 한눈에 ── */
 
+export const Outlined = {
+  args: {
+    variant: 'outlined',
+    children: 'Outlined',
+    size: 'md',
+    disabled: false,
+    fullWidth: false,
+    storyShowIcon: false,
+  } as Story['args'],
+  argTypes: {
+    variant: { table: { disable: true } },
+    size: { control: 'select', options: ['sm', 'md', 'lg'] },
+    storyShowIcon: {
+      control: 'boolean',
+      name: 'Icon',
+      table: { category: 'Story only' },
+    },
+  },
+  render: (args) => {
+    const { storyShowIcon, ...props } = args as typeof args & StoryOnlyArgs;
+    return (
+      <Button
+        {...props}
+        icon={storyShowIcon ? <ChevronRightIcon /> : undefined}
+      />
+    );
+  },
+} as Story;
+
+export const Text = {
+  args: {
+    variant: 'text',
+    children: 'Text',
+    size: 'md',
+    disabled: false,
+    storyShowIcon: false,
+  } as Story['args'],
+  argTypes: {
+    variant: { table: { disable: true } },
+    size: { table: { disable: true } },
+    fullWidth: { table: { disable: true } },
+    storyShowIcon: {
+      control: 'boolean',
+      name: 'Icon',
+      table: { category: 'Story only' },
+    },
+  },
+  render: (args) => {
+    const { storyShowIcon, ...props } = args as typeof args & StoryOnlyArgs;
+    return (
+      <Button
+        {...props}
+        icon={storyShowIcon ? <ChevronRightIcon /> : undefined}
+      />
+    );
+  },
+} as Story;
+
 export const AllVariants: Story = {
   tags: ['!autodocs'],
   parameters: { layout: 'padded' },

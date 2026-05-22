@@ -140,7 +140,7 @@ export default function FileUploadZone({
     <div
       className={`relative w-full max-w-[64.8rem] overflow-hidden rounded-16 bg-white px-20 pt-16 pb-20 ${
         isUpload ? 'h-[16.7rem]' : 'h-[25.8rem]'
-      } ${disabled ? 'opacity-50' : ''} ${className}`.trim()}
+      } border-2 border-orange-500 ${disabled ? 'opacity-50' : ''} ${className}`.trim()}
       {...rest}
     >
       <div className="mb-12 flex items-center">
