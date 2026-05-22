@@ -1,9 +1,9 @@
 'use client';
 
 import {
-  useState,
-  useRef,
   useCallback,
+  useRef,
+  useState,
   type DragEvent,
   type HTMLAttributes,
   type ReactNode,
@@ -12,13 +12,9 @@ import {
 type FileUploadState = 'default' | 'drag' | 'upload';
 
 export type FileUploadZoneProps = {
-  /** 허용 확장자 (기본: .csv) */
   accept?: string;
-  /** 파일 선택 완료 콜백 */
   onFileSelect?: (file: File) => void;
-  /** 에러 콜백 (확장자 불일치 등) */
   onError?: (message: string) => void;
-  /** 비활성화 */
   disabled?: boolean;
   state?: FileUploadState;
   title?: string;
@@ -29,48 +25,7 @@ export type FileUploadZoneProps = {
   uploadIcon?: ReactNode;
 } & Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'onDrop' | 'onError'>;
 
-function CsvIcon() {
-  return (
-    <svg
-      width="48"
-      height="56"
-      viewBox="0 0 48 56"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
-    >
-      <rect
-        x="0"
-        y="0"
-        width="48"
-        height="56"
-        rx="6"
-        fill="#FFA947"
-        opacity="0.2"
-      />
-      <rect
-        x="4"
-        y="4"
-        width="40"
-        height="48"
-        rx="4"
-        fill="#FFA947"
-        opacity="0.4"
-      />
-      <text
-        x="24"
-        y="34"
-        textAnchor="middle"
-        fontSize="14"
-        fontWeight="700"
-        fill="#FC8320"
-        fontFamily="Pretendard, sans-serif"
-      >
-        CSV
-      </text>
-    </svg>
-  );
-}
+const CSV_GRAPHIC_SRC = '/illusts/csv-graphic.svg';
 
 function UploadIcon() {
   return (
@@ -122,8 +77,8 @@ export default function FileUploadZone({
   const validateAndEmit = useCallback(
     (file: File) => {
       const extensions = accept.split(',').map((s) => s.trim().toLowerCase());
-      const fileName = file.name.toLowerCase();
-      const valid = extensions.some((ext) => fileName.endsWith(ext));
+      const lowerFileName = file.name.toLowerCase();
+      const valid = extensions.some((ext) => lowerFileName.endsWith(ext));
       if (!valid) {
         onError?.(`${extensions.join(', ')} 파일만 업로드할 수 있습니다.`);
         return;
@@ -198,7 +153,15 @@ export default function FileUploadZone({
       {isUpload ? (
         <div className="relative h-[9.1rem] rounded-8 border border-gray-400">
           <div className="absolute left-[0.95rem] top-[0.85rem]">
-            {uploadIcon ?? <CsvIcon />}
+            {uploadIcon ?? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={CSV_GRAPHIC_SRC}
+                alt=""
+                aria-hidden
+                className="h-[5.6rem] w-[4.8rem]"
+              />
+            )}
           </div>
           <p className="absolute left-[6.7rem] top-[1.15rem] max-w-[42rem] truncate text-body3 text-gray-900 opacity-80">
             {fileName}
@@ -214,9 +177,9 @@ export default function FileUploadZone({
           >
             <CloseIcon />
           </button>
-          <div className="absolute bottom-[1.85rem] left-[1.85rem] h-[0.6rem] w-[54rem] max-w-[calc(100%-6.8rem)] rounded-[22.2rem] bg-gray-300">
+          <div className="absolute bottom-[1.85rem] left-[1.85rem] h-[0.6rem] w-[54rem] max-w-[calc(100%-6.8rem)] rounded-222 bg-gray-300">
             <div
-              className="h-full rounded-[22.2rem] bg-orange-500"
+              className="h-full rounded-222 bg-orange-500"
               style={{ width: `${Math.max(0, Math.min(progress, 100))}%` }}
             />
           </div>
@@ -237,7 +200,7 @@ export default function FileUploadZone({
           onDrop={handleDrop}
           className={`flex h-[18.2rem] cursor-pointer flex-col items-center justify-center rounded-8 border-[1.5px] border-dashed transition-colors ${
             isDrag
-              ? 'border-orange-500'
+              ? 'border-orange-500 bg-orange-100/30'
               : 'border-gray-400 hover:border-orange-500'
           } ${disabled ? 'cursor-not-allowed' : ''}`}
         >
@@ -248,7 +211,7 @@ export default function FileUploadZone({
           <p className="text-body4 text-gray-800 opacity-70">or</p>
           <button
             type="button"
-            className="mt-4 rounded-[22.2rem] bg-orange-500 px-12 py-8 text-body2 text-white"
+            className="mt-4 rounded-222 bg-orange-500 px-12 py-8 text-body2 text-white"
           >
             파일 업로드
           </button>

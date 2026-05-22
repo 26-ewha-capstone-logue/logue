@@ -1,71 +1,27 @@
 import {
   forwardRef,
-  useRef,
   useCallback,
   useImperativeHandle,
+  useRef,
   useState,
-  type TextareaHTMLAttributes,
-  type ReactNode,
   type MouseEvent,
+  type ReactNode,
+  type TextareaHTMLAttributes,
 } from 'react';
+import ArrowUpIcon from '@/assets/icons/arrow-up.svg';
+import PlusIcon from '@/assets/icons/plus.svg';
 
 type TextFieldSize = 'lg' | 'md';
 
 export type TextFieldProps = {
-  /** 파일 추가 버튼 클릭 콜백 */
   onFileAttach?: () => void;
-  /** 전송 버튼 클릭 콜백 */
   onSubmit?: () => void;
-  /** 전송 버튼 비활성화 (값이 비어있을 때 등) */
   submitDisabled?: boolean;
-  /** 파일 추가 버튼 커스텀 아이콘 */
   fileIcon?: ReactNode;
-  /** 파일 추가 버튼 텍스트 */
   fileLabel?: string;
-  /** 전체 너비 */
   fullWidth?: boolean;
-  /** Figma text filed size */
   size?: TextFieldSize;
 } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'children'>;
-
-function ArrowUpIcon() {
-  return (
-    <svg
-      className="icon-24"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
-    >
-      <path
-        d="M12 19V5m0 0L6 11m6-6 6 6"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg className="icon-24" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M12 5v14M5 12h14"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function DefaultFileIcon() {
-  return (
-    <span className="inline-block h-[1.4rem] w-[1.4rem] shrink-0 rounded-[0.2rem] bg-mint-400" />
-  );
-}
 
 const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
   function TextField(
@@ -80,14 +36,19 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
       className = '',
       placeholder = '메시지를 입력하세요',
       rows = 1,
-      ...rest
+      onKeyDown,
+      onFocus,
+      onBlur,
+      value,
+      defaultValue,
+      ...textareaProps
     },
     ref,
   ) {
     const innerRef = useRef<HTMLTextAreaElement>(null);
     const [focused, setFocused] = useState(false);
 
-    useImperativeHandle(ref, () => innerRef.current as HTMLTextAreaElement);
+    useImperativeHandle(ref, () => innerRef.current as HTMLTextAreaElement, []);
 
     const handleContainerClick = useCallback(
       (e: MouseEvent<HTMLDivElement>) => {
@@ -107,12 +68,12 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
           e.preventDefault();
           if (!submitDisabled) onSubmit?.();
         }
-        rest.onKeyDown?.(e);
+        onKeyDown?.(e);
       },
-      [onSubmit, submitDisabled, rest],
+      [onKeyDown, onSubmit, submitDisabled],
     );
 
-    const hasValue = String(rest.value ?? rest.defaultValue ?? '').length > 0;
+    const hasValue = String(value ?? defaultValue ?? '').length > 0;
     const toneClass = hasValue
       ? 'text-gray-900'
       : focused
@@ -123,7 +84,7 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
     return (
       <div
         onClick={handleContainerClick}
-        className={`inline-flex cursor-text bg-white ${
+        className={`inline-flex cursor-text bg-white shadow-[0_0.2rem_1.2rem_rgba(0,0,0,0.06)] ${
           isCompact
             ? 'min-w-[41.8rem] flex-row items-center rounded-16 px-24 py-12'
             : 'min-w-[29rem] flex-col items-start gap-[5.9rem] rounded-20 px-[2.6rem] py-[2.9rem]'
@@ -133,19 +94,21 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
           ref={innerRef}
           rows={rows}
           placeholder={placeholder}
+          value={value}
+          defaultValue={defaultValue}
           onFocus={(e) => {
             setFocused(true);
-            rest.onFocus?.(e);
+            onFocus?.(e);
           }}
           onBlur={(e) => {
             setFocused(false);
-            rest.onBlur?.(e);
+            onBlur?.(e);
           }}
           onKeyDown={handleKeyDown}
-          className={`min-w-0 flex-1 resize-none bg-transparent outline-none ${
+          className={`scrollbar-hide min-w-0 flex-1 resize-none bg-transparent outline-none ${
             isCompact ? 'text-body2' : 'text-head3'
           } ${toneClass}`}
-          {...rest}
+          {...textareaProps}
         />
 
         <div
@@ -161,15 +124,19 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
               aria-label={fileLabel}
               className="inline-flex h-[3.8rem] w-[3.8rem] items-center justify-center rounded-12 text-gray-900 transition-colors hover:bg-gray-300"
             >
-              {fileIcon ?? <PlusIcon />}
+              {fileIcon ?? (
+                <PlusIcon aria-hidden className="icon-24 text-gray-900" />
+              )}
             </button>
           ) : (
             <button
               type="button"
               onClick={onFileAttach}
-              className="inline-flex items-center gap-2 rounded-[22.2rem] border border-gray-500 bg-white px-16 py-8 text-body1 text-gray-900 transition-colors hover:bg-gray-100"
+              className="inline-flex items-center gap-2 rounded-222 border border-gray-500 bg-white px-16 py-8 text-body1 text-gray-900 transition-colors hover:bg-gray-100"
             >
-              {fileIcon ?? <DefaultFileIcon />}
+              {fileIcon ?? (
+                <PlusIcon aria-hidden className="icon-16 text-gray-800" />
+              )}
               {fileLabel}
             </button>
           )}
@@ -179,9 +146,9 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
             onClick={onSubmit}
             disabled={submitDisabled}
             aria-label="전송"
-            className="inline-flex h-[3.8rem] w-[3.8rem] shrink-0 items-center justify-center rounded-12 bg-orange-500 text-white transition-colors hover:bg-orange-400 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-600"
+            className="inline-flex h-[3.8rem] w-[3.8rem] shrink-0 items-center justify-center rounded-12 bg-orange-500 text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:text-gray-600"
           >
-            <ArrowUpIcon />
+            <ArrowUpIcon aria-hidden className="icon-20" />
           </button>
         </div>
       </div>

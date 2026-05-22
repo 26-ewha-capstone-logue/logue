@@ -29,7 +29,7 @@ export default function DataRow({
 
   return (
     <div
-      className={`flex w-[49.8rem] gap-[4.4rem] border-b border-[#f0f0f0] pb-[0.9rem] pt-8 ${
+      className={`flex w-[49.8rem] gap-[4.4rem] border-b border-[#f0f0f0] pt-8 pb-[0.9rem] ${
         selected ? 'items-center' : 'items-start'
       } ${className}`.trim()}
       {...rest}

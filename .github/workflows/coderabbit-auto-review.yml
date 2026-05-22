@@ -1,0 +1,46 @@
+name: CodeRabbit Auto Review
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - ready_for_review
+      - edited
+      - synchronize
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  sync-review-label:
+    name: Sync review label
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync CodeRabbit opt-in label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LABEL: coderabbit-review
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$BASE_REF" == "dev" ]]; then
+            if gh api \
+              --method POST \
+              "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" \
+              -f "labels[]=$LABEL" \
+              --silent; then
+              echo "Added $LABEL label to PR #$PR_NUMBER."
+            else
+              echo "::warning::Failed to add $LABEL label to PR #$PR_NUMBER. Check workflow token permissions."
+            fi
+          else
+            gh api \
+              --method DELETE \
+              "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels/$LABEL" \
+              --silent || true
+          fi

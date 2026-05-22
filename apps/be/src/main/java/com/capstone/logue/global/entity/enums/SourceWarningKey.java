@@ -10,5 +10,19 @@ package com.capstone.logue.global.entity.enums;
  * </ul>
  */
 public enum SourceWarningKey {
-    DATE_FIELD_CONFLICT
+    DATE_FIELD_CONFLICT(
+            "날짜 기준을 하나로 정할 수 없어요",
+            "어떤 날짜를 기준으로 볼지 선택하여 질문해 주세요."
+    );
+
+    private final String name;
+    private final String comment;
+
+    SourceWarningKey(String name, String comment) {
+        this.name = name;
+        this.comment = comment;
+    }
+
+    public String getName() { return name; }
+    public String getComment() { return comment; }
 }
