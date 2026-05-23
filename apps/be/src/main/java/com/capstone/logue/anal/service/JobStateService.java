@@ -348,7 +348,7 @@ public class JobStateService {
 
         AnalysisFlow flow = job.getAnalysisFlow();
         AnalysisCriteria criteria = analysisCriteriaRepository
-                .findTopByAnalysisFlowIdOrderByCreatedAtDesc(flow.getId())
+                .findTopByAnalysisFlowIdOrderByCreatedAtDescIdDesc(flow.getId())
                 .orElseThrow(() -> new LogueException(ErrorCode.CRITERIA_NOT_FOUND));
 
         return new ResultJobContext(criteria, flow.getDataSource());
