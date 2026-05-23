@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { createAnalysisFlow, createConversation } from '@/apis/analysis';
-import { uploadDataSource } from '@/apis/dataSource';
+import { startAnalysisFlowFromDataSource } from '@/apis/analysis';
+import { dataSourceQueryKeys, uploadDataSource } from '@/apis/dataSource';
 import { getApiErrorMessage } from '@/apis/errors';
 import { getMyInfo } from '@/apis/user';
 import { ToastAlert } from '@/components';
@@ -29,6 +29,7 @@ const ANALYSIS_FILE_MESSAGES = {
 
 export default function AnalysisPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const { hasAccessToken } = useAuthSession();
   const {
@@ -60,18 +61,17 @@ export default function AnalysisPage() {
       }
 
       const uploadedDataSource = await uploadDataSource(value.file);
-      const conversation = await createConversation();
-      const analysisFlow = await createAnalysisFlow(
-        conversation.conversationId,
-        {
-          dataSourceId: uploadedDataSource.dataSourceId,
-        },
+      await queryClient.invalidateQueries({
+        queryKey: dataSourceQueryKeys.lists(),
+      });
+      const analysisFlow = await startAnalysisFlowFromDataSource(
+        uploadedDataSource.dataSourceId,
       );
 
       return {
-        conversationId: conversation.conversationId,
+        conversationId: analysisFlow.conversationId,
         analysisFlowId: analysisFlow.analysisFlowId,
-        dataSourceId: uploadedDataSource.dataSourceId,
+        dataSourceId: analysisFlow.dataSourceId,
         prompt: value.prompt,
         fileName: value.file.name,
       };

@@ -3,11 +3,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { startAnalysisFlowFromDataSource } from '@/apis/analysis';
 import {
   dataSourceQueryKeys,
   deleteDataSources,
   getDataSources,
   uploadDataSource,
+  type DataSourceSummary,
   type DataSourceSort,
 } from '@/apis/dataSource';
 import { getApiErrorMessage } from '@/apis/errors';
@@ -28,6 +30,8 @@ const UPLOAD_ERROR_MESSAGE =
   '파일 업로드에 실패했어요. 잠시 후 다시 시도해 주세요.';
 const DELETE_ERROR_MESSAGE =
   '파일 삭제에 실패했어요. 잠시 후 다시 시도해 주세요.';
+const START_CHAT_ERROR_MESSAGE =
+  '분석 채팅을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.';
 
 type ToastState = {
   message: string;
@@ -86,7 +90,16 @@ export default function DataPage() {
     mutationFn: deleteDataSources,
   });
 
+  const startChatMutation = useMutation({
+    mutationFn: startAnalysisFlowFromDataSource,
+  });
+
   const dataSources = dataSourcesQuery.data?.dataSources ?? [];
+  const chatPendingDataSourceId =
+    startChatMutation.isPending &&
+    typeof startChatMutation.variables === 'number'
+      ? startChatMutation.variables
+      : null;
   const allSelected =
     dataSources.length > 0 &&
     dataSources.every((dataSource) => selectedIds.has(dataSource.dataSourceId));
@@ -186,9 +199,26 @@ export default function DataPage() {
     }
   };
 
-  const handleChat = (id: number) => {
-    // TODO: 해당 데이터 소스로 분석 채팅 시작 플로우 연결
-    void id;
+  const handleChat = (dataSource: DataSourceSummary) => {
+    if (!hasAccessToken) {
+      showToast(LOGIN_REQUIRED_MESSAGE, 'error');
+      return;
+    }
+
+    startChatMutation.mutate(dataSource.dataSourceId, {
+      onSuccess: ({ conversationId, analysisFlowId, dataSourceId }) => {
+        const params = new URLSearchParams({
+          analysisFlowId: String(analysisFlowId),
+          dataSourceId: String(dataSourceId),
+          file: dataSource.fileName,
+        });
+
+        router.push(`/analysis/${conversationId}?${params.toString()}`);
+      },
+      onError: (error) => {
+        showToast(getApiErrorMessage(error, START_CHAT_ERROR_MESSAGE), 'error');
+      },
+    });
   };
 
   const goToDetail = (id: number) => {
@@ -265,6 +295,8 @@ export default function DataPage() {
             ) : (
               dataSources.map((row) => {
                 const checked = selectedIds.has(row.dataSourceId);
+                const isChatPending =
+                  chatPendingDataSourceId === row.dataSourceId;
                 return (
                   <tr
                     key={row.dataSourceId}
@@ -293,14 +325,16 @@ export default function DataPage() {
                     >
                       <button
                         type="button"
-                        onClick={() => handleChat(row.dataSourceId)}
-                        className="inline-flex items-center gap-4 rounded-full border border-gray-300 bg-white px-12 py-6 text-body4 text-gray-700 transition-colors hover:bg-gray-100"
+                        onClick={() => handleChat(row)}
+                        disabled={startChatMutation.isPending}
+                        aria-label={`${row.fileName} 분석 채팅 시작`}
+                        className="inline-flex items-center gap-4 rounded-full border border-gray-300 bg-white px-12 py-6 text-body4 text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                       >
                         <ChatIcon
                           aria-hidden
                           className="icon-12 text-orange-500"
                         />
-                        <span>채팅</span>
+                        <span>{isChatPending ? '시작 중' : '채팅'}</span>
                       </button>
                     </td>
                   </tr>

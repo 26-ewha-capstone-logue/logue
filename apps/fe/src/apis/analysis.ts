@@ -26,6 +26,12 @@ export type CreateAnalysisFlowResponse = {
   createdAt: string;
 };
 
+export type StartAnalysisFlowFromDataSourceResponse = {
+  conversationId: number;
+  analysisFlowId: number;
+  dataSourceId: number;
+};
+
 export type GetSummaryResponse = {
   rowCount: number;
   columnCount: number;
@@ -183,6 +189,19 @@ export async function createAnalysisFlow(
   );
 
   return unwrapApiResponse(data);
+}
+
+export async function startAnalysisFlowFromDataSource(dataSourceId: number) {
+  const conversation = await createConversation();
+  const analysisFlow = await createAnalysisFlow(conversation.conversationId, {
+    dataSourceId,
+  });
+
+  return {
+    conversationId: conversation.conversationId,
+    analysisFlowId: analysisFlow.analysisFlowId,
+    dataSourceId: analysisFlow.dataSourceId,
+  } satisfies StartAnalysisFlowFromDataSourceResponse;
 }
 
 export async function getSummaryStatus(params: AnalysisFlowParams) {
