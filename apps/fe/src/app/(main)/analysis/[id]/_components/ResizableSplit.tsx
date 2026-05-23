@@ -18,6 +18,12 @@ export type ResizableSplitProps = {
   minLeftRem?: number;
   /** 초기 우측 영역 width (rem). 미지정 시 컨테이너의 50% */
   initialRightRem?: number;
+  /** 우측 채팅 패널 접힘 상태 */
+  rightCollapsed?: boolean;
+  /** 우측 채팅 패널 접힘 상태 변경 */
+  onRightCollapsedChange?: (collapsed: boolean) => void;
+  /** 접혔을 때 우측 레일 width (rem) */
+  collapsedRightRem?: number;
 };
 
 // 1rem = 10px (globals.css 의 base font-size 설정과 동일)
@@ -29,12 +35,27 @@ export default function ResizableSplit({
   minRightRem = 41.8,
   minLeftRem = 32,
   initialRightRem,
+  rightCollapsed,
+  onRightCollapsedChange,
+  collapsedRightRem = 3.9,
 }: ResizableSplitProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [rightRem, setRightRem] = useState<number | null>(
     initialRightRem ?? null,
   );
   const [isDragging, setIsDragging] = useState(false);
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const isRightCollapsed = rightCollapsed ?? internalCollapsed;
+
+  const setCollapsed = useCallback(
+    (collapsed: boolean) => {
+      onRightCollapsedChange?.(collapsed);
+      if (rightCollapsed === undefined) {
+        setInternalCollapsed(collapsed);
+      }
+    },
+    [onRightCollapsedChange, rightCollapsed],
+  );
 
   // 마운트 후 컨테이너 width 기반으로 초기 width 계산
   useEffect(() => {
@@ -47,13 +68,17 @@ export default function ResizableSplit({
     setRightRem(Math.max(minRightRem, Math.min(half, 56)));
   }, [rightRem, minRightRem]);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  }, []);
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      if (isRightCollapsed) return;
+      setIsDragging(true);
+    },
+    [isRightCollapsed],
+  );
 
   useEffect(() => {
-    if (!isDragging) return;
+    if (!isDragging || isRightCollapsed) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       const el = containerRef.current;
@@ -85,7 +110,11 @@ export default function ResizableSplit({
       document.body.style.userSelect = prevUserSelect;
       document.body.style.cursor = prevCursor;
     };
-  }, [isDragging, minRightRem, minLeftRem]);
+  }, [isDragging, isRightCollapsed, minRightRem, minLeftRem]);
+
+  const displayRightRem = isRightCollapsed
+    ? collapsedRightRem
+    : (rightRem ?? minRightRem);
 
   return (
     <div ref={containerRef} className="relative flex flex-1 overflow-hidden">
@@ -97,7 +126,9 @@ export default function ResizableSplit({
         role="separator"
         aria-orientation="vertical"
         onMouseDown={handleMouseDown}
-        className="group relative flex w-[1.6rem] shrink-0 cursor-ew-resize items-center justify-center bg-gray-200"
+        className={`group relative flex w-[1.6rem] shrink-0 items-center justify-center bg-gray-200 ${
+          isRightCollapsed ? 'cursor-default' : 'cursor-ew-resize'
+        }`}
       >
         {/* 가운데 세로 pill 막대 */}
         <div
@@ -108,19 +139,41 @@ export default function ResizableSplit({
         {/* > 화살표 (막대 우측) */}
         <ArrowRightIcon
           aria-hidden
-          className="pointer-events-none absolute left-[calc(50%+0.6rem)] icon-12 text-gray-500"
+          className={`pointer-events-none absolute left-[calc(50%+0.6rem)] icon-12 text-gray-500 transition-transform ${
+            isRightCollapsed ? 'rotate-180' : ''
+          }`}
+        />
+        <button
+          type="button"
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={() => setCollapsed(!isRightCollapsed)}
+          aria-label={isRightCollapsed ? '채팅창 열기' : '채팅창 닫기'}
+          className="absolute inset-0"
         />
       </div>
 
       {/* 우측 패널 (고정 width, 최소값 보장) */}
       <div
-        className="flex shrink-0 flex-col overflow-hidden bg-gray-200"
+        className={`flex shrink-0 flex-col overflow-hidden bg-gray-200 transition-[width] duration-200 ${
+          isRightCollapsed ? 'items-center justify-center' : ''
+        }`}
         style={{
-          width: rightRem !== null ? `${rightRem}rem` : `${minRightRem}rem`,
-          minWidth: `${minRightRem}rem`,
+          width: `${displayRightRem}rem`,
+          minWidth: `${isRightCollapsed ? collapsedRightRem : minRightRem}rem`,
         }}
       >
-        {right}
+        {isRightCollapsed ? (
+          <button
+            type="button"
+            onClick={() => setCollapsed(false)}
+            aria-label="채팅창 열기"
+            className="flex h-32 w-32 items-center justify-center rounded-8 text-gray-600 transition-colors hover:bg-gray-300 hover:text-gray-900"
+          >
+            <ArrowRightIcon aria-hidden className="icon-16 rotate-180" />
+          </button>
+        ) : (
+          right
+        )}
       </div>
     </div>
   );

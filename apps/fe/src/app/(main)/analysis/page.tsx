@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { createAnalysisFlow, createConversation } from '@/apis/analysis';
+import { uploadDataSource } from '@/apis/dataSource';
+import { getApiErrorMessage } from '@/apis/errors';
 import { getMyInfo } from '@/apis/user';
 import { ToastAlert } from '@/components';
 import { validateCsvFile } from '@/lib/fileValidation';
@@ -14,6 +17,10 @@ import SampleDataSection from './_components/SampleDataSection';
 const FALLBACK_USER_NAME = '사용자';
 const USER_INFO_STALE_TIME = 5 * 60 * 1000;
 const TOAST_DURATION_MS = 2500;
+const MISSING_FILE_MESSAGE = '분석할 CSV 파일을 먼저 추가해 주세요.';
+const LOGIN_REQUIRED_MESSAGE = '로그인이 필요해요. 다시 로그인해 주세요.';
+const START_ANALYSIS_ERROR_MESSAGE =
+  '분석을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.';
 
 const ANALYSIS_FILE_MESSAGES = {
   invalidType: 'Logue는 CSV 형식의 파일만 지원해요',
@@ -42,6 +49,53 @@ export default function AnalysisPage() {
   const userName = shouldUseFetchedUserName
     ? (myInfo?.name ?? FALLBACK_USER_NAME)
     : FALLBACK_USER_NAME;
+  const startAnalysisMutation = useMutation({
+    mutationFn: async (value: PromptInputValue) => {
+      if (!hasAccessToken) {
+        throw new Error(LOGIN_REQUIRED_MESSAGE);
+      }
+
+      if (!value.file) {
+        throw new Error(MISSING_FILE_MESSAGE);
+      }
+
+      const uploadedDataSource = await uploadDataSource(value.file);
+      const conversation = await createConversation();
+      const analysisFlow = await createAnalysisFlow(
+        conversation.conversationId,
+        {
+          dataSourceId: uploadedDataSource.dataSourceId,
+        },
+      );
+
+      return {
+        conversationId: conversation.conversationId,
+        analysisFlowId: analysisFlow.analysisFlowId,
+        dataSourceId: uploadedDataSource.dataSourceId,
+        prompt: value.prompt,
+        fileName: value.file.name,
+      };
+    },
+    onSuccess: ({
+      conversationId,
+      analysisFlowId,
+      dataSourceId,
+      prompt,
+      fileName,
+    }) => {
+      const params = new URLSearchParams({
+        analysisFlowId: String(analysisFlowId),
+        dataSourceId: String(dataSourceId),
+        q: prompt,
+        file: fileName,
+      });
+
+      router.push(`/analysis/${conversationId}?${params.toString()}`);
+    },
+    onError: (error) => {
+      setToastMessage(getApiErrorMessage(error, START_ANALYSIS_ERROR_MESSAGE));
+    },
+  });
 
   useEffect(() => {
     if (!toastMessage) return;
@@ -53,14 +107,7 @@ export default function AnalysisPage() {
   }, [toastMessage]);
 
   const handleSubmit = (value: PromptInputValue) => {
-    // TODO: 분석 생성 API 호출 후 응답 id 로 교체
-    // e.g. const { id } = await createAnalysis({ prompt: value.prompt, file: value.file });
-    const tempId = `tmp-${Date.now()}`;
-    const params = new URLSearchParams();
-    if (value.prompt) params.set('q', value.prompt);
-    if (value.file?.name) params.set('file', value.file.name);
-    const qs = params.toString();
-    router.push(`/analysis/${tempId}${qs ? `?${qs}` : ''}`);
+    startAnalysisMutation.mutate(value);
   };
 
   const handlePromptError = (message: string) => {
@@ -88,6 +135,7 @@ export default function AnalysisPage() {
 
       <PromptInput
         validateFile={(file) => validateCsvFile(file, ANALYSIS_FILE_MESSAGES)}
+        submitDisabled={startAnalysisMutation.isPending}
         onSubmit={handleSubmit}
         onError={handlePromptError}
       />

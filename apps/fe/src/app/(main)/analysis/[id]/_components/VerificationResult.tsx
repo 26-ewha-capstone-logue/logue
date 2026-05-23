@@ -55,12 +55,6 @@ const DEFAULT_DEVICE_DATA: ChartDataPoint[] = [
   { name: '이름', value: 130 },
 ];
 
-const DEFAULT_WARNINGS = [
-  '날짜 기준을 하나로 정할 수 없어요. 어떤 날짜를 기준으로 볼지 선택해 주세요.',
-  '현재 질문에 필요한 항목이 이 데이터에 없어요. 없는 항목은 다른 기준으로 바꿔서 계속할 수 있어요.',
-  '분석에 필요한 값이 일부 비어 있어서, 결과가 달라질 수 있어요. 해당 항목을 확인하고 계속할지 선택해 주세요. (칼럼명1, 칼럼명2)',
-];
-
 type BalloonLabelProps = {
   x?: number;
   y?: number;
@@ -112,7 +106,7 @@ export default function VerificationResult({
   deviceList = ['iOS', 'Android', 'CRM', '콜드메일', '사이트 직접 탐색'],
   channelData = DEFAULT_CHANNEL_DATA,
   deviceData = DEFAULT_DEVICE_DATA,
-  warnings = DEFAULT_WARNINGS,
+  warnings = [],
 }: VerificationResultProps) {
   const [tab, setTab] = useState<TabKey>('device');
   const data = tab === 'channel' ? channelData : deviceData;
@@ -193,18 +187,19 @@ export default function VerificationResult({
         </div>
       </div>
 
-      {/* 데이터 경고 */}
-      <div className="flex flex-col gap-8">
-        <div className="inline-flex items-center gap-4 text-body2 font-semibold text-orange-500">
-          <AlertIcon aria-hidden className="icon-16 text-orange-500" />
-          <span>데이터 경고</span>
+      {warnings.length > 0 && (
+        <div className="flex flex-col gap-8">
+          <div className="inline-flex items-center gap-4 text-body2 font-semibold text-orange-500">
+            <AlertIcon aria-hidden className="icon-16 text-orange-500" />
+            <span>데이터 경고</span>
+          </div>
+          <ul className="ml-20 flex list-disc flex-col gap-8 text-body2 text-gray-900">
+            {warnings.map((w, i) => (
+              <li key={i}>{w}</li>
+            ))}
+          </ul>
         </div>
-        <ul className="ml-20 flex list-disc flex-col gap-8 text-body2 text-gray-900">
-          {warnings.map((w, i) => (
-            <li key={i}>{w}</li>
-          ))}
-        </ul>
-      </div>
+      )}
     </div>
   );
 }

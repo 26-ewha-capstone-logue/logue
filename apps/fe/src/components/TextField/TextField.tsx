@@ -17,6 +17,7 @@ export type TextFieldProps = {
   onFileAttach?: () => void;
   onSubmit?: () => void;
   submitDisabled?: boolean;
+  showFileAttach?: boolean;
   fileIcon?: ReactNode;
   fileLabel?: string;
   fullWidth?: boolean;
@@ -29,6 +30,7 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
       onFileAttach,
       onSubmit,
       submitDisabled = false,
+      showFileAttach = true,
       fileIcon,
       fileLabel = '파일 추가하기',
       fullWidth = false,
@@ -114,10 +116,14 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
         <div
           data-toolbar
           className={`flex shrink-0 items-center ${
-            isCompact ? 'gap-[1rem]' : 'w-full justify-between'
+            isCompact
+              ? 'gap-[1rem]'
+              : showFileAttach
+                ? 'w-full justify-between'
+                : 'w-full justify-end'
           }`}
         >
-          {isCompact ? (
+          {showFileAttach && isCompact ? (
             <button
               type="button"
               onClick={onFileAttach}
@@ -128,7 +134,7 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
                 <PlusIcon aria-hidden className="icon-24 text-gray-900" />
               )}
             </button>
-          ) : (
+          ) : showFileAttach ? (
             <button
               type="button"
               onClick={onFileAttach}
@@ -139,7 +145,7 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
               )}
               {fileLabel}
             </button>
-          )}
+          ) : null}
 
           <button
             type="button"
