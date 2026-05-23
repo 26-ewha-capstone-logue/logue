@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { getMyInfo } from '@/apis/user';
+import { getMyInfo, userKeys } from '@/apis/user';
 import { ToastAlert } from '@/components';
 import { validateCsvFile } from '@/lib/fileValidation';
 import { useAuthSession } from '@/providers/AuthProvider';
@@ -29,7 +29,7 @@ export default function AnalysisPage() {
     isError: isUserInfoError,
     isLoading: isUserInfoLoading,
   } = useQuery({
-    queryKey: ['user', 'me'],
+    queryKey: userKeys.me(),
     queryFn: getMyInfo,
     enabled: hasAccessToken,
     staleTime: USER_INFO_STALE_TIME,
