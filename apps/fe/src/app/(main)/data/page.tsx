@@ -119,9 +119,9 @@ export default function DataPage() {
     showToast('파일이 삭제되었습니다', 'success');
   };
 
-  const handleChat = (id: string) => {
+  const handleChat = () => {
     // TODO: 해당 데이터로 분석 채팅 시작 (별도 페이지에서 처리 가능)
-    void id;
+    return;
   };
 
   const goToDetail = (id: string) => {
@@ -192,11 +192,19 @@ export default function DataPage() {
                 <tr
                   key={row.id}
                   onClick={() => goToDetail(row.id)}
-                  className="cursor-pointer border-t border-gray-200 transition-colors hover:bg-gray-100"
+                  onKeyDown={(event) => {
+                    if (event.key !== 'Enter' && event.key !== ' ') return;
+                    event.preventDefault();
+                    goToDetail(row.id);
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  className="cursor-pointer border-t border-gray-200 transition-colors hover:bg-gray-100 focus-visible:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500"
                 >
                   <td
                     className="py-16 pl-24"
                     onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
                   >
                     <Checkbox
                       checked={checked}
@@ -212,13 +220,13 @@ export default function DataPage() {
                   >
                     <button
                       type="button"
-                      onClick={() => handleChat(row.id)}
-                      className="inline-flex items-center gap-4 rounded-full border border-gray-300 bg-white px-12 py-6 text-body4 text-gray-700 transition-colors hover:bg-gray-100"
+                      disabled
+                      aria-disabled="true"
+                      title="준비 중인 기능입니다."
+                      onClick={handleChat}
+                      className="inline-flex cursor-not-allowed items-center gap-4 rounded-full border border-gray-200 bg-gray-100 px-12 py-6 text-body4 text-gray-400"
                     >
-                      <ChatIcon
-                        aria-hidden
-                        className="icon-12 text-orange-500"
-                      />
+                      <ChatIcon aria-hidden className="icon-12 text-gray-400" />
                       <span>채팅</span>
                     </button>
                   </td>
