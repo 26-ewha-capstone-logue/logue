@@ -170,6 +170,7 @@ export default function DataPage() {
       setDeleteOpen(false);
       showToast('파일을 삭제했습니다.', 'success');
     } catch {
+      setDeleteOpen(false);
       showToast('파일 삭제에 실패했습니다.', 'error');
     }
   };

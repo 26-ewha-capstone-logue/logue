@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import PriceIcon from '@/assets/icons/price.svg';
 import SuccessIcon from '@/assets/icons/success.svg';
-import { getOAuthLoginUrl } from '@/lib/authRedirect';
 import IntroCarousel from './_components/IntroCarousel';
 
 // 다색 일러스트는 SVGR 변환을 피하기 위해 public/ 정적 자산
@@ -104,7 +103,7 @@ export default function IntroPage() {
   const [scrolled, setScrolled] = useState(false);
 
   const goToLogin = () => {
-    window.location.assign(getOAuthLoginUrl());
+    router.push('/login');
   };
 
   // hero(=뷰포트 1개) 만큼 스크롤되면 헤더가 흰 배경 + 그림자로 전환됨

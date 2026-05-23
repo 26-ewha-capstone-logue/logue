@@ -120,7 +120,7 @@ export default function DataChartCard({
             aria-label="삭제"
             className="text-gray-500 transition-colors hover:text-error-500"
           >
-            <TrashIcon aria-hidden className="icon-16 text-gray-500" />
+            <TrashIcon aria-hidden className="icon-16" />
           </button>
         </div>
       </div>

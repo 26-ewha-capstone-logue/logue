@@ -44,6 +44,10 @@ function serializeDataSourceIds(dataSourceIds: number[]) {
   return `id=${dataSourceIds.join(',')}`;
 }
 
+function getDeleteDataSourcesPath(dataSourceIds: number[]) {
+  return `/api/datasources?${serializeDataSourceIds(dataSourceIds)}`;
+}
+
 export const dataSourceKeys = {
   all: ['dataSources'] as const,
   lists: () => [...dataSourceKeys.all, 'list'] as const,
@@ -79,13 +83,7 @@ export async function deleteDataSources(dataSourceIds: number[]) {
   if (dataSourceIds.length === 0) return;
 
   const { data } = await instance.delete<ApiResponse<unknown>>(
-    '/api/datasources',
-    {
-      params: {
-        id: dataSourceIds,
-      },
-      paramsSerializer: () => serializeDataSourceIds(dataSourceIds),
-    },
+    getDeleteDataSourcesPath(dataSourceIds),
   );
 
   unwrapApiResponse(data);
