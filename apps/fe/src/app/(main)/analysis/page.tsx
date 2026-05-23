@@ -8,6 +8,7 @@ import { dataSourceQueryKeys, uploadDataSource } from '@/apis/dataSource';
 import { getApiErrorMessage } from '@/apis/errors';
 import { getMyInfo } from '@/apis/user';
 import { ToastAlert } from '@/components';
+import { writeAnalysisStartPayload } from '@/lib/analysisStartPayload';
 import { validateCsvFile } from '@/lib/fileValidation';
 import { useAuthSession } from '@/providers/AuthProvider';
 import GreetingSection from './_components/GreetingSection';
@@ -83,11 +84,11 @@ export default function AnalysisPage() {
       prompt,
       fileName,
     }) => {
+      writeAnalysisStartPayload(conversationId, { prompt, fileName });
+
       const params = new URLSearchParams({
         analysisFlowId: String(analysisFlowId),
         dataSourceId: String(dataSourceId),
-        q: prompt,
-        file: fileName,
       });
 
       router.push(`/analysis/${conversationId}?${params.toString()}`);

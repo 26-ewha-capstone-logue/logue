@@ -28,6 +28,10 @@ import {
 } from '@/apis/dataSource';
 import { getApiErrorMessage } from '@/apis/errors';
 import { ChatBubble, ToastAlert } from '@/components';
+import {
+  readAnalysisStartPayload,
+  type AnalysisStartPayload,
+} from '@/lib/analysisStartPayload';
 import PromptInput, { type PromptInputValue } from '../_components/PromptInput';
 import AnalysisResult, {
   type ColumnCandidate,
@@ -259,23 +263,34 @@ export default function AnalysisChatPage({
     searchParams.get('analysisFlowId'),
   );
   const dataSourceId = parsePositiveNumber(searchParams.get('dataSourceId'));
-  const initialPrompt = searchParams.get('q') ?? DEFAULT_PROMPT;
-  const fileName = searchParams.get('file');
   const routeReady = conversationId !== null && analysisFlowId !== null;
 
+  const [startPayload, setStartPayload] = useState<AnalysisStartPayload>(
+    () => ({
+      prompt: DEFAULT_PROMPT,
+      fileName: null,
+    }),
+  );
   const [messages, setMessages] = useState<ChatMessage[]>(() => [
     {
       id: 'init-user',
       role: 'user',
-      content: initialPrompt,
-      fileName,
+      content: DEFAULT_PROMPT,
+      fileName: null,
     },
   ]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isChatCollapsed, setIsChatCollapsed] = useState(false);
   const [hasStartedInitialQuestion, setHasStartedInitialQuestion] =
     useState(false);
+  const [hasResolvedStartPayload, setHasResolvedStartPayload] = useState(false);
   const openNextCriteriaInEditRef = useRef(false);
+  const readStartPayloadConversationIdRef = useRef<number | null>(null);
+  const questionSubmissionLockedRef = useRef(false);
+  const criteriaSubmissionLockedRef = useRef(false);
+
+  const initialPrompt = startPayload.prompt || DEFAULT_PROMPT;
+  const fileName = startPayload.fileName ?? null;
 
   const dataSourceQuery = useQuery({
     queryKey: dataSourceQueryKeys.detail(dataSourceId ?? 0),
@@ -299,10 +314,13 @@ export default function AnalysisChatPage({
       return getSummaryStatus({ conversationId, analysisFlowId });
     },
     enabled: routeReady,
-    refetchInterval: (query) =>
-      shouldPollJobStatus(query.state.data?.status)
-        ? STATUS_POLL_INTERVAL_MS
-        : false,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+
+      if (query.state.error || !status) return false;
+
+      return shouldPollJobStatus(status) ? STATUS_POLL_INTERVAL_MS : false;
+    },
   });
   const summaryStatus = summaryStatusQuery.data?.status;
 
@@ -402,6 +420,8 @@ export default function AnalysisChatPage({
 
   const startQuestion = useCallback(
     (question: string, appendUserMessage = true) => {
+      if (questionSubmissionLockedRef.current) return;
+
       if (conversationId === null || analysisFlowId === null) {
         setToastMessage(INVALID_ROUTE_MESSAGE);
         appendNotice(INVALID_ROUTE_MESSAGE, 'error');
@@ -410,6 +430,8 @@ export default function AnalysisChatPage({
 
       const normalizedQuestion = question.trim();
       if (!normalizedQuestion) return;
+
+      questionSubmissionLockedRef.current = true;
 
       if (appendUserMessage) {
         setMessages((prev) => [
@@ -430,6 +452,7 @@ export default function AnalysisChatPage({
         },
         {
           onSuccess: (criteria) => {
+            questionSubmissionLockedRef.current = false;
             const initialMode: CriteriaInitialMode =
               openNextCriteriaInEditRef.current ? 'edit' : 'normal';
             openNextCriteriaInEditRef.current = false;
@@ -445,6 +468,7 @@ export default function AnalysisChatPage({
             ]);
           },
           onError: (error) => {
+            questionSubmissionLockedRef.current = false;
             openNextCriteriaInEditRef.current = false;
             const message = getApiErrorMessage(
               error,
@@ -468,13 +492,14 @@ export default function AnalysisChatPage({
 
   const startInitialQuestion = useCallback(
     (initialMode: CriteriaInitialMode = 'normal') => {
-      if (hasStartedInitialQuestion) return;
+      if (hasStartedInitialQuestion || !hasResolvedStartPayload) return;
 
       setHasStartedInitialQuestion(true);
       openNextCriteriaInEditRef.current = initialMode === 'edit';
       startQuestion(initialPrompt, false);
     },
     [
+      hasResolvedStartPayload,
       hasStartedInitialQuestion,
       initialPrompt,
       setHasStartedInitialQuestion,
@@ -497,10 +522,14 @@ export default function AnalysisChatPage({
     messageId: number,
     request: UpdateQuestionCriteriaRequest,
   ) {
+    if (criteriaSubmissionLockedRef.current) return;
+
     if (conversationId === null || analysisFlowId === null) {
       setToastMessage(INVALID_ROUTE_MESSAGE);
       return;
     }
+
+    criteriaSubmissionLockedRef.current = true;
 
     updateCriteriaMutation.mutate(
       {
@@ -521,6 +550,7 @@ export default function AnalysisChatPage({
             },
             {
               onSuccess: (result) => {
+                criteriaSubmissionLockedRef.current = false;
                 setMessages((prev) => [
                   ...prev,
                   {
@@ -532,6 +562,7 @@ export default function AnalysisChatPage({
                 ]);
               },
               onError: (error) => {
+                criteriaSubmissionLockedRef.current = false;
                 const message = getApiErrorMessage(
                   error,
                   GET_RESULT_ERROR_MESSAGE,
@@ -543,6 +574,7 @@ export default function AnalysisChatPage({
           );
         },
         onError: (error) => {
+          criteriaSubmissionLockedRef.current = false;
           const message = getApiErrorMessage(
             error,
             UPDATE_CRITERIA_ERROR_MESSAGE,
@@ -564,7 +596,62 @@ export default function AnalysisChatPage({
   }, [toastMessage]);
 
   useEffect(() => {
-    if (!summaryQuery.data || hasStartedInitialQuestion) return;
+    if (
+      conversationId !== null &&
+      readStartPayloadConversationIdRef.current === conversationId
+    ) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      if (conversationId === null) {
+        setStartPayload({ prompt: DEFAULT_PROMPT, fileName: null });
+        setHasResolvedStartPayload(true);
+        return;
+      }
+
+      readStartPayloadConversationIdRef.current = conversationId;
+
+      const storedPayload = readAnalysisStartPayload(conversationId);
+
+      setStartPayload({
+        prompt: storedPayload?.prompt || DEFAULT_PROMPT,
+        fileName: storedPayload?.fileName ?? null,
+      });
+      setHasResolvedStartPayload(true);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [conversationId]);
+
+  useEffect(() => {
+    if (!hasResolvedStartPayload) return;
+
+    const timer = window.setTimeout(() => {
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === 'init-user' && message.role === 'user'
+            ? {
+                ...message,
+                content: initialPrompt,
+                fileName,
+              }
+            : message,
+        ),
+      );
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [fileName, hasResolvedStartPayload, initialPrompt]);
+
+  useEffect(() => {
+    if (
+      !summaryQuery.data ||
+      hasStartedInitialQuestion ||
+      !hasResolvedStartPayload
+    ) {
+      return;
+    }
     if (createSummaryWarnings(summaryQuery.data).length > 0) return;
 
     const timer = window.setTimeout(() => {
@@ -572,12 +659,21 @@ export default function AnalysisChatPage({
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [hasStartedInitialQuestion, startInitialQuestion, summaryQuery.data]);
+  }, [
+    hasResolvedStartPayload,
+    hasStartedInitialQuestion,
+    startInitialQuestion,
+    summaryQuery.data,
+  ]);
 
   const previewTable = createPreviewTable(dataSourceQuery.data?.preview);
   const summaryColumnOptions = getSummaryColumnOptions(summaryQuery.data);
   const summaryPending =
-    routeReady && !summaryQuery.data && !isFailedJobStatus(summaryStatus);
+    routeReady &&
+    !summaryStatusQuery.isError &&
+    !summaryQuery.isError &&
+    !summaryQuery.data &&
+    !isFailedJobStatus(summaryStatus);
   const summaryErrorMessage = !routeReady
     ? INVALID_ROUTE_MESSAGE
     : summaryStatusQuery.isError
@@ -612,6 +708,7 @@ export default function AnalysisChatPage({
     const hasWarnings = warnings.length > 0;
     const summaryActionDisabled =
       hasStartedInitialQuestion ||
+      !hasResolvedStartPayload ||
       isQuestionAnalysisPending ||
       updateCriteriaMutation.isPending;
 

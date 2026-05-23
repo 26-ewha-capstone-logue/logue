@@ -16,6 +16,7 @@ import { getApiErrorMessage } from '@/apis/errors';
 import ChatIcon from '@/assets/icons/chat.svg';
 import SuccessIcon from '@/assets/icons/success.svg';
 import { FileUploadModal, Modal, ToastAlert } from '@/components';
+import { writeAnalysisStartPayload } from '@/lib/analysisStartPayload';
 import { formatFileSize, validateCsvFile } from '@/lib/fileValidation';
 import { useAuthSession } from '@/providers/AuthProvider';
 import Checkbox from './_components/Checkbox';
@@ -144,8 +145,8 @@ export default function DataPage() {
     });
   };
 
-  const handleSortChange = (next: string) => {
-    setSortKey(next as DataSourceSort);
+  const handleSortChange = (next: DataSourceSort) => {
+    setSortKey(next);
     setPage(0);
     setSelectedIds(new Set());
   };
@@ -207,10 +208,13 @@ export default function DataPage() {
 
     startChatMutation.mutate(dataSource.dataSourceId, {
       onSuccess: ({ conversationId, analysisFlowId, dataSourceId }) => {
+        writeAnalysisStartPayload(conversationId, {
+          fileName: dataSource.fileName,
+        });
+
         const params = new URLSearchParams({
           analysisFlowId: String(analysisFlowId),
           dataSourceId: String(dataSourceId),
-          file: dataSource.fileName,
         });
 
         router.push(`/analysis/${conversationId}?${params.toString()}`);
@@ -300,8 +304,7 @@ export default function DataPage() {
                 return (
                   <tr
                     key={row.dataSourceId}
-                    onClick={() => goToDetail(row.dataSourceId)}
-                    className="cursor-pointer border-t border-gray-200 transition-colors hover:bg-gray-100"
+                    className="border-t border-gray-200 transition-colors hover:bg-gray-100"
                   >
                     <td
                       className="py-16 pl-24"
@@ -312,7 +315,16 @@ export default function DataPage() {
                         onChange={() => toggleOne(row.dataSourceId)}
                       />
                     </td>
-                    <td className="py-16 text-gray-900">{row.fileName}</td>
+                    <td className="py-16 text-gray-900">
+                      <button
+                        type="button"
+                        onClick={() => goToDetail(row.dataSourceId)}
+                        aria-label={`${row.fileName} 데이터 소스 상세 보기`}
+                        className="text-left transition-colors hover:text-orange-600 hover:underline focus-visible:rounded-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                      >
+                        {row.fileName}
+                      </button>
+                    </td>
                     <td className="py-16 text-gray-800">
                       {formatFileSize(row.fileSize)}
                     </td>
