@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getApiBaseUrl } from '@/lib/apiBaseUrl';
+import { getOAuthLoginUrl } from '@/lib/authRedirect';
 
 export function GET() {
-  return NextResponse.redirect(
-    new URL('/oauth2/authorization/google', getApiBaseUrl()),
-  );
+  return NextResponse.redirect(getOAuthLoginUrl());
 }

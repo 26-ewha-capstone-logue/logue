@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { Header, type NavItem } from '@/components';
+import { getOAuthLoginUrl } from '@/lib/authRedirect';
 import { useAuthSession } from '@/providers/AuthProvider';
 import FileIcon from '@/assets/icons/file.svg';
 import GTapIcon from '@/assets/icons/G-tap.svg';
@@ -41,7 +42,7 @@ export default function MainLayout({
 
   const handleProfileClick = () => {
     if (!hasAccessToken) {
-      window.location.assign('/login');
+      window.location.assign(getOAuthLoginUrl());
     }
   };
 
