@@ -106,26 +106,28 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         String profileImageUrl = oAuth2UserInfo.getProfileImageUrl();
 
         // 신규 유저면 저장, 기존 유저면 그대로 조회
-        User user = userRepository.findByProviderUserId(providerUserId)
-                .orElseGet(() -> {
-                    log.info("신규 유저 저장. provider={}, providerUserId={}", provider, providerUserId);
-                    return userRepository.save(User.builder()
-                            .provider(provider)
-                            .providerUserId(providerUserId)
-                            .email(email)
-                            .name(name)
-                            .profileImageUrl(profileImageUrl)
-                            .build());
-                });
+        Optional<User> existingUser = userRepository.findByProviderUserId(providerUserId);
+        boolean isNewUser = existingUser.isEmpty();
+        User user = existingUser.orElseGet(() -> {
+            log.info("신규 유저 저장. provider={}, providerUserId={}", provider, providerUserId);
+            return userRepository.save(User.builder()
+                    .provider(provider)
+                    .providerUserId(providerUserId)
+                    .email(email)
+                    .name(name)
+                    .profileImageUrl(profileImageUrl)
+                    .build());
+        });
 
-        log.info("OAuth 로그인 성공. providerUserId = {}", providerUserId);
+        log.info("OAuth 로그인 성공. providerUserId = {}, isNewUser = {}", providerUserId, isNewUser);
         String accessToken = jwtProvider.generateToken(user.getId(), user.getEmail(), ACCESS_TOKEN_EXPIRATION_TIME);
         String refreshToken = jwtProvider.generateToken(user.getId(), user.getEmail(), REFRESH_TOKEN_EXPIRATION_TIME);
 
         refreshTokenService.saveRefreshToken(user.getId(), refreshToken);
 
+        String baseUri = isNewUser ? REDIRECT_URI_ONBOARDING : REDIRECT_URI_BASE;
         String redirectUrl = UriComponentsBuilder
-                .fromUriString(REDIRECT_URI_BASE)
+                .fromUriString(baseUri)
                 .queryParam("accessToken", accessToken)
                 .queryParam("refreshToken", refreshToken)
                 .build()
