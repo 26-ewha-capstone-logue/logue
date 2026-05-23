@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   ACCESS_TOKEN_STORAGE_KEY,
   AUTH_TOKENS_CHANGED_EVENT,
@@ -17,6 +18,8 @@ import {
   readAuthTokensFromSearchParams,
   setAuthTokens,
 } from '@/lib/auth';
+
+const AUTH_REDIRECT_PATH = '/analysis';
 
 type AuthContextValue = {
   hasAccessToken: boolean;
@@ -40,6 +43,7 @@ function removeTokenParamsFromCurrentUrl(url: URL) {
 }
 
 export default function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [hasAccessToken, setHasAccessToken] = useState(
     () => typeof window !== 'undefined' && Boolean(getAccessToken()),
   );
@@ -57,6 +61,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     if (redirectedTokens) {
       setAuthTokens(redirectedTokens);
       removeTokenParamsFromCurrentUrl(currentUrl);
+      router.replace(AUTH_REDIRECT_PATH);
     }
 
     syncAccessToken();
@@ -78,7 +83,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener(AUTH_TOKENS_CHANGED_EVENT, syncAccessToken);
       window.removeEventListener('storage', handleStorage);
     };
-  }, []);
+  }, [router]);
 
   const value = useMemo(
     () => ({
