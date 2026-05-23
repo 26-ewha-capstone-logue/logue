@@ -1,0 +1,4 @@
+interface:
+  display_name: "Logue FE API Integration"
+  short_description: "FE-only API integration guardrails for Logue"
+  default_prompt: "Use $logue-fe-api-integration to add or review a Logue FE API integration."
