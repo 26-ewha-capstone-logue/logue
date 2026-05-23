@@ -20,8 +20,8 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 `NEXT_PUBLIC_API_URL` configures the backend API base URL.
 
-- Local development, test, and Vercel Preview default to `https://api-stg.asklogue.co` when unset.
-- Vercel Production builds must set `NEXT_PUBLIC_API_URL`; missing values intentionally fail.
+- Local development, test, Vercel Preview, and unset Production values default to `https://api-stg.asklogue.co`.
+- Set `NEXT_PUBLIC_API_URL` in Production when the frontend should target a different backend API host.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
