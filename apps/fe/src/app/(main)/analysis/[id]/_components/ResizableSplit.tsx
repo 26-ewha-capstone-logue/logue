@@ -136,20 +136,20 @@ export default function ResizableSplit({
             isDragging ? 'bg-orange-400' : 'group-hover:bg-gray-600'
           }`}
         />
-        {/* > 화살표 (막대 우측) */}
-        <ArrowRightIcon
-          aria-hidden
-          className={`pointer-events-none absolute left-[calc(50%+0.6rem)] icon-12 text-gray-500 transition-transform ${
-            isRightCollapsed ? 'rotate-180' : ''
-          }`}
-        />
         <button
           type="button"
           onMouseDown={(e) => e.stopPropagation()}
           onClick={() => setCollapsed(!isRightCollapsed)}
           aria-label={isRightCollapsed ? '채팅창 열기' : '채팅창 닫기'}
-          className="absolute inset-0"
-        />
+          className="absolute left-[calc(50%+0.1rem)] flex h-24 w-24 items-center justify-center rounded-8 text-gray-500 transition-colors hover:bg-gray-300 hover:text-gray-700"
+        >
+          <ArrowRightIcon
+            aria-hidden
+            className={`icon-12 transition-transform ${
+              isRightCollapsed ? 'rotate-180' : ''
+            }`}
+          />
+        </button>
       </div>
 
       {/* 우측 패널 (고정 width, 최소값 보장) */}
