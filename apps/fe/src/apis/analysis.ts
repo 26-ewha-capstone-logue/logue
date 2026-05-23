@@ -110,6 +110,37 @@ export type UpdateQuestionCriteriaResponse = {
   confirmedAt: string;
 };
 
+export type ResultSeriesInfo = {
+  name?: string | null;
+  values?: number[] | null;
+};
+
+export type ResultChartInfo = {
+  unit?: string | null;
+  labels?: string[] | null;
+  series?: ResultSeriesInfo[] | null;
+};
+
+export type ResultTabInfo = {
+  tabName?: string | null;
+  chart?: ResultChartInfo | null;
+};
+
+export type ResultChartDataInfo = {
+  tabs?: string[] | null;
+  defaultTab?: string | null;
+  tabResults?: ResultTabInfo[] | null;
+  exportEnabled?: boolean | null;
+};
+
+export type GetQuestionResultResponse = {
+  resultId: number;
+  summaryMessage?: string | null;
+  description?: string | null;
+  criteria?: CriteriaInfo | null;
+  chartData?: ResultChartDataInfo | null;
+};
+
 export type CancelAnalysisResponse = {
   status: AnalysisJobStatus;
 };
@@ -121,6 +152,10 @@ export type AnalysisFlowParams = {
 
 export type QuestionCriteriaParams = AnalysisFlowParams & {
   messageId: number;
+};
+
+export type QuestionResultParams = QuestionCriteriaParams & {
+  analysisCriteriaId: number;
 };
 
 export const analysisQueryKeys = {
@@ -157,6 +192,32 @@ export const analysisQueryKeys = {
       ...analysisQueryKeys.criteria(conversationId, analysisFlowId, messageId),
       'status',
     ] as const,
+  result: (
+    conversationId: number,
+    analysisFlowId: number,
+    messageId: number,
+    analysisCriteriaId: number,
+  ) =>
+    [
+      ...analysisQueryKeys.criteria(conversationId, analysisFlowId, messageId),
+      'results',
+      analysisCriteriaId,
+    ] as const,
+  resultStatus: (
+    conversationId: number,
+    analysisFlowId: number,
+    messageId: number,
+    analysisCriteriaId: number,
+  ) =>
+    [
+      ...analysisQueryKeys.result(
+        conversationId,
+        analysisFlowId,
+        messageId,
+        analysisCriteriaId,
+      ),
+      'status',
+    ] as const,
 };
 
 function flowPath({ conversationId, analysisFlowId }: AnalysisFlowParams) {
@@ -169,6 +230,10 @@ function criteriaPath({
   messageId,
 }: QuestionCriteriaParams) {
   return `${flowPath({ conversationId, analysisFlowId })}/messages/${messageId}/analysisCriterias`;
+}
+
+function resultPath(params: QuestionResultParams) {
+  return `${criteriaPath(params)}/${params.analysisCriteriaId}/results`;
 }
 
 export async function createConversation() {
@@ -270,6 +335,30 @@ export async function updateCriteria(
 export async function cancelCriteria(params: QuestionCriteriaParams) {
   const { data } = await instance.post<ApiResponse<CancelAnalysisResponse>>(
     `${criteriaPath(params)}/cancel`,
+  );
+
+  return unwrapApiResponse(data);
+}
+
+export async function getResultStatus(params: QuestionResultParams) {
+  const { data } = await instance.get<ApiResponse<AnalysisStatusResponse>>(
+    `${resultPath(params)}/status`,
+  );
+
+  return unwrapApiResponse(data);
+}
+
+export async function getResult(params: QuestionResultParams) {
+  const { data } = await instance.get<ApiResponse<GetQuestionResultResponse>>(
+    resultPath(params),
+  );
+
+  return unwrapApiResponse(data);
+}
+
+export async function cancelResult(params: QuestionResultParams) {
+  const { data } = await instance.post<ApiResponse<CancelAnalysisResponse>>(
+    `${resultPath(params)}/cancel`,
   );
 
   return unwrapApiResponse(data);

@@ -8,13 +8,17 @@ import {
   createQuestion,
   getCriteria,
   getCriteriaStatus,
+  getResult,
+  getResultStatus,
   getSummary,
   getSummaryStatus,
   updateCriteria,
   type AnalysisJobStatus,
   type GetQuestionCriteriaResponse,
+  type GetQuestionResultResponse,
   type GetSummaryResponse,
   type QuestionCriteriaParams,
+  type QuestionResultParams,
   type UpdateQuestionCriteriaRequest,
 } from '@/apis/analysis';
 import {
@@ -35,6 +39,7 @@ import DataTablePreview, {
 import LoadingDataPreview from './_components/LoadingDataPreview';
 import QuestionAnalysisResult from './_components/QuestionAnalysisResult';
 import ResizableSplit from './_components/ResizableSplit';
+import VerificationResult from './_components/VerificationResult';
 
 type PageParams = { id: string };
 type CriteriaInitialMode = 'normal' | 'edit';
@@ -56,6 +61,12 @@ type ChatMessage =
   | {
       id: string;
       role: 'bot';
+      kind: 'verification';
+      result: GetQuestionResultResponse;
+    }
+  | {
+      id: string;
+      role: 'bot';
       kind: 'notice';
       content: string;
       tone?: 'default' | 'error';
@@ -64,6 +75,7 @@ type ChatMessage =
 const DEFAULT_PROMPT = 'CSV 파일을 분석해주세요';
 const STATUS_POLL_INTERVAL_MS = 1500;
 const QUESTION_ANALYSIS_TIMEOUT_MS = 120000;
+const RESULT_ANALYSIS_TIMEOUT_MS = 120000;
 const TOAST_DURATION_MS = 2500;
 const INVALID_ROUTE_MESSAGE = '분석 정보를 찾지 못했어요. 다시 시작해 주세요.';
 const SUMMARY_NOT_READY_MESSAGE = 'CSV 데이터 요약이 끝난 뒤 질문할 수 있어요.';
@@ -75,6 +87,8 @@ const GET_CRITERIA_ERROR_MESSAGE =
   '분석 기준을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
 const UPDATE_CRITERIA_ERROR_MESSAGE =
   '분석 기준을 확정하지 못했어요. 잠시 후 다시 시도해 주세요.';
+const GET_RESULT_ERROR_MESSAGE =
+  '최종 분석 결과를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
 
 const SUMMARY_WARNING_MESSAGE_MAP: Record<string, string> = {
   date_field_conflict:
@@ -92,6 +106,13 @@ type UpdateCriteriaVariables = {
   targetAnalysisFlowId: number;
   messageId: number;
   request: UpdateQuestionCriteriaRequest;
+};
+
+type ResultAnalysisVariables = {
+  targetConversationId: number;
+  targetAnalysisFlowId: number;
+  messageId: number;
+  analysisCriteriaId: number;
 };
 
 function parsePositiveNumber(value: string | null | undefined) {
@@ -143,6 +164,23 @@ async function waitForCriteriaSuccess(params: QuestionCriteriaParams) {
   }
 
   throw new Error(GET_CRITERIA_ERROR_MESSAGE);
+}
+
+async function waitForResultSuccess(params: QuestionResultParams) {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < RESULT_ANALYSIS_TIMEOUT_MS) {
+    const { status } = await getResultStatus(params);
+
+    if (status === 'SUCCESS') return;
+    if (isFailedJobStatus(status)) {
+      throw new Error(GET_RESULT_ERROR_MESSAGE);
+    }
+
+    await wait(STATUS_POLL_INTERVAL_MS);
+  }
+
+  throw new Error(GET_RESULT_ERROR_MESSAGE);
 }
 
 function createPreviewTable(preview?: FilePreview | null) {
@@ -327,6 +365,25 @@ export default function AnalysisChatPage({
       ),
   });
 
+  const resultAnalysisMutation = useMutation({
+    mutationFn: async ({
+      targetConversationId,
+      targetAnalysisFlowId,
+      messageId,
+      analysisCriteriaId,
+    }: ResultAnalysisVariables) => {
+      const resultParams = {
+        conversationId: targetConversationId,
+        analysisFlowId: targetAnalysisFlowId,
+        messageId,
+        analysisCriteriaId,
+      };
+
+      await waitForResultSuccess(resultParams);
+      return getResult(resultParams);
+    },
+  });
+
   const appendNotice = useCallback(
     (content: string, tone: 'default' | 'error' = 'default') => {
       setMessages((prev) => [
@@ -453,8 +510,37 @@ export default function AnalysisChatPage({
         request,
       },
       {
-        onSuccess: () => {
+        onSuccess: ({ analysisCriteriaId }) => {
           appendNotice('분석 기준이 확정되었어요.');
+          resultAnalysisMutation.mutate(
+            {
+              targetConversationId: conversationId,
+              targetAnalysisFlowId: analysisFlowId,
+              messageId,
+              analysisCriteriaId,
+            },
+            {
+              onSuccess: (result) => {
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: `result-${result.resultId}`,
+                    role: 'bot',
+                    kind: 'verification',
+                    result,
+                  },
+                ]);
+              },
+              onError: (error) => {
+                const message = getApiErrorMessage(
+                  error,
+                  GET_RESULT_ERROR_MESSAGE,
+                );
+                setToastMessage(message);
+                appendNotice(message, 'error');
+              },
+            },
+          );
         },
         onError: (error) => {
           const message = getApiErrorMessage(
@@ -504,16 +590,20 @@ export default function AnalysisChatPage({
   const shouldShowAnalyzing =
     summaryPending ||
     isQuestionAnalysisPending ||
-    updateCriteriaMutation.isPending;
+    updateCriteriaMutation.isPending ||
+    resultAnalysisMutation.isPending;
   const analyzingMessage = summaryPending
     ? 'CSV 데이터를 분석 중이에요'
     : updateCriteriaMutation.isPending
       ? '분석 기준을 확정 중이에요'
-      : '질문을 분석 중이에요';
+      : resultAnalysisMutation.isPending
+        ? '최종 분석 결과를 생성 중이에요'
+        : '질문을 분석 중이에요';
   const inputDisabled =
     !summaryQuery.data ||
     isQuestionAnalysisPending ||
-    updateCriteriaMutation.isPending;
+    updateCriteriaMutation.isPending ||
+    resultAnalysisMutation.isPending;
 
   const renderSummaryMessage = () => {
     if (!summaryQuery.data) return null;
@@ -589,6 +679,16 @@ export default function AnalysisChatPage({
       );
     }
 
+    if (message.kind === 'verification') {
+      return (
+        <div key={message.id} className="flex w-full justify-start">
+          <div className="w-full max-w-[80%]">
+            <VerificationResult result={message.result} />
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div key={message.id} className="flex w-full justify-start">
         <div className="w-full max-w-[80%]">
@@ -605,7 +705,10 @@ export default function AnalysisChatPage({
               ...(summaryQuery.data?.measure ?? []),
               ...summaryColumnOptions,
             ])}
-            isSubmitting={updateCriteriaMutation.isPending}
+            isSubmitting={
+              updateCriteriaMutation.isPending ||
+              resultAnalysisMutation.isPending
+            }
             onContinue={(values) =>
               handleConfirmCriteria(message.criteria.messageId, values)
             }
