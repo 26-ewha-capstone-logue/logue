@@ -66,7 +66,7 @@ public class AnalysisResultService {
         AnalysisCriteria criteria = loadCriteria(flow, analysisCriteriaId);
 
         AiTaggingJob job = aiTaggingJobRepository
-                .findTopByMessageIdAndStageOrderByCreatedAtDesc(messageId, JobStage.ANALYSIS_RESULT)
+                .findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(messageId, JobStage.ANALYSIS_RESULT)
                 .orElseThrow(() -> new LogueException(ErrorCode.RESULT_NOT_FOUND));
 
         if (job.getStatus() != JobStatus.SUCCESS) {
@@ -115,7 +115,7 @@ public class AnalysisResultService {
         loadCriteria(flow, analysisCriteriaId);
 
         AiTaggingJob job = aiTaggingJobRepository
-                .findTopByMessageIdAndStageOrderByCreatedAtDesc(messageId, JobStage.ANALYSIS_RESULT)
+                .findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(messageId, JobStage.ANALYSIS_RESULT)
                 .orElseThrow(() -> new LogueException(ErrorCode.RESULT_NOT_FOUND));
 
         return new GetQuestionResultStatusResponse(job.getStatus().name());
@@ -133,7 +133,7 @@ public class AnalysisResultService {
         loadCriteria(flow, analysisCriteriaId);
 
         AiTaggingJob job = aiTaggingJobRepository
-                .findTopByMessageIdAndStageOrderByCreatedAtDesc(messageId, JobStage.ANALYSIS_RESULT)
+                .findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(messageId, JobStage.ANALYSIS_RESULT)
                 .orElseThrow(() -> new LogueException(ErrorCode.RESULT_NOT_FOUND));
 
         JobStatus status = job.getStatus();

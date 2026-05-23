@@ -142,7 +142,7 @@ class AnalysisResultServiceTest {
                 .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
                 .stage(JobStage.ANALYSIS_RESULT).status(JobStatus.SUCCESS)
                 .build();
-        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDesc(
+        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(
                 MESSAGE_ID, JobStage.ANALYSIS_RESULT))
                 .thenReturn(Optional.of(job));
 
@@ -177,7 +177,7 @@ class AnalysisResultServiceTest {
                 .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
                 .stage(JobStage.ANALYSIS_RESULT).status(JobStatus.RUNNING)
                 .build();
-        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDesc(
+        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(
                 MESSAGE_ID, JobStage.ANALYSIS_RESULT))
                 .thenReturn(Optional.of(job));
 
@@ -191,7 +191,7 @@ class AnalysisResultServiceTest {
     @DisplayName("getResult: Job 자체가 없으면 RESULT_NOT_FOUND")
     void getResult_jobNotFound() {
         stubAccess();
-        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDesc(
+        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(
                 MESSAGE_ID, JobStage.ANALYSIS_RESULT))
                 .thenReturn(Optional.empty());
 
@@ -210,7 +210,7 @@ class AnalysisResultServiceTest {
                 .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
                 .stage(JobStage.ANALYSIS_RESULT).status(JobStatus.RUNNING)
                 .build();
-        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDesc(
+        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(
                 MESSAGE_ID, JobStage.ANALYSIS_RESULT))
                 .thenReturn(Optional.of(job));
 
@@ -229,7 +229,7 @@ class AnalysisResultServiceTest {
                 .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
                 .stage(JobStage.ANALYSIS_RESULT).status(JobStatus.QUEUED)
                 .build();
-        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDesc(
+        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(
                 MESSAGE_ID, JobStage.ANALYSIS_RESULT))
                 .thenReturn(Optional.of(job));
 
@@ -250,7 +250,7 @@ class AnalysisResultServiceTest {
                 .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
                 .stage(JobStage.ANALYSIS_RESULT).status(JobStatus.RUNNING)
                 .build();
-        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDesc(
+        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(
                 MESSAGE_ID, JobStage.ANALYSIS_RESULT))
                 .thenReturn(Optional.of(job));
         doThrow(new RestClientException("boom")).when(fastApiClient).cancelAnalysis(JOB_ID);
@@ -271,7 +271,7 @@ class AnalysisResultServiceTest {
                 .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
                 .stage(JobStage.ANALYSIS_RESULT).status(JobStatus.SUCCESS)
                 .build();
-        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDesc(
+        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(
                 MESSAGE_ID, JobStage.ANALYSIS_RESULT))
                 .thenReturn(Optional.of(job));
 
