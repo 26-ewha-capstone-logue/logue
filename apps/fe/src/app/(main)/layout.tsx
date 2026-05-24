@@ -1,7 +1,7 @@
 'use client';
 
 import type { CSSProperties } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePathname, useRouter } from 'next/navigation';
 import { getMyInfo, userKeys, type GetUserInfoResponse } from '@/apis/user';
 import { Header, type NavItem } from '@/components';
@@ -9,6 +9,7 @@ import FileIcon from '@/assets/icons/file.svg';
 import GTapIcon from '@/assets/icons/G-tap.svg';
 import GHistoryIcon from '@/assets/icons/G-history.svg';
 import SearchIcon from '@/assets/icons/search.svg';
+import { clearAuthTokens } from '@/lib/auth';
 import { useAuthSession } from '@/providers/AuthProvider';
 
 const NAV_ITEMS: NavItem[] = [
@@ -95,6 +96,7 @@ export default function MainLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const queryClient = useQueryClient();
   const { hasAccessToken } = useAuthSession();
   const {
     data: myInfo,
@@ -108,12 +110,27 @@ export default function MainLayout({
   });
 
   const showDataSearch = pathname.startsWith('/data');
+  const handleLogout = () => {
+    clearAuthTokens();
+    queryClient.removeQueries({ queryKey: userKeys.me() });
+    router.replace('/');
+  };
+
   const profileSlot = hasAccessToken ? (
-    <UserProfileSlot
-      user={myInfo}
-      isLoading={isUserInfoLoading}
-      isError={isUserInfoError}
-    />
+    <div className="flex items-center gap-12">
+      <UserProfileSlot
+        user={myInfo}
+        isLoading={isUserInfoLoading}
+        isError={isUserInfoError}
+      />
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="rounded-full border border-gray-300 px-12 py-8 text-body4 font-medium text-gray-700 transition-colors hover:border-orange-500 hover:text-orange-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500"
+      >
+        로그아웃
+      </button>
+    </div>
   ) : undefined;
 
   return (
