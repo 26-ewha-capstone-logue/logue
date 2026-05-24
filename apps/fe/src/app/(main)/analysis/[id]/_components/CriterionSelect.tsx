@@ -51,7 +51,7 @@ export default function CriterionSelect(props: CriterionSelectProps) {
         : `${props.values[0]} 외 ${props.values.length - 1}`
     : props.value;
   const optionFocusSelector = props.multi
-    ? '[role="option"] input:not([disabled])'
+    ? '[role="option"]:not([aria-disabled="true"])'
     : '[role="option"]:not([disabled]):not([aria-disabled="true"])';
 
   return (
@@ -170,12 +170,32 @@ export default function CriterionSelect(props: CriterionSelectProps) {
                 !checked &&
                 props.maxSelect !== undefined &&
                 props.values.length >= props.maxSelect;
+              const handleToggle = () => {
+                if (disabled) return;
+
+                const next = checked
+                  ? props.values.filter((v) => v !== opt)
+                  : [...props.values, opt];
+                props.onChange(next);
+              };
+
               return (
                 <label
                   key={opt}
                   role="option"
                   aria-selected={checked}
                   aria-disabled={disabled}
+                  tabIndex={disabled ? -1 : 0}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    handleToggle();
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key !== 'Enter' && event.key !== ' ') return;
+
+                    event.preventDefault();
+                    handleToggle();
+                  }}
                   className={`flex cursor-pointer items-center gap-8 px-12 py-8 text-body2 transition-colors hover:bg-gray-100 ${
                     disabled
                       ? 'cursor-not-allowed text-gray-500'
@@ -184,15 +204,11 @@ export default function CriterionSelect(props: CriterionSelectProps) {
                 >
                   <input
                     type="checkbox"
-                    aria-label={opt}
+                    aria-hidden
+                    tabIndex={-1}
                     checked={checked}
                     disabled={disabled}
-                    onChange={() => {
-                      const next = checked
-                        ? props.values.filter((v) => v !== opt)
-                        : [...props.values, opt];
-                      props.onChange(next);
-                    }}
+                    readOnly
                     className="h-16 w-16 accent-orange-500"
                   />
                   <span>{opt}</span>
