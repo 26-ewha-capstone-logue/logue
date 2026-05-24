@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
   ACCESS_TOKEN_STORAGE_KEY,
   AUTH_TOKENS_CHANGED_EVENT,
@@ -47,8 +47,11 @@ function shouldRedirectAuthenticatedUser(pathname: string) {
   return AUTH_ENTRY_PATHS.has(pathname);
 }
 
+function replaceLocation(pathname: string) {
+  window.location.replace(pathname);
+}
+
 export default function AuthProvider({ children }: { children: ReactNode }) {
-  const router = useRouter();
   const pathname = usePathname();
   const [hasAccessToken, setHasAccessToken] = useState(false);
 
@@ -67,7 +70,8 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     if (redirectedTokens) {
       setAuthTokens(redirectedTokens);
       removeTokenParamsFromCurrentUrl(currentUrl);
-      router.replace(AUTH_REDIRECT_PATH);
+      replaceLocation(AUTH_REDIRECT_PATH);
+      return;
     }
 
     const nextHasAccessToken = syncAccessToken();
@@ -77,7 +81,8 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       nextHasAccessToken &&
       shouldRedirectAuthenticatedUser(pathname)
     ) {
-      router.replace(AUTH_REDIRECT_PATH);
+      replaceLocation(AUTH_REDIRECT_PATH);
+      return;
     }
 
     const handleStorage = (event: StorageEvent) => {
@@ -97,7 +102,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener(AUTH_TOKENS_CHANGED_EVENT, syncAccessToken);
       window.removeEventListener('storage', handleStorage);
     };
-  }, [pathname, router]);
+  }, [pathname]);
 
   const value = useMemo(
     () => ({
