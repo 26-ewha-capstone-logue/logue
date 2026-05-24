@@ -32,6 +32,7 @@ public enum ErrorCode {
     DATASOURCE_STORAGE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "D004", "데이터 소스 파일 저장/읽기에 실패했습니다."),
     DATASOURCE_INVALID_PAGE_PARAM(HttpStatus.BAD_REQUEST, "D005", "잘못된 페이지 요청 파라미터입니다."),
     COLUMN_NOT_FOUND(HttpStatus.BAD_GATEWAY, "D006", "FastAPI 응답에 알 수 없는 컬럼명이 포함되어 있습니다."),
+    DATASOURCE_IN_USE(HttpStatus.CONFLICT, "D007", "분석 흐름에서 사용 중인 데이터 소스는 삭제할 수 없습니다."),
     SUMMARY_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "D101", "데이터 요약이 완료되지 않았습니다."),
     SUMMARY_NOT_STARTED(HttpStatus.BAD_REQUEST, "D102", "데이터 요약이 시작되지 않았습니다."),
 

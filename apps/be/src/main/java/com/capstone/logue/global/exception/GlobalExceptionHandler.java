@@ -5,6 +5,7 @@ import com.capstone.logue.global.response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -67,6 +68,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(ErrorCode.RESOURCE_NOT_FOUND.getHttpStatus())
                 .body(ApiResponse.error(ErrorCode.RESOURCE_NOT_FOUND));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(DataIntegrityViolationException e, HttpServletRequest request) {
+        log.warn("[DataIntegrityViolation] {} {} - {}", request.getMethod(), request.getRequestURI(), e.getMessage());
+        return ResponseEntity
+                .status(ErrorCode.DATASOURCE_IN_USE.getHttpStatus())
+                .body(ApiResponse.error(ErrorCode.DATASOURCE_IN_USE));
     }
 
     @ExceptionHandler(Exception.class)
