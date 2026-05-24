@@ -137,6 +137,10 @@ export default function MainLayout({
     </div>
   ) : undefined;
 
+  const handleProfileClick = () => {
+    router.push('/login');
+  };
+
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-gray-200">
       <Header
@@ -146,7 +150,7 @@ export default function MainLayout({
         searchSlot={showDataSearch ? <DataSourceSearchInput /> : undefined}
         onLogoClick={handleLogoClick}
         onNavClick={(href) => router.push(href)}
-        onProfileClick={() => router.push('/login')}
+        onProfileClick={hasAccessToken ? undefined : handleProfileClick}
       />
       {children}
     </div>
