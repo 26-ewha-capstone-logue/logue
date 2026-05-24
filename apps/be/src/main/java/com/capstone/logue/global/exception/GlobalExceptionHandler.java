@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -44,6 +45,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(ErrorCode.INVALID_INPUT.getHttpStatus())
                 .body(ApiResponse.error(ErrorCode.INVALID_INPUT));
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingRequestParameter(MissingServletRequestParameterException e) {
+        log.warn("[MissingRequestParameter] {}", e.getMessage());
+        return ResponseEntity
+                .status(ErrorCode.MISSING_REQUEST_PARAMETER.getHttpStatus())
+                .body(ApiResponse.error(ErrorCode.MISSING_REQUEST_PARAMETER));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
