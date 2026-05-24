@@ -175,7 +175,7 @@ public class AnalService {
                 .orElseThrow(() -> new LogueException(ErrorCode.DATASOURCE_NOT_FOUND));
 
         AiTaggingJob job = aiTaggingJobRepository
-                .findTopByConversationIdAndStageOrderByCreatedAtDesc(analysisFlowId, JobStage.DATA_STATUS)
+                .findTopByAnalysisFlowIdAndStageOrderByCreatedAtDescIdDesc(analysisFlowId, JobStage.DATA_STATUS)
                 .orElseThrow(() -> new LogueException(ErrorCode.JOB_NOT_FOUND));
 
         if (job.getStatus() != JobStatus.SUCCESS) {
@@ -231,8 +231,8 @@ public class AnalService {
         validateConversationAccess(conversationId, analysisFlowId);
 
         AiTaggingJob job = aiTaggingJobRepository
-                .findTopByConversationIdAndStageOrderByCreatedAtDesc(analysisFlowId, JobStage.DATA_STATUS)
-                .orElseThrow(() -> new LogueException(ErrorCode.INTERNAL_SERVER_ERROR));
+                .findTopByAnalysisFlowIdAndStageOrderByCreatedAtDescIdDesc(analysisFlowId, JobStage.DATA_STATUS)
+                .orElseThrow(() -> new LogueException(ErrorCode.JOB_NOT_FOUND));
 
         return new GetSummaryStatusResponse(job.getStatus().name());
     }
@@ -251,8 +251,8 @@ public class AnalService {
         validateConversationAccess(conversationId, analysisFlowId);
 
         AiTaggingJob job = aiTaggingJobRepository
-                .findTopByConversationIdAndStageOrderByCreatedAtDesc(analysisFlowId, JobStage.DATA_STATUS)
-                .orElseThrow(() -> new LogueException(ErrorCode.INTERNAL_SERVER_ERROR));
+                .findTopByAnalysisFlowIdAndStageOrderByCreatedAtDescIdDesc(analysisFlowId, JobStage.DATA_STATUS)
+                .orElseThrow(() -> new LogueException(ErrorCode.JOB_NOT_FOUND));
 
         if (job.getStatus() != JobStatus.QUEUED && job.getStatus() != JobStatus.RUNNING) {
             throw new LogueException(ErrorCode.SUMMARY_NOT_STARTED);
