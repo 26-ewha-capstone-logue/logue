@@ -20,10 +20,10 @@ export type AnalysisResultProps = {
   warnings?: string[];
 };
 
-const DEFAULT_CANDIDATES: ColumnCandidate[] = Array.from(
-  { length: 9 },
-  () => ({ name: '날짜 기준', example: 'signup_date, created_at' }),
-);
+const DEFAULT_CANDIDATES: ColumnCandidate[] = Array.from({ length: 9 }, () => ({
+  name: '날짜 기준',
+  example: 'signup_date, created_at',
+}));
 
 export default function AnalysisResult({
   rowCount,
@@ -41,9 +41,7 @@ export default function AnalysisResult({
         <p className="text-body2 text-gray-900">데이터를 확인했어요.</p>
         <p className="text-body2 text-gray-900">
           총{' '}
-          <span className="text-orange-500">
-            {rowCount.toLocaleString()}행
-          </span>
+          <span className="text-orange-500">{rowCount.toLocaleString()}행</span>
           , <span className="text-orange-500">{columnCount}열</span>의 데이터가
           업로드되었어요.
           <br />

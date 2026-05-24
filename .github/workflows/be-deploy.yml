@@ -89,9 +89,12 @@ jobs:
               "aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $REGISTRY",
               "docker pull $IMAGE",
               "aws ssm get-parameters-by-path --region $AWS_REGION --path /logue/$ENV/ --recursive --with-decryption --output json --query 'Parameters[*]' | python3 -c \"import sys,json; params=json.load(sys.stdin); open('/tmp/.logue.env','w').write(''.join([p['Name'].split('/')[-1]+'='+p['Value']+chr(10) for p in params]))\"",
+              "set -a && . /tmp/.logue.env && set +a",
+              "docker network inspect logue-net >/dev/null 2>&1 || docker network create logue-net",
+              "docker ps --filter name=^redis\$ --format '{{.Names}}' | grep -q '^redis\$' || docker run -d --name redis --restart unless-stopped --network logue-net -v redis-data:/data redis:7-alpine redis-server --appendonly yes --requirepass \"\$REDIS_PASSWORD\"",
               "docker stop $CONTAINER_NAME 2>/dev/null || true",
               "docker rm   $CONTAINER_NAME 2>/dev/null || true",
-              "docker run -d --name $CONTAINER_NAME --restart unless-stopped -p $APP_PORT:8080 -e SPRING_PROFILES_ACTIVE=$ENV --env-file /tmp/.logue.env $IMAGE",
+              "docker run -d --name $CONTAINER_NAME --restart unless-stopped --network logue-net -p $APP_PORT:8080 -e SPRING_PROFILES_ACTIVE=$ENV --env-file /tmp/.logue.env $IMAGE",
               "rm -f /tmp/.logue.env",
               "docker image prune -f"
             ]

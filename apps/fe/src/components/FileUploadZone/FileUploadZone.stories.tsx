@@ -31,6 +31,18 @@ export const Disabled: Story = {
   args: { disabled: true },
 };
 
+export const Drag: Story = {
+  args: { state: 'drag' },
+};
+
+export const Upload: Story = {
+  args: {
+    state: 'upload',
+    fileName: '유니커넥트_사업자등록증.csv',
+    progress: 36,
+  },
+};
+
 export const Interactive: Story = {
   render: (args) => {
     const [file, setFile] = useState<File | null>(null);
