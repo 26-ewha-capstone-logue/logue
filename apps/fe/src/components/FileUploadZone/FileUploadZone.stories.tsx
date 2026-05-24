@@ -43,6 +43,15 @@ export const Upload: Story = {
   },
 };
 
+export const LongFileNameUpload: Story = {
+  args: {
+    state: 'upload',
+    fileName:
+      '2026년_전국_지역별_매출_고객군_디바이스_채널_분석용_원본데이터_최종_수정본.csv',
+    progress: 100,
+  },
+};
+
 export const Interactive: Story = {
   render: (args) => {
     const [file, setFile] = useState<File | null>(null);

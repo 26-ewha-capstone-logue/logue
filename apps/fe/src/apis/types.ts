@@ -33,3 +33,11 @@ export function unwrapApiResponse<T>(response: ApiResponse<T>): T {
 
   return response.data;
 }
+
+export function getPublicApiErrorMessage(error: unknown) {
+  if (error instanceof ApiResponseError) {
+    return '요청을 처리하지 못했어요.';
+  }
+
+  return '일시적인 오류가 발생했어요. 잠시 후 다시 시도해주세요.';
+}

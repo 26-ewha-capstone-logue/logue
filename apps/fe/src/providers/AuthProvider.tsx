@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { usePathname } from 'next/navigation';
 import {
   ACCESS_TOKEN_STORAGE_KEY,
@@ -20,6 +21,8 @@ import {
   setAuthTokens,
 } from '@/lib/auth';
 
+const LOGIN_PATH = '/login';
+const PRIVATE_PATH_PREFIXES = ['/analysis', '/data', '/history'];
 const AUTH_REDIRECT_PATH = '/analysis';
 const AUTH_ENTRY_PATHS = new Set(['/', '/login']);
 
@@ -44,6 +47,12 @@ function removeTokenParamsFromCurrentUrl(url: URL) {
   );
 }
 
+function isPrivatePath(pathname: string) {
+  return PRIVATE_PATH_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
 function shouldRedirectAuthenticatedUser(pathname: string) {
   return AUTH_ENTRY_PATHS.has(pathname);
 }
@@ -54,12 +63,23 @@ function replaceLocation(pathname: string) {
 
 export default function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const queryClient = useQueryClient();
   const [hasAccessToken, setHasAccessToken] = useState(false);
 
   useEffect(() => {
     const syncAccessToken = () => {
       const nextHasAccessToken = Boolean(getAccessToken());
+
       setHasAccessToken(nextHasAccessToken);
+
+      if (!nextHasAccessToken) {
+        queryClient.clear();
+
+        if (isPrivatePath(pathname)) {
+          replaceLocation(LOGIN_PATH);
+        }
+      }
+
       return nextHasAccessToken;
     };
 
@@ -107,7 +127,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener(AUTH_TOKENS_CHANGED_EVENT, syncAccessToken);
       window.removeEventListener('storage', handleStorage);
     };
-  }, [pathname]);
+  }, [pathname, queryClient]);
 
   const value = useMemo(
     () => ({

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { startAnalysisFlowFromDataSource } from '@/apis/analysis';
@@ -47,6 +47,7 @@ const SORT_OPTIONS = [
 
 const DATA_FILE_MESSAGES = {
   invalidType: '파일 형식이 맞지 않습니다.',
+  empty: '빈 CSV 파일은 업로드할 수 없어요.',
   tooLarge: '파일이 너무 커요. 50MB까지만 업로드 가능해요.',
 };
 
@@ -60,6 +61,8 @@ export default function DataPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const deleteTitleId = useId();
+  const deleteDescriptionId = useId();
 
   const listParams = useMemo(
     () => ({ sort: sortKey, page, size: DATA_SOURCE_PAGE_SIZE }),
@@ -354,7 +357,14 @@ export default function DataPage() {
         onUpload={handleUploaded}
       />
 
-      <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)}>
+      {/* 삭제 확인 모달 */}
+      <Modal
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        ariaLabelledBy={deleteTitleId}
+        ariaDescribedBy={deleteDescriptionId}
+        closeOnOverlayClick={false}
+      >
         <div className="flex flex-col items-center gap-24">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -364,11 +374,14 @@ export default function DataPage() {
             className="h-[8rem] w-auto"
           />
           <div className="flex flex-col items-center gap-4">
-            <h3 className="text-head4 font-semibold text-gray-900">
+            <h3
+              id={deleteTitleId}
+              className="text-head4 font-semibold text-gray-900"
+            >
               파일을 삭제하시겠어요?
             </h3>
-            <p className="text-body4 text-gray-700">
-              삭제 후에는 복구할 수 없어요.
+            <p id={deleteDescriptionId} className="text-body4 text-gray-700">
+              삭제 후엔 복구할 수 없어요.
             </p>
           </div>
           <div className="flex w-full justify-center gap-8">
