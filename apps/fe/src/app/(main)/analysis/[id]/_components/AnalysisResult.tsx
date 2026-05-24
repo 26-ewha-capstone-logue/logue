@@ -18,6 +18,14 @@ export type AnalysisResultProps = {
   candidates?: ColumnCandidate[];
   /** 데이터 경고 메시지들 */
   warnings?: string[];
+  /** 데이터 경고가 있을 때 노출할 액션 */
+  warningActions?: {
+    editLabel?: string;
+    continueLabel?: string;
+    disabled?: boolean;
+    onEdit?: () => void;
+    onContinue?: () => void;
+  };
 };
 
 const DEFAULT_CANDIDATES: ColumnCandidate[] = Array.from({ length: 9 }, () => ({
@@ -31,8 +39,10 @@ export default function AnalysisResult({
   description = '분석에 필요한 주요 컬럼 후보를 아래처럼 찾았어요.',
   candidates = DEFAULT_CANDIDATES,
   warnings,
+  warningActions,
 }: AnalysisResultProps) {
   const [summaryOpen, setSummaryOpen] = useState(true);
+  const hasWarnings = Boolean(warnings?.length);
 
   return (
     <div className="flex w-full flex-col gap-16 rounded-20 bg-white p-24 shadow-[0_0.2rem_1.2rem_rgba(0,0,0,0.06)]">
@@ -96,17 +106,37 @@ export default function AnalysisResult({
       </div>
 
       {/* 데이터 경고 */}
-      {warnings && warnings.length > 0 && (
+      {hasWarnings && (
         <div className="flex flex-col gap-8">
           <div className="inline-flex items-center gap-4 text-body4 text-orange-500">
             <AlertIcon aria-hidden className="icon-16 text-orange-500" />
             <span>데이터 경고</span>
           </div>
           <ul className="ml-20 list-disc text-body2 text-gray-900">
-            {warnings.map((w, i) => (
+            {warnings?.map((w, i) => (
               <li key={i}>{w}</li>
             ))}
           </ul>
+          {warningActions && (
+            <div className="mt-8 flex justify-end gap-8">
+              <button
+                type="button"
+                onClick={warningActions.onEdit}
+                disabled={warningActions.disabled}
+                className="rounded-20 bg-gray-300 px-16 py-8 text-body2 text-gray-700 transition-colors hover:bg-gray-400 disabled:cursor-not-allowed disabled:text-gray-500"
+              >
+                {warningActions.editLabel ?? '수정하기'}
+              </button>
+              <button
+                type="button"
+                onClick={warningActions.onContinue}
+                disabled={warningActions.disabled}
+                className="rounded-20 bg-orange-500 px-16 py-8 text-body2 text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:text-gray-600"
+              >
+                {warningActions.continueLabel ?? '이 기준으로 계속 할게요'}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

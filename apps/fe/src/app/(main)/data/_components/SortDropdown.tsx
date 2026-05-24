@@ -3,22 +3,22 @@
 import { useEffect, useRef, useState } from 'react';
 import DownIcon from '@/assets/icons/down.svg';
 
-export type SortOption = {
-  value: string;
+export type SortOption<T extends string = string> = {
+  value: T;
   label: string;
 };
 
-export type SortDropdownProps = {
-  options: SortOption[];
-  value: string;
-  onChange: (next: string) => void;
+export type SortDropdownProps<T extends string = string> = {
+  options: SortOption<T>[];
+  value: T;
+  onChange: (next: T) => void;
 };
 
-export default function SortDropdown({
+export default function SortDropdown<T extends string>({
   options,
   value,
   onChange,
-}: SortDropdownProps) {
+}: SortDropdownProps<T>) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 

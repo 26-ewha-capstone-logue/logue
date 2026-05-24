@@ -1,20 +1,27 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { startAnalysisFlowFromDataSource } from '@/apis/analysis';
+import { dataSourceKeys, uploadDataSource } from '@/apis/datasource';
+import { getApiErrorMessage } from '@/apis/errors';
 import { getMyInfo, userKeys } from '@/apis/user';
 import { ToastAlert } from '@/components';
+import { writeAnalysisStartPayload } from '@/lib/analysisStartPayload';
 import { validateCsvFile } from '@/lib/fileValidation';
 import { useAuthSession } from '@/providers/AuthProvider';
 import GreetingSection from './_components/GreetingSection';
 import PromptInput, { type PromptInputValue } from './_components/PromptInput';
 import SampleDataSection from './_components/SampleDataSection';
-import { saveAnalysisDraft } from './_lib/analysisDraftStorage';
 
 const FALLBACK_USER_NAME = '사용자';
 const USER_INFO_STALE_TIME = 5 * 60 * 1000;
 const TOAST_DURATION_MS = 2500;
+const MISSING_FILE_MESSAGE = '분석할 CSV 파일을 먼저 추가해 주세요.';
+const LOGIN_REQUIRED_MESSAGE = '로그인이 필요해요. 다시 로그인해 주세요.';
+const START_ANALYSIS_ERROR_MESSAGE =
+  '분석을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.';
 
 const ANALYSIS_FILE_MESSAGES = {
   invalidType: 'Logue는 CSV 형식의 파일만 지원해요',
@@ -23,6 +30,7 @@ const ANALYSIS_FILE_MESSAGES = {
 
 export default function AnalysisPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const { hasAccessToken } = useAuthSession();
   const {
@@ -43,6 +51,52 @@ export default function AnalysisPage() {
   const userName = shouldUseFetchedUserName
     ? (myInfo?.name ?? FALLBACK_USER_NAME)
     : FALLBACK_USER_NAME;
+  const startAnalysisMutation = useMutation({
+    mutationFn: async (value: PromptInputValue) => {
+      if (!hasAccessToken) {
+        throw new Error(LOGIN_REQUIRED_MESSAGE);
+      }
+
+      if (!value.file) {
+        throw new Error(MISSING_FILE_MESSAGE);
+      }
+
+      const uploadedDataSource = await uploadDataSource(value.file);
+      await queryClient.invalidateQueries({
+        queryKey: dataSourceKeys.lists(),
+      });
+      const analysisFlow = await startAnalysisFlowFromDataSource(
+        uploadedDataSource.dataSourceId,
+      );
+
+      return {
+        conversationId: analysisFlow.conversationId,
+        analysisFlowId: analysisFlow.analysisFlowId,
+        dataSourceId: analysisFlow.dataSourceId,
+        prompt: value.prompt,
+        fileName: value.file.name,
+      };
+    },
+    onSuccess: ({
+      conversationId,
+      analysisFlowId,
+      dataSourceId,
+      prompt,
+      fileName,
+    }) => {
+      writeAnalysisStartPayload(conversationId, { prompt, fileName });
+
+      const params = new URLSearchParams({
+        analysisFlowId: String(analysisFlowId),
+        dataSourceId: String(dataSourceId),
+      });
+
+      router.push(`/analysis/${conversationId}?${params.toString()}`);
+    },
+    onError: (error) => {
+      setToastMessage(getApiErrorMessage(error, START_ANALYSIS_ERROR_MESSAGE));
+    },
+  });
 
   useEffect(() => {
     if (!toastMessage) return;
@@ -54,14 +108,7 @@ export default function AnalysisPage() {
   }, [toastMessage]);
 
   const handleSubmit = (value: PromptInputValue) => {
-    // TODO: 분석 생성 API 호출 후 응답 id 로 교체
-    // e.g. const { id } = await createAnalysis({ prompt: value.prompt, file: value.file });
-    const tempId = `tmp-${Date.now()}`;
-    saveAnalysisDraft(tempId, {
-      prompt: value.prompt,
-      fileName: value.file?.name ?? null,
-    });
-    router.push(`/analysis/${tempId}`);
+    startAnalysisMutation.mutate(value);
   };
 
   const handlePromptError = (message: string) => {
@@ -89,6 +136,7 @@ export default function AnalysisPage() {
 
       <PromptInput
         validateFile={(file) => validateCsvFile(file, ANALYSIS_FILE_MESSAGES)}
+        submitDisabled={startAnalysisMutation.isPending}
         onSubmit={handleSubmit}
         onError={handlePromptError}
       />
