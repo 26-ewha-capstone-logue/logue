@@ -23,17 +23,27 @@ export function saveAnalysisDraft(analysisId: string, draft: AnalysisDraft) {
   const storage = getSessionStorage();
   if (!storage) return;
 
-  storage.setItem(
-    getAnalysisDraftStorageKey(analysisId),
-    JSON.stringify(draft),
-  );
+  try {
+    storage.setItem(
+      getAnalysisDraftStorageKey(analysisId),
+      JSON.stringify(draft),
+    );
+  } catch {
+    return;
+  }
 }
 
 export function readAnalysisDraft(analysisId: string): AnalysisDraft | null {
   const storage = getSessionStorage();
   if (!storage) return null;
 
-  const rawDraft = storage.getItem(getAnalysisDraftStorageKey(analysisId));
+  let rawDraft: string | null = null;
+  try {
+    rawDraft = storage.getItem(getAnalysisDraftStorageKey(analysisId));
+  } catch {
+    return null;
+  }
+
   if (!rawDraft) return null;
 
   try {
