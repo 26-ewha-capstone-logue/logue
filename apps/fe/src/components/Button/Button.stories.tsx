@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
 
-import Button from './Button';
+import Button, { type ButtonProps } from './Button';
 
 function ChevronRightIcon() {
   return (
@@ -23,6 +23,7 @@ function ChevronRightIcon() {
 }
 
 type StoryOnlyArgs = { storyShowIcon?: boolean };
+type ButtonStoryArgs = ButtonProps & StoryOnlyArgs;
 
 const meta = {
   title: 'Components/Button',
@@ -34,6 +35,16 @@ const meta = {
 
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+const renderButtonWithIcon = (args: Story['args']) => {
+  const { storyShowIcon, ...props } = args as ButtonStoryArgs;
+  return (
+    <Button
+      {...props}
+      icon={storyShowIcon ? <ChevronRightIcon /> : undefined}
+    />
+  );
+};
 
 /* ── 스토리 1: CTA (Controls로 disabled, children, icon 조작) ── */
 
@@ -54,15 +65,7 @@ export const CTA = {
       table: { category: 'Story only' },
     },
   },
-  render: (args) => {
-    const { storyShowIcon, ...props } = args as typeof args & StoryOnlyArgs;
-    return (
-      <Button
-        {...props}
-        icon={storyShowIcon ? <ChevronRightIcon /> : undefined}
-      />
-    );
-  },
+  render: renderButtonWithIcon,
 } as Story;
 
 /* ── 스토리 2: Primary (Controls로 size, disabled, children, icon, fullWidth 조작) ── */
@@ -85,18 +88,53 @@ export const Primary = {
       table: { category: 'Story only' },
     },
   },
-  render: (args) => {
-    const { storyShowIcon, ...props } = args as typeof args & StoryOnlyArgs;
-    return (
-      <Button
-        {...props}
-        icon={storyShowIcon ? <ChevronRightIcon /> : undefined}
-      />
-    );
-  },
+  render: renderButtonWithIcon,
 } as Story;
 
 /* ── Docs 전용: 모든 종류 한눈에 ── */
+
+export const Outlined = {
+  args: {
+    variant: 'outlined',
+    children: 'Outlined',
+    size: 'md',
+    disabled: false,
+    fullWidth: false,
+    storyShowIcon: false,
+  } as Story['args'],
+  argTypes: {
+    variant: { table: { disable: true } },
+    size: { control: 'select', options: ['sm', 'md', 'lg'] },
+    storyShowIcon: {
+      control: 'boolean',
+      name: 'Icon',
+      table: { category: 'Story only' },
+    },
+  },
+  render: renderButtonWithIcon,
+} as Story;
+
+export const Text = {
+  args: {
+    variant: 'text',
+    children: 'Text',
+    size: 'md',
+    disabled: false,
+    fullWidth: false,
+    storyShowIcon: false,
+  } as Story['args'],
+  argTypes: {
+    variant: { table: { disable: true } },
+    size: { control: 'select', options: ['sm', 'md', 'lg'] },
+    fullWidth: { control: 'boolean' },
+    storyShowIcon: {
+      control: 'boolean',
+      name: 'Icon',
+      table: { category: 'Story only' },
+    },
+  },
+  render: renderButtonWithIcon,
+} as Story;
 
 export const AllVariants: Story = {
   tags: ['!autodocs'],
