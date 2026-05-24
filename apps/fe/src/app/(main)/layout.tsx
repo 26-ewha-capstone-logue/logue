@@ -81,7 +81,7 @@ export default function MainLayout({
         activeHref={pathname}
         searchSlot={
           showDataSearch ? (
-            <DataSourceSearchInput key={pathname} pathname={pathname} />
+            <DataSourceSearchInput pathname={pathname} />
           ) : undefined
         }
         onLogoClick={() => router.push('/analysis')}

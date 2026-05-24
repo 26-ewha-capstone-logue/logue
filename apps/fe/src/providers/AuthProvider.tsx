@@ -44,6 +44,12 @@ function removeTokenParamsFromCurrentUrl(url: URL) {
   );
 }
 
+function isPrivatePath(pathname: string) {
+  return PRIVATE_PATH_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
 export default function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -62,7 +68,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
       queryClient.clear();
 
-      if (PRIVATE_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+      if (isPrivatePath(pathname)) {
         router.replace(LOGIN_PATH);
       }
     };

@@ -54,4 +54,8 @@ describe('validateCsvFile', () => {
       validateCsvFile(createFileInput({ type: 'application/pdf' }), messages),
     ).toBe(messages.invalidType);
   });
+
+  it('accepts CSV extensions when the browser does not provide a MIME type', () => {
+    expect(validateCsvFile(createFileInput({ type: '' }), messages)).toBeNull();
+  });
 });

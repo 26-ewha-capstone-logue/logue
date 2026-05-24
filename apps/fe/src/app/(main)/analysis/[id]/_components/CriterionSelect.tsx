@@ -50,6 +50,9 @@ export default function CriterionSelect(props: CriterionSelectProps) {
         ? props.values[0]
         : `${props.values[0]} 외 ${props.values.length - 1}`
     : props.value;
+  const optionFocusSelector = props.multi
+    ? '[role="option"] input:not([disabled])'
+    : '[role="option"]:not([disabled]):not([aria-disabled="true"])';
 
   return (
     <div
@@ -74,9 +77,10 @@ export default function CriterionSelect(props: CriterionSelectProps) {
           event.preventDefault();
           setOpen(true);
           window.requestAnimationFrame(() => {
-            const options = rootRef.current?.querySelectorAll<HTMLElement>(
-              '[role="option"]:not([disabled]):not([aria-disabled="true"])',
-            );
+            const options =
+              rootRef.current?.querySelectorAll<HTMLElement>(
+                optionFocusSelector,
+              );
             const target =
               event.key === 'ArrowUp'
                 ? options?.[options.length - 1]
@@ -116,9 +120,10 @@ export default function CriterionSelect(props: CriterionSelectProps) {
               return;
             }
 
-            const options = rootRef.current?.querySelectorAll<HTMLElement>(
-              '[role="option"]:not([disabled]):not([aria-disabled="true"])',
-            );
+            const options =
+              rootRef.current?.querySelectorAll<HTMLElement>(
+                optionFocusSelector,
+              );
             if (!options?.length) return;
 
             event.preventDefault();
@@ -171,17 +176,6 @@ export default function CriterionSelect(props: CriterionSelectProps) {
                   role="option"
                   aria-selected={checked}
                   aria-disabled={disabled}
-                  tabIndex={disabled ? -1 : 0}
-                  onKeyDown={(event) => {
-                    if (event.key !== 'Enter' && event.key !== ' ') return;
-                    event.preventDefault();
-                    if (disabled) return;
-
-                    const next = checked
-                      ? props.values.filter((v) => v !== opt)
-                      : [...props.values, opt];
-                    props.onChange(next);
-                  }}
                   className={`flex cursor-pointer items-center gap-8 px-12 py-8 text-body2 transition-colors hover:bg-gray-100 ${
                     disabled
                       ? 'cursor-not-allowed text-gray-500'
@@ -190,6 +184,7 @@ export default function CriterionSelect(props: CriterionSelectProps) {
                 >
                   <input
                     type="checkbox"
+                    aria-label={opt}
                     checked={checked}
                     disabled={disabled}
                     onChange={() => {

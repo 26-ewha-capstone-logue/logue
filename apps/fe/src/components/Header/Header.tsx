@@ -28,6 +28,8 @@ export type HeaderProps = {
   onLogoClick?: () => void;
   /** 프로필 클릭 콜백 */
   onProfileClick?: () => void;
+  /** 기본 프로필 버튼 접근성 레이블 */
+  profileAriaLabel?: string;
   /** 메뉴 클릭 콜백 */
   onNavClick?: (href: string) => void;
 } & Omit<HTMLAttributes<HTMLElement>, 'children'>;
@@ -62,6 +64,7 @@ export default function Header({
   searchSlot,
   onLogoClick,
   onProfileClick,
+  profileAriaLabel = '프로필 메뉴',
   onNavClick,
   className = '',
   ...rest
@@ -122,7 +125,7 @@ export default function Header({
           <button
             type="button"
             onClick={onProfileClick}
-            aria-label="로그인 페이지로 이동"
+            aria-label={profileAriaLabel}
           >
             <ProfileIcon />
           </button>

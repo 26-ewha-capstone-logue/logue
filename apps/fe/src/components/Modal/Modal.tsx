@@ -30,15 +30,30 @@ const FOCUSABLE_SELECTOR = [
   'a[href]',
   'button:not([disabled])',
   'textarea:not([disabled])',
-  'input:not([disabled])',
+  'input:not([disabled]):not([type="hidden"])',
   'select:not([disabled])',
   '[tabindex]:not([tabindex="-1"])',
 ].join(',');
 
+function isFocusableElementVisible(element: HTMLElement) {
+  if (
+    element.hasAttribute('disabled') ||
+    element.getAttribute('aria-hidden') === 'true' ||
+    element.closest('[aria-hidden="true"]')
+  ) {
+    return false;
+  }
+
+  const style = window.getComputedStyle(element);
+  if (style.display === 'none' || style.visibility === 'hidden') return false;
+
+  return element.getClientRects().length > 0;
+}
+
 function getFocusableElements(container: HTMLElement) {
   return Array.from(
     container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-  ).filter((element) => !element.hasAttribute('disabled'));
+  ).filter(isFocusableElementVisible);
 }
 
 export default function Modal({

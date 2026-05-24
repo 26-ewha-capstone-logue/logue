@@ -29,6 +29,17 @@ function normalizeApiBaseUrl(apiUrl: string) {
   const isLocalHttp =
     parsedUrl.protocol === 'http:' && LOCAL_HOSTS.has(parsedUrl.hostname);
 
+  if (
+    parsedUrl.search ||
+    parsedUrl.hash ||
+    parsedUrl.username ||
+    parsedUrl.password
+  ) {
+    throw new Error(
+      'NEXT_PUBLIC_API_URL must not contain query, fragment, or userinfo',
+    );
+  }
+
   if (!isHttps && !isLocalHttp) {
     throw new Error('NEXT_PUBLIC_API_URL must use HTTPS outside localhost');
   }

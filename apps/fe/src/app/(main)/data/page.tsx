@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useState, type KeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import ChatIcon from '@/assets/icons/chat.svg';
 import SuccessIcon from '@/assets/icons/success.svg';
@@ -131,6 +131,16 @@ export default function DataPage() {
     router.push(`/data/${id}`);
   };
 
+  const handleRowKeyDown = (
+    event: KeyboardEvent<HTMLTableRowElement>,
+    id: string,
+  ) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+
+    event.preventDefault();
+    goToDetail(id);
+  };
+
   return (
     <main className="scrollbar-hide flex min-h-0 flex-1 flex-col overflow-y-auto px-40 pt-32 pb-40">
       <h1 className="mb-24 text-head2 font-semibold text-gray-900">
@@ -205,13 +215,17 @@ export default function DataPage() {
               return (
                 <tr
                   key={row.id}
+                  role="button"
+                  tabIndex={0}
                   aria-label={`${row.fileName} 상세 보기`}
                   onClick={() => goToDetail(row.id)}
-                  className="cursor-pointer border-t border-gray-200 transition-colors hover:bg-gray-100"
+                  onKeyDown={(event) => handleRowKeyDown(event, row.id)}
+                  className="cursor-pointer border-t border-gray-200 transition-colors hover:bg-gray-100 focus-visible:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500 focus-visible:outline-offset-[-0.2rem]"
                 >
                   <td
                     className="py-16 pl-24"
                     onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
                   >
                     <Checkbox
                       checked={checked}
@@ -224,6 +238,7 @@ export default function DataPage() {
                   <td
                     className="py-16 pr-24 text-right"
                     onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
                   >
                     <button
                       type="button"

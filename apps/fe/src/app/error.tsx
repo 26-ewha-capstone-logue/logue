@@ -1,11 +1,14 @@
 'use client';
 
 export default function Error({
+  error: _error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  void _error;
+
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4">
       <h1 className="text-4xl font-bold">오류 발생</h1>
