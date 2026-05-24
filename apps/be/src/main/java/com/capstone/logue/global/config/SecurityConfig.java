@@ -46,7 +46,9 @@ public class SecurityConfig {
         config.setAllowedOriginPatterns(List.of(
                 "http://localhost:5173",
                 "http://localhost:3000",
-                "https://www.logue-kr.site"
+                "https://asklogue.co",
+                "https://www.asklogue.co",
+                "https://logue-git-dev-maetelson-s-projects.vercel.app"
         ));
         config.setAllowCredentials(true);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
