@@ -60,7 +60,6 @@ const TOOL_OPTIONS = [
   'Mixpanel',
   'Firebase Analytics',
 ];
-const PRODUCTION_ANALYSIS_URL = 'https://www.asklogue.co/analysis';
 
 const STEP_COPY: Record<StepKey, { title: string; description: string }> = {
   1: {
@@ -111,7 +110,7 @@ export default function OnboardingPage() {
     }
     // step 3 → 완료
     // TODO: 온보딩 결과 저장 API 호출
-    window.location.assign(PRODUCTION_ANALYSIS_URL);
+    router.push('/analysis');
   };
 
   const toggleTool = (value: string) => {

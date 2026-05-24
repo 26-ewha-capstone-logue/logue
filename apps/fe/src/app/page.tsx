@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import PriceIcon from '@/assets/icons/price.svg';
 import SuccessIcon from '@/assets/icons/success.svg';
-import { clearAuthTokens } from '@/lib/auth';
-import { useAuthSession } from '@/providers/AuthProvider';
 import IntroCarousel from './_components/IntroCarousel';
 
 // 다색 일러스트는 SVGR 변환을 피하기 위해 public/ 정적 자산
@@ -102,15 +100,10 @@ const NEWS_CARDS = [
 
 export default function IntroPage() {
   const router = useRouter();
-  const { hasAccessToken } = useAuthSession();
   const [scrolled, setScrolled] = useState(false);
 
   const goToLogin = () => {
     router.push('/login');
-  };
-
-  const handleLogout = () => {
-    clearAuthTokens();
   };
 
   // hero(=뷰포트 1개) 만큼 스크롤되면 헤더가 흰 배경 + 그림자로 전환됨
@@ -177,44 +170,28 @@ export default function IntroPage() {
 
         {/* 우측 액션 */}
         <div className="ml-auto flex items-center gap-20">
-          {hasAccessToken ? (
-            <button
-              type="button"
-              onClick={handleLogout}
-              className={`rounded-full px-20 py-8 text-body2 font-medium transition-colors ${
-                scrolled
-                  ? 'bg-orange-500 text-white hover:bg-orange-600'
-                  : 'bg-white text-gray-900 hover:bg-gray-100'
-              }`}
-            >
-              로그아웃
-            </button>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={goToLogin}
-                className={`text-body2 underline underline-offset-2 transition-colors ${
-                  scrolled
-                    ? 'text-gray-900 hover:text-gray-700'
-                    : 'text-white hover:text-white/80'
-                }`}
-              >
-                로그인
-              </button>
-              <button
-                type="button"
-                onClick={goToLogin}
-                className={`rounded-full px-20 py-8 text-body2 font-medium transition-colors ${
-                  scrolled
-                    ? 'bg-orange-500 text-white hover:bg-orange-600'
-                    : 'bg-white text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                회원가입
-              </button>
-            </>
-          )}
+          <button
+            type="button"
+            onClick={goToLogin}
+            className={`text-body2 underline underline-offset-2 transition-colors ${
+              scrolled
+                ? 'text-gray-900 hover:text-gray-700'
+                : 'text-white hover:text-white/80'
+            }`}
+          >
+            로그인
+          </button>
+          <button
+            type="button"
+            onClick={goToLogin}
+            className={`rounded-full px-20 py-8 text-body2 font-medium transition-colors ${
+              scrolled
+                ? 'bg-orange-500 text-white hover:bg-orange-600'
+                : 'bg-white text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            회원가입
+          </button>
         </div>
       </header>
 
