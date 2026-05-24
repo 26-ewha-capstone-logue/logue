@@ -22,10 +22,10 @@ import {
   type UpdateQuestionCriteriaRequest,
 } from '@/apis/analysis';
 import {
-  dataSourceQueryKeys,
+  dataSourceKeys,
   getDataSource,
   type FilePreview,
-} from '@/apis/dataSource';
+} from '@/apis/datasource';
 import { getApiErrorMessage } from '@/apis/errors';
 import { ChatBubble, ToastAlert } from '@/components';
 import {
@@ -297,7 +297,7 @@ export default function AnalysisChatPage({
   const fileName = startPayload.fileName ?? null;
 
   const dataSourceQuery = useQuery({
-    queryKey: dataSourceQueryKeys.detail(dataSourceId ?? 0),
+    queryKey: dataSourceKeys.detail(dataSourceId ?? 0),
     queryFn: () => {
       if (dataSourceId === null) throw new Error(INVALID_ROUTE_MESSAGE);
       return getDataSource(dataSourceId);

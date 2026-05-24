@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { startAnalysisFlowFromDataSource } from '@/apis/analysis';
-import { dataSourceQueryKeys, uploadDataSource } from '@/apis/dataSource';
+import { dataSourceKeys, uploadDataSource } from '@/apis/datasource';
 import { getApiErrorMessage } from '@/apis/errors';
-import { getMyInfo } from '@/apis/user';
+import { getMyInfo, userKeys } from '@/apis/user';
 import { ToastAlert } from '@/components';
 import { writeAnalysisStartPayload } from '@/lib/analysisStartPayload';
 import { validateCsvFile } from '@/lib/fileValidation';
@@ -38,7 +38,7 @@ export default function AnalysisPage() {
     isError: isUserInfoError,
     isLoading: isUserInfoLoading,
   } = useQuery({
-    queryKey: ['user', 'me'],
+    queryKey: userKeys.me(),
     queryFn: getMyInfo,
     enabled: hasAccessToken,
     staleTime: USER_INFO_STALE_TIME,
@@ -63,7 +63,7 @@ export default function AnalysisPage() {
 
       const uploadedDataSource = await uploadDataSource(value.file);
       await queryClient.invalidateQueries({
-        queryKey: dataSourceQueryKeys.lists(),
+        queryKey: dataSourceKeys.lists(),
       });
       const analysisFlow = await startAnalysisFlowFromDataSource(
         uploadedDataSource.dataSourceId,

@@ -8,15 +8,20 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { usePathname } from 'next/navigation';
 import {
   ACCESS_TOKEN_STORAGE_KEY,
   AUTH_TOKENS_CHANGED_EVENT,
   LEGACY_ACCESS_TOKEN_STORAGE_KEY,
   REFRESH_TOKEN_STORAGE_KEY,
+  consumeAuthEntryRedirectBypass,
   getAccessToken,
   readAuthTokensFromSearchParams,
   setAuthTokens,
 } from '@/lib/auth';
+
+const AUTH_REDIRECT_PATH = '/analysis';
+const AUTH_ENTRY_PATHS = new Set(['/', '/login']);
 
 type AuthContextValue = {
   hasAccessToken: boolean;
@@ -39,14 +44,23 @@ function removeTokenParamsFromCurrentUrl(url: URL) {
   );
 }
 
+function shouldRedirectAuthenticatedUser(pathname: string) {
+  return AUTH_ENTRY_PATHS.has(pathname);
+}
+
+function replaceLocation(pathname: string) {
+  window.location.replace(pathname);
+}
+
 export default function AuthProvider({ children }: { children: ReactNode }) {
-  const [hasAccessToken, setHasAccessToken] = useState(
-    () => typeof window !== 'undefined' && Boolean(getAccessToken()),
-  );
+  const pathname = usePathname();
+  const [hasAccessToken, setHasAccessToken] = useState(false);
 
   useEffect(() => {
     const syncAccessToken = () => {
-      setHasAccessToken(Boolean(getAccessToken()));
+      const nextHasAccessToken = Boolean(getAccessToken());
+      setHasAccessToken(nextHasAccessToken);
+      return nextHasAccessToken;
     };
 
     const currentUrl = new URL(window.location.href);
@@ -57,9 +71,24 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     if (redirectedTokens) {
       setAuthTokens(redirectedTokens);
       removeTokenParamsFromCurrentUrl(currentUrl);
+      replaceLocation(AUTH_REDIRECT_PATH);
+      return;
     }
 
-    syncAccessToken();
+    const nextHasAccessToken = syncAccessToken();
+    const shouldBypassAuthEntryRedirect =
+      shouldRedirectAuthenticatedUser(pathname) &&
+      consumeAuthEntryRedirectBypass();
+
+    if (
+      !redirectedTokens &&
+      nextHasAccessToken &&
+      shouldRedirectAuthenticatedUser(pathname) &&
+      !shouldBypassAuthEntryRedirect
+    ) {
+      replaceLocation(AUTH_REDIRECT_PATH);
+      return;
+    }
 
     const handleStorage = (event: StorageEvent) => {
       if (
@@ -78,7 +107,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener(AUTH_TOKENS_CHANGED_EVENT, syncAccessToken);
       window.removeEventListener('storage', handleStorage);
     };
-  }, []);
+  }, [pathname]);
 
   const value = useMemo(
     () => ({

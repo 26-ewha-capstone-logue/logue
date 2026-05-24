@@ -1,15 +1,6 @@
 import instance from '@/lib/axios';
 import { unwrapApiResponse, type ApiResponse } from './types';
 
-export type FilePreview = {
-  headers: string[];
-  rows: string[][];
-};
-
-export type UploadDataSourceResponse = {
-  dataSourceId: number;
-};
-
 export type DataSourceSort = 'LATEST' | 'MOST_USED';
 
 export type DataSourceSummary = {
@@ -33,11 +24,20 @@ export type GetDataSourceListResponse = {
   dataSources: DataSourceSummary[];
 };
 
-export type GetDataSourceResponse = {
+export type FilePreview = {
+  headers: string[];
+  rows: string[][];
+};
+
+export type GetFileResponse = {
   fileName: string;
   fileSize: number;
   uploadedAt: string;
-  preview?: FilePreview | null;
+  preview: FilePreview | null;
+};
+
+export type UploadFileResponse = {
+  dataSourceId: number;
 };
 
 function serializeDataSourceIds(dataSourceIds: number[]) {
@@ -48,13 +48,14 @@ function getDeleteDataSourcesPath(dataSourceIds: number[]) {
   return `/api/datasources?${serializeDataSourceIds(dataSourceIds)}`;
 }
 
-export const dataSourceQueryKeys = {
+export const dataSourceKeys = {
   all: ['dataSources'] as const,
-  lists: () => [...dataSourceQueryKeys.all, 'list'] as const,
+  lists: () => [...dataSourceKeys.all, 'list'] as const,
   list: (params: GetDataSourceListParams) =>
-    [...dataSourceQueryKeys.lists(), params] as const,
+    [...dataSourceKeys.lists(), params] as const,
+  details: () => [...dataSourceKeys.all, 'detail'] as const,
   detail: (dataSourceId: number) =>
-    [...dataSourceQueryKeys.all, 'detail', dataSourceId] as const,
+    [...dataSourceKeys.details(), dataSourceId] as const,
 };
 
 export async function getDataSources(params: GetDataSourceListParams) {
@@ -70,7 +71,7 @@ export async function uploadDataSource(file: File) {
   const formData = new FormData();
   formData.append('file', file);
 
-  const { data } = await instance.post<ApiResponse<UploadDataSourceResponse>>(
+  const { data } = await instance.post<ApiResponse<UploadFileResponse>>(
     '/api/datasources',
     formData,
   );
@@ -89,9 +90,17 @@ export async function deleteDataSources(dataSourceIds: number[]) {
 }
 
 export async function getDataSource(dataSourceId: number) {
-  const { data } = await instance.get<ApiResponse<GetDataSourceResponse>>(
+  const { data } = await instance.get<ApiResponse<GetFileResponse>>(
     `/api/datasources/${dataSourceId}`,
   );
 
   return unwrapApiResponse(data);
+}
+
+export async function deleteDataSource(dataSourceId: number) {
+  const { data } = await instance.delete<ApiResponse<unknown>>(
+    `/api/datasources/${dataSourceId}`,
+  );
+
+  unwrapApiResponse(data);
 }

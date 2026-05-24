@@ -90,6 +90,12 @@ export const Interactive: Story = {
 
 /* ── 모든 상태 한눈에 ── */
 
+export const Filled: Story = {
+  args: {
+    defaultValue: '지난달과 이번달 매출을 비교해줘',
+  },
+};
+
 export const AllVariants: Story = {
   tags: ['!autodocs'],
   parameters: { layout: 'padded' },

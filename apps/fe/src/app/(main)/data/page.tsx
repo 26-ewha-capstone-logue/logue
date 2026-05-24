@@ -5,18 +5,19 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { startAnalysisFlowFromDataSource } from '@/apis/analysis';
 import {
-  dataSourceQueryKeys,
+  dataSourceKeys,
   deleteDataSources,
   getDataSources,
   uploadDataSource,
   type DataSourceSummary,
   type DataSourceSort,
-} from '@/apis/dataSource';
+} from '@/apis/datasource';
 import { getApiErrorMessage } from '@/apis/errors';
 import ChatIcon from '@/assets/icons/chat.svg';
 import SuccessIcon from '@/assets/icons/success.svg';
 import { FileUploadModal, Modal, ToastAlert } from '@/components';
 import { writeAnalysisStartPayload } from '@/lib/analysisStartPayload';
+import { formatDateTime } from '@/lib/dateTime';
 import { formatFileSize, validateCsvFile } from '@/lib/fileValidation';
 import { useAuthSession } from '@/providers/AuthProvider';
 import Checkbox from './_components/Checkbox';
@@ -49,18 +50,6 @@ const DATA_FILE_MESSAGES = {
   tooLarge: '파일이 너무 커요. 50MB까지만 업로드 가능해요.',
 };
 
-const DATE_TIME_FORMATTER = new Intl.DateTimeFormat('ko-KR', {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-  timeZone: 'Asia/Seoul',
-});
-
-function formatUploadedAt(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return DATE_TIME_FORMATTER.format(date);
-}
-
 export default function DataPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -78,7 +67,7 @@ export default function DataPage() {
   );
 
   const dataSourcesQuery = useQuery({
-    queryKey: dataSourceQueryKeys.list(listParams),
+    queryKey: dataSourceKeys.list(listParams),
     queryFn: () => getDataSources(listParams),
     enabled: hasAccessToken,
   });
@@ -168,7 +157,7 @@ export default function DataPage() {
     try {
       await uploadMutation.mutateAsync(uploaded);
       await queryClient.invalidateQueries({
-        queryKey: dataSourceQueryKeys.lists(),
+        queryKey: dataSourceKeys.lists(),
       });
       setSelectedIds(new Set());
       setUploadOpen(false);
@@ -189,7 +178,7 @@ export default function DataPage() {
     try {
       await deleteMutation.mutateAsync(Array.from(selectedIds));
       await queryClient.invalidateQueries({
-        queryKey: dataSourceQueryKeys.lists(),
+        queryKey: dataSourceKeys.lists(),
       });
       setSelectedIds(new Set());
       setDeleteOpen(false);
@@ -329,7 +318,7 @@ export default function DataPage() {
                       {formatFileSize(row.fileSize)}
                     </td>
                     <td className="py-16 text-gray-800">
-                      {formatUploadedAt(row.uploadedAt)}
+                      {formatDateTime(row.uploadedAt)}
                     </td>
                     <td
                       className="py-16 pr-24 text-right"

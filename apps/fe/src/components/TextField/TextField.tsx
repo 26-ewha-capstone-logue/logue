@@ -4,6 +4,8 @@ import {
   useImperativeHandle,
   useRef,
   useState,
+  type ChangeEvent,
+  type KeyboardEvent,
   type MouseEvent,
   type ReactNode,
   type TextareaHTMLAttributes,
@@ -24,6 +26,17 @@ export type TextFieldProps = {
   size?: TextFieldSize;
 } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'children'>;
 
+function getSubmitToneClass(
+  isCompact: boolean,
+  hasValue: boolean,
+  focused: boolean,
+) {
+  if (isCompact) return 'bg-orange-500 text-white hover:bg-orange-600';
+  if (hasValue) return 'bg-orange-400 text-white hover:bg-orange-500';
+  if (focused) return 'bg-orange-500 text-white hover:bg-orange-600';
+  return 'bg-gray-300 text-gray-900 hover:bg-gray-400';
+}
+
 const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
   function TextField(
     {
@@ -41,6 +54,7 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
       onKeyDown,
       onFocus,
       onBlur,
+      onChange,
       value,
       defaultValue,
       ...textareaProps
@@ -49,23 +63,30 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
   ) {
     const innerRef = useRef<HTMLTextAreaElement>(null);
     const [focused, setFocused] = useState(false);
+    const [internalHasValue, setInternalHasValue] = useState(
+      () => String(defaultValue ?? '').length > 0,
+    );
+    const isControlled = value !== undefined;
 
     useImperativeHandle(ref, () => innerRef.current as HTMLTextAreaElement, []);
 
     const handleContainerClick = useCallback(
       (e: MouseEvent<HTMLDivElement>) => {
-        if (
-          e.target === e.currentTarget ||
-          (e.target as HTMLElement).closest('[data-toolbar]')
-        )
-          return;
+        if ((e.target as HTMLElement).closest('[data-toolbar]')) return;
         innerRef.current?.focus();
       },
       [],
     );
 
     const handleKeyDown = useCallback(
-      (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      (e: KeyboardEvent<HTMLTextAreaElement>) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+          e.preventDefault();
+          e.currentTarget.select();
+          onKeyDown?.(e);
+          return;
+        }
+
         if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
           e.preventDefault();
           if (!submitDisabled) onSubmit?.();
@@ -75,13 +96,24 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
       [onKeyDown, onSubmit, submitDisabled],
     );
 
-    const hasValue = String(value ?? defaultValue ?? '').length > 0;
+    const handleChange = useCallback(
+      (e: ChangeEvent<HTMLTextAreaElement>) => {
+        if (!isControlled) {
+          setInternalHasValue(e.currentTarget.value.length > 0);
+        }
+        onChange?.(e);
+      },
+      [isControlled, onChange],
+    );
+
+    const hasValue = isControlled ? String(value).length > 0 : internalHasValue;
     const toneClass = hasValue
       ? 'text-gray-900'
       : focused
         ? 'text-gray-800'
         : 'text-gray-700 placeholder:text-gray-700';
     const isCompact = size === 'md';
+    const submitToneClass = getSubmitToneClass(isCompact, hasValue, focused);
 
     return (
       <div
@@ -89,7 +121,7 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
         className={`inline-flex cursor-text bg-white shadow-[0_0.2rem_1.2rem_rgba(0,0,0,0.06)] ${
           isCompact
             ? 'min-w-[41.8rem] flex-row items-center rounded-16 px-24 py-12'
-            : 'min-w-[29rem] flex-col items-start gap-[5.9rem] rounded-20 px-[2.6rem] py-[2.9rem]'
+            : 'w-[115.5rem] max-w-full flex-col items-start gap-[5.9rem] rounded-20 px-[2.6rem] py-[2.9rem]'
         } ${fullWidth ? 'w-full' : ''} ${className}`.trim()}
       >
         <textarea
@@ -107,7 +139,8 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
             onBlur?.(e);
           }}
           onKeyDown={handleKeyDown}
-          className={`scrollbar-hide min-w-0 flex-1 resize-none bg-transparent outline-none ${
+          onChange={handleChange}
+          className={`scrollbar-hide min-w-0 w-full flex-1 resize-none bg-transparent outline-none ${
             isCompact ? 'text-body2' : 'text-head3'
           } ${toneClass}`}
           {...textareaProps}
@@ -152,7 +185,7 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
             onClick={onSubmit}
             disabled={submitDisabled}
             aria-label="전송"
-            className="inline-flex h-[3.8rem] w-[3.8rem] shrink-0 items-center justify-center rounded-12 bg-orange-500 text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:text-gray-600"
+            className={`inline-flex h-[3.8rem] w-[3.8rem] shrink-0 items-center justify-center rounded-12 transition-colors disabled:cursor-not-allowed disabled:bg-gray-400 disabled:text-gray-600 ${submitToneClass}`}
           >
             <ArrowUpIcon aria-hidden className="icon-20" />
           </button>
