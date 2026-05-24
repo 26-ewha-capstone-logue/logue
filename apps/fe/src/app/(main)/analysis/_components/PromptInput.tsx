@@ -21,6 +21,7 @@ export type PromptInputProps = {
 
 const DEFAULT_PLACEHOLDER =
   '이번달이랑 지난달 비교해서 지역별 매출 높은 순으로 5개 보여줘';
+const MAX_PROMPT_LENGTH = 500;
 
 export default function PromptInput({
   placeholder = DEFAULT_PLACEHOLDER,
@@ -32,13 +33,14 @@ export default function PromptInput({
   const [file, setFile] = useState<File | null>(null);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
 
-  const isSubmitDisabled = prompt.trim().length === 0;
+  const trimmedPrompt = prompt.trim();
+  const isSubmitDisabled = trimmedPrompt.length === 0;
 
   const handleSubmit = useCallback(() => {
     if (isSubmitDisabled) return;
-    onSubmit?.({ prompt, file });
+    onSubmit?.({ prompt: trimmedPrompt, file });
     setPrompt('');
-  }, [file, isSubmitDisabled, onSubmit, prompt]);
+  }, [file, isSubmitDisabled, onSubmit, trimmedPrompt]);
 
   const handleFileSelect = useCallback((selected: File) => {
     setFile(selected);
@@ -57,6 +59,7 @@ export default function PromptInput({
       <TextField
         fullWidth
         value={prompt}
+        maxLength={MAX_PROMPT_LENGTH}
         placeholder={placeholder}
         submitDisabled={isSubmitDisabled}
         onChange={(e) => setPrompt(e.target.value)}
@@ -67,6 +70,7 @@ export default function PromptInput({
       <Modal
         open={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
+        ariaLabel="CSV 파일 업로드"
         contentClassName="relative z-10 w-full max-w-[64.8rem] rounded-16 bg-transparent p-0 shadow-none"
       >
         <FileUploadZone

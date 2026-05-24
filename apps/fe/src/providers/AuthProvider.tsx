@@ -8,6 +8,8 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   ACCESS_TOKEN_STORAGE_KEY,
   AUTH_TOKENS_CHANGED_EVENT,
@@ -17,6 +19,9 @@ import {
   readAuthTokensFromSearchParams,
   setAuthTokens,
 } from '@/lib/auth';
+
+const LOGIN_PATH = '/login';
+const PRIVATE_PATH_PREFIXES = ['/analysis', '/data', '/history'];
 
 type AuthContextValue = {
   hasAccessToken: boolean;
@@ -40,13 +45,26 @@ function removeTokenParamsFromCurrentUrl(url: URL) {
 }
 
 export default function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const queryClient = useQueryClient();
   const [hasAccessToken, setHasAccessToken] = useState(
     () => typeof window !== 'undefined' && Boolean(getAccessToken()),
   );
 
   useEffect(() => {
     const syncAccessToken = () => {
-      setHasAccessToken(Boolean(getAccessToken()));
+      const nextHasAccessToken = Boolean(getAccessToken());
+
+      setHasAccessToken(nextHasAccessToken);
+
+      if (nextHasAccessToken) return;
+
+      queryClient.clear();
+
+      if (PRIVATE_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+        router.replace(LOGIN_PATH);
+      }
     };
 
     const currentUrl = new URL(window.location.href);
@@ -78,7 +96,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener(AUTH_TOKENS_CHANGED_EVENT, syncAccessToken);
       window.removeEventListener('storage', handleStorage);
     };
-  }, []);
+  }, [pathname, queryClient, router]);
 
   const value = useMemo(
     () => ({

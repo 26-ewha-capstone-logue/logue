@@ -27,6 +27,31 @@ export type FileUploadZoneProps = {
 } & Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'onDrop' | 'onError'>;
 
 const CSV_GRAPHIC_SRC = '/illusts/csv-graphic.svg';
+const MULTIPLE_FILES_MESSAGE = '파일은 하나만 업로드할 수 있습니다.';
+
+function getAcceptTokens(accept: string) {
+  return accept
+    .split(',')
+    .map((token) => token.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function matchesAcceptedFile(file: File, accept: string) {
+  const tokens = getAcceptTokens(accept);
+  if (tokens.length === 0) return true;
+
+  const lowerFileName = file.name.toLowerCase();
+  const lowerMimeType = file.type.toLowerCase();
+
+  return tokens.some((token) => {
+    if (token.startsWith('.')) return lowerFileName.endsWith(token);
+    if (token.endsWith('/*')) {
+      return lowerMimeType.startsWith(token.slice(0, -1));
+    }
+
+    return lowerMimeType === token;
+  });
+}
 
 function UploadIcon() {
   return (
@@ -83,40 +108,46 @@ export default function FileUploadZone({
         return;
       }
 
-      const extensions = accept.split(',').map((s) => s.trim().toLowerCase());
-      const lowerFileName = file.name.toLowerCase();
-      const valid = extensions.some((ext) => lowerFileName.endsWith(ext));
-      if (!valid) {
-        onError?.(`${extensions.join(', ')} 파일만 업로드할 수 있습니다.`);
+      if (!matchesAcceptedFile(file, accept)) {
+        onError?.(
+          `${getAcceptTokens(accept).join(', ')} 파일만 업로드할 수 있습니다.`,
+        );
         return;
       }
+
       onFileSelect?.(file);
     },
     [accept, onFileSelect, onError, validateFile],
   );
 
   const handleDragOver = useCallback(
-    (e: DragEvent<HTMLDivElement>) => {
+    (e: DragEvent<HTMLButtonElement>) => {
       e.preventDefault();
       if (!disabled) setIsDragOver(true);
     },
     [disabled],
   );
 
-  const handleDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
+  const handleDragLeave = useCallback((e: DragEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setIsDragOver(false);
   }, []);
 
   const handleDrop = useCallback(
-    (e: DragEvent<HTMLDivElement>) => {
+    (e: DragEvent<HTMLButtonElement>) => {
       e.preventDefault();
       setIsDragOver(false);
       if (disabled) return;
+
+      if (e.dataTransfer.files.length > 1) {
+        onError?.(MULTIPLE_FILES_MESSAGE);
+        return;
+      }
+
       const file = e.dataTransfer.files[0];
       if (file) validateAndEmit(file);
     },
-    [disabled, validateAndEmit],
+    [disabled, onError, validateAndEmit],
   );
 
   const handleClick = useCallback(() => {
@@ -184,7 +215,13 @@ export default function FileUploadZone({
           >
             <CloseIcon />
           </button>
-          <div className="absolute bottom-[1.8rem] left-20 h-[0.6rem] w-[54rem] max-w-[calc(100%-6.8rem)] rounded-222 bg-gray-300">
+          <div
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.max(0, Math.min(progress, 100))}
+            className="absolute bottom-[1.8rem] left-20 h-[0.6rem] w-[54rem] max-w-[calc(100%-6.8rem)] rounded-222 bg-gray-300"
+          >
             <div
               className="h-full rounded-222 bg-orange-500"
               style={{ width: `${Math.max(0, Math.min(progress, 100))}%` }}
@@ -192,16 +229,10 @@ export default function FileUploadZone({
           </div>
         </div>
       ) : (
-        <div
-          role="button"
-          tabIndex={disabled ? -1 : 0}
+        <button
+          type="button"
+          disabled={disabled}
           onClick={handleClick}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              handleClick();
-            }
-          }}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
@@ -216,18 +247,16 @@ export default function FileUploadZone({
             파일 드롭하기
           </p>
           <p className="text-body4 text-gray-800 opacity-70">or</p>
-          <button
-            type="button"
-            className="mt-4 rounded-222 bg-orange-500 px-12 py-8 text-body2 text-white"
-          >
+          <span className="mt-4 rounded-222 bg-orange-500 px-12 py-8 text-body2 text-white">
             파일 업로드
-          </button>
-        </div>
+          </span>
+        </button>
       )}
       <input
         ref={inputRef}
         type="file"
         accept={accept}
+        disabled={disabled}
         onChange={handleInputChange}
         className="hidden"
         aria-label="파일 업로드"

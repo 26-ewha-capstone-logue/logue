@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ChatIcon from '@/assets/icons/chat.svg';
 import SuccessIcon from '@/assets/icons/success.svg';
@@ -33,6 +33,7 @@ const SORT_OPTIONS = [
 const DATA_FILE_MESSAGES = {
   invalidType: '파일 형식이 맞지 않습니다.',
   tooLarge: '파일이 너무 커요. 50MB까지만 업로드 가능해요',
+  empty: '빈 CSV 파일은 업로드할 수 없어요.',
 };
 
 // TODO: API 연동
@@ -51,6 +52,8 @@ export default function DataPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const deleteTitleId = useId();
+  const deleteDescriptionId = useId();
 
   // TODO: 실제 정렬/필터 로직 (현재는 더미)
   void sortKey;
@@ -186,11 +189,23 @@ export default function DataPage() {
             </tr>
           </thead>
           <tbody>
+            {data.length === 0 && (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="px-24 py-40 text-center text-body3 text-gray-600"
+                >
+                  업로드된 데이터 소스가 없습니다.
+                </td>
+              </tr>
+            )}
+
             {data.map((row) => {
               const checked = selectedIds.has(row.id);
               return (
                 <tr
                   key={row.id}
+                  aria-label={`${row.fileName} 상세 보기`}
                   onClick={() => goToDetail(row.id)}
                   className="cursor-pointer border-t border-gray-200 transition-colors hover:bg-gray-100"
                 >
@@ -239,7 +254,13 @@ export default function DataPage() {
       />
 
       {/* 삭제 확인 모달 */}
-      <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)}>
+      <Modal
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        ariaLabelledBy={deleteTitleId}
+        ariaDescribedBy={deleteDescriptionId}
+        closeOnOverlayClick={false}
+      >
         <div className="flex flex-col items-center gap-24">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -249,10 +270,13 @@ export default function DataPage() {
             className="h-[8rem] w-auto"
           />
           <div className="flex flex-col items-center gap-4">
-            <h3 className="text-head4 font-semibold text-gray-900">
+            <h3
+              id={deleteTitleId}
+              className="text-head4 font-semibold text-gray-900"
+            >
               파일을 삭제하시겠어요?
             </h3>
-            <p className="text-body4 text-gray-700">
+            <p id={deleteDescriptionId} className="text-body4 text-gray-700">
               삭제 후엔 복구할 수 없어요.
             </p>
           </div>

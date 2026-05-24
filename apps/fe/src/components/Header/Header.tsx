@@ -75,6 +75,7 @@ export default function Header({
       <button
         type="button"
         onClick={onLogoClick}
+        aria-label="Logue 홈으로 이동"
         className="mr-24 flex shrink-0 items-center gap-8"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -118,7 +119,11 @@ export default function Header({
       <div className="ml-auto flex items-center gap-16">
         {searchSlot}
         {profileSlot ?? (
-          <button type="button" onClick={onProfileClick}>
+          <button
+            type="button"
+            onClick={onProfileClick}
+            aria-label="로그인 페이지로 이동"
+          >
             <ProfileIcon />
           </button>
         )}

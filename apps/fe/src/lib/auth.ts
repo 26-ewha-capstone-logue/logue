@@ -8,6 +8,8 @@ export const REFRESH_TOKEN_STORAGE_KEY = 'refreshToken';
 export const LEGACY_ACCESS_TOKEN_STORAGE_KEY = 'token';
 export const AUTH_TOKENS_CHANGED_EVENT = 'logue:auth-tokens-changed';
 
+const MAX_AUTH_TOKEN_LENGTH = 8192;
+
 function getOptionalLocalStorage() {
   if (typeof window === 'undefined') return null;
 
@@ -16,14 +18,6 @@ function getOptionalLocalStorage() {
   } catch {
     return null;
   }
-}
-
-function getRequiredLocalStorage() {
-  if (typeof window === 'undefined') {
-    throw new Error('localStorage is not available outside the browser');
-  }
-
-  return window.localStorage;
 }
 
 function notifyAuthTokensChanged() {
@@ -43,13 +37,35 @@ function getStorageItem(key: string) {
 }
 
 function setStorageItem(key: string, value: string) {
-  const storage = getRequiredLocalStorage();
-  storage.setItem(key, value);
+  const storage = getOptionalLocalStorage();
+  if (!storage) return false;
+
+  try {
+    storage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function removeStorageItem(key: string) {
-  const storage = getRequiredLocalStorage();
-  storage.removeItem(key);
+  const storage = getOptionalLocalStorage();
+  if (!storage) return false;
+
+  try {
+    storage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function normalizeToken(token: string | null | undefined) {
+  const normalized = token?.trim();
+
+  if (!normalized || normalized.length > MAX_AUTH_TOKEN_LENGTH) return null;
+
+  return normalized;
 }
 
 export function getAccessToken() {
@@ -64,21 +80,20 @@ export function getRefreshToken() {
 }
 
 export function setAuthTokens(tokens: AuthTokens) {
-  const accessToken = tokens.accessToken.trim();
-  const refreshToken = tokens.refreshToken?.trim();
+  const accessToken = normalizeToken(tokens.accessToken);
 
   if (!accessToken) return;
 
-  setStorageItem(ACCESS_TOKEN_STORAGE_KEY, accessToken);
+  const didStoreAccessToken = setStorageItem(
+    ACCESS_TOKEN_STORAGE_KEY,
+    accessToken,
+  );
   setStorageItem(LEGACY_ACCESS_TOKEN_STORAGE_KEY, accessToken);
+  // Refresh rotation is not implemented in the FE yet, so avoid persisting an
+  // unused long-lived credential in browser storage.
+  removeStorageItem(REFRESH_TOKEN_STORAGE_KEY);
 
-  if (refreshToken) {
-    setStorageItem(REFRESH_TOKEN_STORAGE_KEY, refreshToken);
-  } else {
-    removeStorageItem(REFRESH_TOKEN_STORAGE_KEY);
-  }
-
-  notifyAuthTokensChanged();
+  if (didStoreAccessToken) notifyAuthTokensChanged();
 }
 
 export function clearAuthTokens() {
@@ -91,8 +106,8 @@ export function clearAuthTokens() {
 export function readAuthTokensFromSearchParams(
   searchParams: URLSearchParams,
 ): AuthTokens | null {
-  const accessToken = searchParams.get('accessToken')?.trim();
-  const refreshToken = searchParams.get('refreshToken')?.trim();
+  const accessToken = normalizeToken(searchParams.get('accessToken'));
+  const refreshToken = normalizeToken(searchParams.get('refreshToken'));
 
   if (!accessToken) return null;
 

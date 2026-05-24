@@ -18,6 +18,7 @@ const TOAST_DURATION_MS = 2500;
 const ANALYSIS_FILE_MESSAGES = {
   invalidType: 'Logue는 CSV 형식의 파일만 지원해요',
   tooLarge: '파일이 너무 커요. 50MB까지만 업로드 가능해요',
+  empty: '빈 CSV 파일은 업로드할 수 없어요',
 };
 
 export default function AnalysisPage() {
