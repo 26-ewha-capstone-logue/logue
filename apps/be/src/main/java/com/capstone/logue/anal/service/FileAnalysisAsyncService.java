@@ -177,7 +177,7 @@ public class FileAnalysisAsyncService {
      */
     private FileAnalysisRequest buildRequest(Long jobId, DataSource dataSource) {
         return fileAnalysisRequestBuilder.build(
-                jobId,
+                String.valueOf(jobId),
                 dataSource.getId(),
                 dataSource.getFileName(),
                 dataSource.getRowCount(),
