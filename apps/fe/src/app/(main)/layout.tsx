@@ -3,13 +3,18 @@
 import { Suspense, useEffect, useState, type CSSProperties } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { logoutAuth } from '@/apis/auth';
 import { getMyInfo, userKeys, type GetUserInfoResponse } from '@/apis/user';
 import { Header, type NavItem } from '@/components';
 import FileIcon from '@/assets/icons/file.svg';
 import GTapIcon from '@/assets/icons/G-tap.svg';
 import GHistoryIcon from '@/assets/icons/G-history.svg';
 import SearchIcon from '@/assets/icons/search.svg';
-import { clearAuthTokens, skipNextAuthEntryRedirect } from '@/lib/auth';
+import {
+  clearAuthTokens,
+  getRefreshToken,
+  skipNextAuthEntryRedirect,
+} from '@/lib/auth';
 import { useAuthSession } from '@/providers/AuthProvider';
 
 const NAV_ITEMS: NavItem[] = [
@@ -159,9 +164,15 @@ export default function MainLayout({
 
   const showDataSearch = pathname.startsWith('/data');
   const handleLogout = () => {
+    const refreshToken = getRefreshToken();
+
     clearAuthTokens();
     queryClient.removeQueries({ queryKey: userKeys.me() });
     router.replace('/');
+
+    if (refreshToken) {
+      void logoutAuth(refreshToken).catch(() => undefined);
+    }
   };
   const handleLogoClick = () => {
     skipNextAuthEntryRedirect();
@@ -186,7 +197,7 @@ export default function MainLayout({
   ) : undefined;
 
   const handleProfileClick = () => {
-    router.push('/login');
+    window.location.assign('/login');
   };
 
   return (

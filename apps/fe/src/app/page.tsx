@@ -103,7 +103,7 @@ export default function IntroPage() {
   const [scrolled, setScrolled] = useState(false);
 
   const goToLogin = () => {
-    router.push('/login');
+    window.location.assign('/login');
   };
 
   // hero(=뷰포트 1개) 만큼 스크롤되면 헤더가 흰 배경 + 그림자로 전환됨
