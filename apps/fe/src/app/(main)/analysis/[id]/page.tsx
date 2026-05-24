@@ -29,6 +29,8 @@ import {
 import { getApiErrorMessage } from '@/apis/errors';
 import { ChatBubble, ToastAlert } from '@/components';
 import {
+  hasAnalysisStartPayloadConsumed,
+  markAnalysisStartPayloadConsumed,
   readAnalysisStartPayload,
   type AnalysisStartPayload,
 } from '@/lib/analysisStartPayload';
@@ -284,6 +286,8 @@ export default function AnalysisChatPage({
   const [hasStartedInitialQuestion, setHasStartedInitialQuestion] =
     useState(false);
   const [hasResolvedStartPayload, setHasResolvedStartPayload] = useState(false);
+  const [canAutoStartInitialQuestion, setCanAutoStartInitialQuestion] =
+    useState(false);
   const openNextCriteriaInEditRef = useRef(false);
   const readStartPayloadConversationIdRef = useRef<number | null>(null);
   const questionSubmissionLockedRef = useRef(false);
@@ -492,16 +496,28 @@ export default function AnalysisChatPage({
 
   const startInitialQuestion = useCallback(
     (initialMode: CriteriaInitialMode = 'normal') => {
-      if (hasStartedInitialQuestion || !hasResolvedStartPayload) return;
+      if (
+        hasStartedInitialQuestion ||
+        !hasResolvedStartPayload ||
+        !canAutoStartInitialQuestion ||
+        conversationId === null
+      ) {
+        return;
+      }
 
+      markAnalysisStartPayloadConsumed(conversationId);
+      setCanAutoStartInitialQuestion(false);
       setHasStartedInitialQuestion(true);
       openNextCriteriaInEditRef.current = initialMode === 'edit';
       startQuestion(initialPrompt, false);
     },
     [
+      canAutoStartInitialQuestion,
+      conversationId,
       hasResolvedStartPayload,
       hasStartedInitialQuestion,
       initialPrompt,
+      setCanAutoStartInitialQuestion,
       setHasStartedInitialQuestion,
       startQuestion,
     ],
@@ -513,6 +529,10 @@ export default function AnalysisChatPage({
       return;
     }
 
+    if (conversationId !== null) {
+      markAnalysisStartPayloadConsumed(conversationId);
+    }
+    setCanAutoStartInitialQuestion(false);
     setHasStartedInitialQuestion(true);
     openNextCriteriaInEditRef.current = false;
     startQuestion(value.prompt);
@@ -603,6 +623,9 @@ export default function AnalysisChatPage({
       return;
     }
 
+    setHasResolvedStartPayload(false);
+    setCanAutoStartInitialQuestion(false);
+
     const timer = window.setTimeout(() => {
       if (conversationId === null) {
         setStartPayload({ prompt: DEFAULT_PROMPT, fileName: null });
@@ -613,11 +636,15 @@ export default function AnalysisChatPage({
       readStartPayloadConversationIdRef.current = conversationId;
 
       const storedPayload = readAnalysisStartPayload(conversationId);
+      const canAutoStart =
+        storedPayload !== null &&
+        !hasAnalysisStartPayloadConsumed(conversationId);
 
       setStartPayload({
         prompt: storedPayload?.prompt || DEFAULT_PROMPT,
         fileName: storedPayload?.fileName ?? null,
       });
+      setCanAutoStartInitialQuestion(canAutoStart);
       setHasResolvedStartPayload(true);
     }, 0);
 
@@ -648,7 +675,8 @@ export default function AnalysisChatPage({
     if (
       !summaryQuery.data ||
       hasStartedInitialQuestion ||
-      !hasResolvedStartPayload
+      !hasResolvedStartPayload ||
+      !canAutoStartInitialQuestion
     ) {
       return;
     }
@@ -662,6 +690,7 @@ export default function AnalysisChatPage({
   }, [
     hasResolvedStartPayload,
     hasStartedInitialQuestion,
+    canAutoStartInitialQuestion,
     startInitialQuestion,
     summaryQuery.data,
   ]);
@@ -709,6 +738,7 @@ export default function AnalysisChatPage({
     const summaryActionDisabled =
       hasStartedInitialQuestion ||
       !hasResolvedStartPayload ||
+      !canAutoStartInitialQuestion ||
       isQuestionAnalysisPending ||
       updateCriteriaMutation.isPending;
 

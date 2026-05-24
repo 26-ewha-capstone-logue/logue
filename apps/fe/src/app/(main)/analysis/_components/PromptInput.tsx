@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { FileUploadZone, Modal, TextField } from '@/components';
 import UploadedFileChip from './UploadedFileChip';
 
@@ -35,19 +35,17 @@ export default function PromptInput({
   const [prompt, setPrompt] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [prevShowFileAttach, setPrevShowFileAttach] = useState(showFileAttach);
 
   const isSubmitDisabled = submitDisabled || prompt.trim().length === 0;
 
-  useEffect(() => {
-    if (showFileAttach) return;
-
-    const timer = window.setTimeout(() => {
+  if (prevShowFileAttach !== showFileAttach) {
+    setPrevShowFileAttach(showFileAttach);
+    if (!showFileAttach) {
       setIsUploadOpen(false);
       setFile(null);
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, [showFileAttach]);
+    }
+  }
 
   const handleSubmit = useCallback(() => {
     if (isSubmitDisabled) return;

@@ -258,15 +258,21 @@ export async function createAnalysisFlow(
 
 export async function startAnalysisFlowFromDataSource(dataSourceId: number) {
   const conversation = await createConversation();
-  const analysisFlow = await createAnalysisFlow(conversation.conversationId, {
-    dataSourceId,
-  });
 
-  return {
-    conversationId: conversation.conversationId,
-    analysisFlowId: analysisFlow.analysisFlowId,
-    dataSourceId: analysisFlow.dataSourceId,
-  } satisfies StartAnalysisFlowFromDataSourceResponse;
+  try {
+    const analysisFlow = await createAnalysisFlow(conversation.conversationId, {
+      dataSourceId,
+    });
+
+    return {
+      conversationId: conversation.conversationId,
+      analysisFlowId: analysisFlow.analysisFlowId,
+      dataSourceId: analysisFlow.dataSourceId,
+    } satisfies StartAnalysisFlowFromDataSourceResponse;
+  } catch (error) {
+    // TODO: call the conversation cleanup API once the backend exposes one.
+    throw error;
+  }
 }
 
 export async function getSummaryStatus(params: AnalysisFlowParams) {
