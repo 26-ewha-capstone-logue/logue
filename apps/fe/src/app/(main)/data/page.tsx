@@ -264,11 +264,19 @@ export default function DataPage() {
                   <tr
                     key={row.dataSourceId}
                     onClick={() => goToDetail(row.dataSourceId)}
-                    className="cursor-pointer border-t border-gray-200 transition-colors hover:bg-gray-100"
+                    onKeyDown={(event) => {
+                      if (event.key !== 'Enter' && event.key !== ' ') return;
+                      event.preventDefault();
+                      goToDetail(row.dataSourceId);
+                    }}
+                    tabIndex={0}
+                    role="button"
+                    className="cursor-pointer border-t border-gray-200 transition-colors hover:bg-gray-100 focus-visible:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500"
                   >
                     <td
                       className="py-16 pl-24"
                       onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
                     >
                       <Checkbox
                         checked={checked}

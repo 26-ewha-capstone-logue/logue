@@ -1,9 +1,9 @@
 'use client';
 
 import { use, useEffect, useState, type ReactNode } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { ChatBubble } from '@/components';
 import PromptInput, { type PromptInputValue } from '../_components/PromptInput';
+import { readAnalysisDraft } from '../_lib/analysisDraftStorage';
 import AnalysisResult from './_components/AnalysisResult';
 import AnalyzingIndicator from './_components/AnalyzingIndicator';
 import DataTablePreview from './_components/DataTablePreview';
@@ -19,6 +19,7 @@ type Message = {
   role: 'user' | 'bot';
   /** 봇은 카드 등 ReactNode, 사용자는 문자열을 사용 */
   content: ReactNode;
+  fileName?: string | null;
 };
 
 // TODO: 실제 API 응답 시간에 맞춰 제거. 현재는 로딩 UI 데모용 시뮬레이션 시간.
@@ -34,18 +35,35 @@ export default function AnalysisChatPage({
 }) {
   // TODO: id 로 분석 데이터 fetch
   const { id } = use(params);
-  void id;
-
-  const searchParams = useSearchParams();
-  const initialPrompt = searchParams.get('q') ?? DEFAULT_PROMPT;
 
   const [messages, setMessages] = useState<Message[]>(() => [
-    { id: 'init-user', role: 'user', content: initialPrompt },
+    { id: 'init-user', role: 'user', content: DEFAULT_PROMPT },
   ]);
   // CSV 분석 완료 여부 — 좌측 데이터 표 vs 로딩 화면 토글에 사용
   const [isCsvAnalyzed, setIsCsvAnalyzed] = useState(false);
   // 분석 중 인디케이터 표시 여부 (CSV 단계 + 질문 단계 동안 true)
   const [isAnalyzing, setIsAnalyzing] = useState(true);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const draft = readAnalysisDraft(id);
+      if (!draft) return;
+
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === 'init-user'
+            ? {
+                ...msg,
+                content: draft.prompt,
+                fileName: draft.fileName,
+              }
+            : msg,
+        ),
+      );
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [id]);
 
   // 최초 진입 — CSV 분석 시뮬레이션
   // TODO: 실제 API 호출(파일 업로드 + 분석)로 교체
@@ -71,7 +89,12 @@ export default function AnalysisChatPage({
     const userMsgId = `user-${Date.now()}`;
     setMessages((prev) => [
       ...prev,
-      { id: userMsgId, role: 'user', content: value.prompt },
+      {
+        id: userMsgId,
+        role: 'user',
+        content: value.prompt,
+        fileName: value.file?.name ?? null,
+      },
     ]);
     setIsAnalyzing(true);
 
@@ -119,7 +142,15 @@ export default function AnalysisChatPage({
               const isUser = msg.role === 'user';
               if (isUser) {
                 return (
-                  <ChatBubble key={msg.id} role="user">
+                  <ChatBubble
+                    key={msg.id}
+                    role="user"
+                    file={
+                      msg.fileName
+                        ? { name: msg.fileName, status: 'uploaded' }
+                        : undefined
+                    }
+                  >
                     {msg.content}
                   </ChatBubble>
                 );
