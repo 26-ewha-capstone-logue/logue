@@ -8,6 +8,10 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --no-dev --frozen --no-cache
 
 COPY main.py .
+COPY core ./core
+COPY routers ./routers
+COPY schemas ./schemas
+COPY services ./services
 
 EXPOSE 8000
 
