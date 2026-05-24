@@ -135,12 +135,18 @@ export default function FileUploadZone({
   const visualState = state ?? (isDragOver ? 'drag' : 'default');
   const isUpload = visualState === 'upload';
   const isDrag = visualState === 'drag';
+  const outerBorderClass = disabled ? 'border-gray-300' : 'border-orange-500';
+  const dropzoneBorderClass = disabled
+    ? 'border-gray-300'
+    : isDrag
+      ? 'border-orange-500 bg-orange-100/30'
+      : 'border-gray-400 hover:border-orange-500';
 
   return (
     <div
       className={`relative w-full max-w-[64.8rem] overflow-hidden rounded-16 bg-white px-20 pt-16 pb-20 ${
         isUpload ? 'h-[16.7rem]' : 'h-[25.8rem]'
-      } ${disabled ? 'opacity-50' : ''} ${className}`.trim()}
+      } border-2 ${outerBorderClass} ${disabled ? 'opacity-50' : ''} ${className}`.trim()}
       {...rest}
     >
       <div className="mb-12 flex items-center">
@@ -205,11 +211,9 @@ export default function FileUploadZone({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`flex h-[18.2rem] cursor-pointer flex-col items-center justify-center rounded-8 border-[1.5px] border-dashed transition-colors ${
-            isDrag
-              ? 'border-orange-500 bg-orange-100/30'
-              : 'border-gray-400 hover:border-orange-500'
-          } ${disabled ? 'cursor-not-allowed' : ''}`}
+          className={`flex h-[18.2rem] cursor-pointer flex-col items-center justify-center rounded-8 border-[1.5px] border-dashed transition-colors ${dropzoneBorderClass} ${
+            disabled ? 'cursor-not-allowed' : ''
+          }`}
         >
           <UploadIcon />
           <p className="mt-8 text-body2 text-gray-900 opacity-70">
@@ -218,7 +222,8 @@ export default function FileUploadZone({
           <p className="text-body4 text-gray-800 opacity-70">or</p>
           <button
             type="button"
-            className="mt-4 rounded-222 bg-orange-500 px-12 py-8 text-body2 text-white"
+            disabled={disabled}
+            className="mt-4 rounded-222 bg-orange-500 px-12 py-8 text-body2 text-white disabled:cursor-not-allowed disabled:bg-gray-400 disabled:text-gray-700"
           >
             파일 업로드
           </button>
