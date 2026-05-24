@@ -80,9 +80,6 @@ public class DataSourceService {
         }
 
         FilePreview preview = csvParser.parse(new ByteArrayInputStream(bytes));
-        if (preview.rows().isEmpty()) {
-            throw new LogueException(ErrorCode.DATASOURCE_EMPTY_ROWS);
-        }
 
         String storageKey = storage.store(
                 userId,
