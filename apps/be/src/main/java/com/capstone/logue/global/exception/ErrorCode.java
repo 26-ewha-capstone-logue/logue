@@ -14,6 +14,7 @@ public enum ErrorCode {
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "C003", "지원하지 않는 HTTP 메서드입니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C004", "서버 내부 오류가 발생했습니다."),
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "C005", "요청한 리소스를 찾을 수 없습니다."),
+    MISSING_REQUEST_PARAMETER(HttpStatus.BAD_REQUEST, "C006", "필수 요청 파라미터가 누락되었습니다."),
 
     // Auth
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "A001", "인증이 필요합니다."),
@@ -32,6 +33,7 @@ public enum ErrorCode {
     DATASOURCE_STORAGE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "D004", "데이터 소스 파일 저장/읽기에 실패했습니다."),
     DATASOURCE_INVALID_PAGE_PARAM(HttpStatus.BAD_REQUEST, "D005", "잘못된 페이지 요청 파라미터입니다."),
     COLUMN_NOT_FOUND(HttpStatus.BAD_GATEWAY, "D006", "FastAPI 응답에 알 수 없는 컬럼명이 포함되어 있습니다."),
+    DATASOURCE_IN_USE(HttpStatus.CONFLICT, "D007", "분석 흐름에서 사용 중인 데이터 소스는 삭제할 수 없습니다."),
     SUMMARY_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "D101", "데이터 요약이 완료되지 않았습니다."),
     SUMMARY_NOT_STARTED(HttpStatus.BAD_REQUEST, "D102", "데이터 요약이 시작되지 않았습니다."),
 

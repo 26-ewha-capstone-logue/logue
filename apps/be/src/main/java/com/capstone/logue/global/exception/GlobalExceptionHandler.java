@@ -5,12 +5,15 @@ import com.capstone.logue.global.response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @Slf4j
@@ -45,6 +48,22 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ErrorCode.INVALID_INPUT));
     }
 
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingRequestParameter(MissingServletRequestParameterException e) {
+        log.warn("[MissingRequestParameter] {}", e.getMessage());
+        return ResponseEntity
+                .status(ErrorCode.MISSING_REQUEST_PARAMETER.getHttpStatus())
+                .body(ApiResponse.error(ErrorCode.MISSING_REQUEST_PARAMETER));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> handleArgumentTypeMismatch(MethodArgumentTypeMismatchException e) {
+        log.warn("[ArgumentTypeMismatch] {}", e.getMessage());
+        return ResponseEntity
+                .status(ErrorCode.INVALID_TYPE.getHttpStatus())
+                .body(ApiResponse.error(ErrorCode.INVALID_TYPE));
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse<Void>> handleMessageNotReadable(HttpMessageNotReadableException e) {
         log.warn("[MessageNotReadable] {}", e.getMessage());
@@ -67,6 +86,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(ErrorCode.RESOURCE_NOT_FOUND.getHttpStatus())
                 .body(ApiResponse.error(ErrorCode.RESOURCE_NOT_FOUND));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(DataIntegrityViolationException e, HttpServletRequest request) {
+        log.warn("[DataIntegrityViolation] {} {} - {}", request.getMethod(), request.getRequestURI(), e.getMessage());
+        return ResponseEntity
+                .status(ErrorCode.DATASOURCE_IN_USE.getHttpStatus())
+                .body(ApiResponse.error(ErrorCode.DATASOURCE_IN_USE));
     }
 
     @ExceptionHandler(Exception.class)
