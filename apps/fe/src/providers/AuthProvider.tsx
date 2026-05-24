@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   ACCESS_TOKEN_STORAGE_KEY,
   AUTH_TOKENS_CHANGED_EVENT,
@@ -20,6 +20,7 @@ import {
 } from '@/lib/auth';
 
 const AUTH_REDIRECT_PATH = '/analysis';
+const AUTH_ENTRY_PATHS = new Set(['/', '/login']);
 
 type AuthContextValue = {
   hasAccessToken: boolean;
@@ -42,15 +43,20 @@ function removeTokenParamsFromCurrentUrl(url: URL) {
   );
 }
 
+function shouldRedirectAuthenticatedUser(pathname: string) {
+  return AUTH_ENTRY_PATHS.has(pathname);
+}
+
 export default function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const [hasAccessToken, setHasAccessToken] = useState(
-    () => typeof window !== 'undefined' && Boolean(getAccessToken()),
-  );
+  const pathname = usePathname();
+  const [hasAccessToken, setHasAccessToken] = useState(false);
 
   useEffect(() => {
     const syncAccessToken = () => {
-      setHasAccessToken(Boolean(getAccessToken()));
+      const nextHasAccessToken = Boolean(getAccessToken());
+      setHasAccessToken(nextHasAccessToken);
+      return nextHasAccessToken;
     };
 
     const currentUrl = new URL(window.location.href);
@@ -64,7 +70,15 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       router.replace(AUTH_REDIRECT_PATH);
     }
 
-    syncAccessToken();
+    const nextHasAccessToken = syncAccessToken();
+
+    if (
+      !redirectedTokens &&
+      nextHasAccessToken &&
+      shouldRedirectAuthenticatedUser(pathname)
+    ) {
+      router.replace(AUTH_REDIRECT_PATH);
+    }
 
     const handleStorage = (event: StorageEvent) => {
       if (
@@ -83,7 +97,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener(AUTH_TOKENS_CHANGED_EVENT, syncAccessToken);
       window.removeEventListener('storage', handleStorage);
     };
-  }, [router]);
+  }, [pathname, router]);
 
   const value = useMemo(
     () => ({
