@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 @Slf4j
 @RequiredArgsConstructor
 @RestControllerAdvice
@@ -59,6 +62,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiResponse<Void>> handleArgumentTypeMismatch(MethodArgumentTypeMismatchException e) {
         log.warn("[ArgumentTypeMismatch] {}", e.getMessage());
+        Class<?> requiredType = e.getRequiredType();
+        if (requiredType != null && requiredType.isEnum()) {
+            String allowedValues = Arrays.stream(requiredType.getEnumConstants())
+                    .map(Object::toString)
+                    .collect(Collectors.joining(", "));
+            String message = String.format("잘못된 %s 값입니다. 허용값: %s", e.getName(), allowedValues);
+            return ResponseEntity
+                    .status(ErrorCode.INVALID_TYPE.getHttpStatus())
+                    .body(ApiResponse.error(ErrorCode.INVALID_TYPE, message));
+        }
         return ResponseEntity
                 .status(ErrorCode.INVALID_TYPE.getHttpStatus())
                 .body(ApiResponse.error(ErrorCode.INVALID_TYPE));
