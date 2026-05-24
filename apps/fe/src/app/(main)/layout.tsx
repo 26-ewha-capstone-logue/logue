@@ -9,7 +9,7 @@ import FileIcon from '@/assets/icons/file.svg';
 import GTapIcon from '@/assets/icons/G-tap.svg';
 import GHistoryIcon from '@/assets/icons/G-history.svg';
 import SearchIcon from '@/assets/icons/search.svg';
-import { clearAuthTokens } from '@/lib/auth';
+import { clearAuthTokens, skipNextAuthEntryRedirect } from '@/lib/auth';
 import { useAuthSession } from '@/providers/AuthProvider';
 
 const NAV_ITEMS: NavItem[] = [
@@ -115,6 +115,10 @@ export default function MainLayout({
     queryClient.removeQueries({ queryKey: userKeys.me() });
     router.replace('/');
   };
+  const handleLogoClick = () => {
+    skipNextAuthEntryRedirect();
+    router.push('/');
+  };
 
   const profileSlot = hasAccessToken ? (
     <div className="flex items-center gap-12">
@@ -140,7 +144,7 @@ export default function MainLayout({
         activeHref={pathname}
         profileSlot={profileSlot}
         searchSlot={showDataSearch ? <DataSourceSearchInput /> : undefined}
-        onLogoClick={() => router.push('/analysis')}
+        onLogoClick={handleLogoClick}
         onNavClick={(href) => router.push(href)}
         onProfileClick={() => router.push('/login')}
       />

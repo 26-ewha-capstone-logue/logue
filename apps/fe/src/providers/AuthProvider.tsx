@@ -14,6 +14,7 @@ import {
   AUTH_TOKENS_CHANGED_EVENT,
   LEGACY_ACCESS_TOKEN_STORAGE_KEY,
   REFRESH_TOKEN_STORAGE_KEY,
+  consumeAuthEntryRedirectBypass,
   getAccessToken,
   readAuthTokensFromSearchParams,
   setAuthTokens,
@@ -75,11 +76,15 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const nextHasAccessToken = syncAccessToken();
+    const shouldBypassAuthEntryRedirect =
+      shouldRedirectAuthenticatedUser(pathname) &&
+      consumeAuthEntryRedirectBypass();
 
     if (
       !redirectedTokens &&
       nextHasAccessToken &&
-      shouldRedirectAuthenticatedUser(pathname)
+      shouldRedirectAuthenticatedUser(pathname) &&
+      !shouldBypassAuthEntryRedirect
     ) {
       replaceLocation(AUTH_REDIRECT_PATH);
       return;
