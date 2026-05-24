@@ -3,13 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { getMyInfo } from '@/apis/user';
+import { getMyInfo, userKeys } from '@/apis/user';
 import { ToastAlert } from '@/components';
 import { validateCsvFile } from '@/lib/fileValidation';
 import { useAuthSession } from '@/providers/AuthProvider';
 import GreetingSection from './_components/GreetingSection';
 import PromptInput, { type PromptInputValue } from './_components/PromptInput';
 import SampleDataSection from './_components/SampleDataSection';
+import { saveAnalysisDraft } from './_lib/analysisDraftStorage';
 
 const FALLBACK_USER_NAME = '사용자';
 const USER_INFO_STALE_TIME = 5 * 60 * 1000;
@@ -29,7 +30,7 @@ export default function AnalysisPage() {
     isError: isUserInfoError,
     isLoading: isUserInfoLoading,
   } = useQuery({
-    queryKey: ['user', 'me'],
+    queryKey: userKeys.me(),
     queryFn: getMyInfo,
     enabled: hasAccessToken,
     staleTime: USER_INFO_STALE_TIME,
@@ -56,11 +57,11 @@ export default function AnalysisPage() {
     // TODO: 분석 생성 API 호출 후 응답 id 로 교체
     // e.g. const { id } = await createAnalysis({ prompt: value.prompt, file: value.file });
     const tempId = `tmp-${Date.now()}`;
-    const params = new URLSearchParams();
-    if (value.prompt) params.set('q', value.prompt);
-    if (value.file?.name) params.set('file', value.file.name);
-    const qs = params.toString();
-    router.push(`/analysis/${tempId}${qs ? `?${qs}` : ''}`);
+    saveAnalysisDraft(tempId, {
+      prompt: value.prompt,
+      fileName: value.file?.name ?? null,
+    });
+    router.push(`/analysis/${tempId}`);
   };
 
   const handlePromptError = (message: string) => {
