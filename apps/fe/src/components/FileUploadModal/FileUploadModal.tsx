@@ -7,7 +7,7 @@ import Modal from '../Modal/Modal';
 export type FileUploadModalProps = {
   open: boolean;
   onClose: () => void;
-  onUpload?: (file: File) => void;
+  onUpload?: (file: File) => void | Promise<void>;
   validateFile?: (file: File) => string | null;
   onError?: (message: string) => void;
   accept?: string;
@@ -70,12 +70,22 @@ export default function FileUploadModal({
         setProgress(Math.min(p, 100));
 
         if (p >= 100) {
-          reset();
-          onUpload?.(selected);
+          clearTimer();
+          setProgress(100);
+
+          void Promise.resolve(onUpload?.(selected))
+            .catch((error) => {
+              onError?.(
+                error instanceof Error
+                  ? error.message
+                  : '파일 업로드에 실패했습니다.',
+              );
+            })
+            .finally(reset);
         }
       }, SIM_TICK_MS);
     },
-    [clearTimer, onUpload, reset],
+    [clearTimer, onError, onUpload, reset],
   );
 
   const handleCancelFile = useCallback(() => {

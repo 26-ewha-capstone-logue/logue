@@ -106,7 +106,7 @@ export default function IntroPage() {
   const [scrolled, setScrolled] = useState(false);
 
   const goToLogin = () => {
-    window.location.assign('/login');
+    router.push('/login');
   };
 
   const handleLogout = () => {

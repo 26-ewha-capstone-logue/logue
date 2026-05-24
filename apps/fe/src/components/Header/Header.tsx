@@ -122,13 +122,21 @@ export default function Header({
       <div className="ml-auto flex items-center gap-16">
         {searchSlot}
         {profileSlot ?? (
-          <button
-            type="button"
-            onClick={onProfileClick}
-            aria-label={profileAriaLabel}
-          >
-            <ProfileIcon />
-          </button>
+          <>
+            {onProfileClick ? (
+              <button
+                type="button"
+                onClick={onProfileClick}
+                aria-label={profileAriaLabel}
+              >
+                <ProfileIcon />
+              </button>
+            ) : (
+              <span className="inline-flex" aria-label={profileAriaLabel}>
+                <ProfileIcon />
+              </span>
+            )}
+          </>
         )}
       </div>
     </header>

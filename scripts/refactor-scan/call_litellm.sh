@@ -10,24 +10,29 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 2
 fi
 
-prompt="$(cat)"
-if [[ -z "$prompt" ]]; then
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+prompt_file="$tmpdir/prompt"
+payload_file="$tmpdir/payload"
+body_file="$tmpdir/body"
+status_file="$tmpdir/status"
+
+cat > "$prompt_file"
+if [[ ! -s "$prompt_file" ]]; then
   echo "error: empty prompt on stdin" >&2
   exit 2
 fi
 
-payload="$(
-  jq -n \
-    --arg model "$LITELLM_MODEL" \
-    --arg content "$prompt" \
-    --argjson max_tokens "$LITELLM_MAX_TOKENS" \
-    '{
-      model: $model,
-      max_tokens: $max_tokens,
-      temperature: 0.2,
-      messages: [{role: "user", content: $content}]
-    }'
-)"
+jq -n \
+  --arg model "$LITELLM_MODEL" \
+  --rawfile content "$prompt_file" \
+  --argjson max_tokens "$LITELLM_MAX_TOKENS" \
+  '{
+    model: $model,
+    max_tokens: $max_tokens,
+    temperature: 0.2,
+    messages: [{role: "user", content: $content}]
+  }' > "$payload_file"
 
 endpoint="${LITELLM_BASE_URL%/}/v1/chat/completions"
 
@@ -45,11 +50,6 @@ if [[ ${#keys[@]} -eq 0 ]]; then
   exit 2
 fi
 
-tmpdir="$(mktemp -d)"
-trap 'rm -rf "$tmpdir"' EXIT
-body_file="$tmpdir/body"
-status_file="$tmpdir/status"
-
 call_once() {
   local key="$1"
   : >"$body_file"
@@ -63,7 +63,7 @@ call_once() {
       --write-out '%{http_code}' \
       --header "Authorization: Bearer $key" \
       --header 'Content-Type: application/json' \
-      --data "$payload" \
+      --data-binary @"$payload_file" \
       "$endpoint" 2>"$tmpdir/curl_err"
     echo "__exit:$?"
   )"

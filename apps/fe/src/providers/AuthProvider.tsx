@@ -9,12 +9,13 @@ import {
   type ReactNode,
 } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
   ACCESS_TOKEN_STORAGE_KEY,
   AUTH_TOKENS_CHANGED_EVENT,
   LEGACY_ACCESS_TOKEN_STORAGE_KEY,
   REFRESH_TOKEN_STORAGE_KEY,
+  consumeAuthEntryRedirectBypass,
   getAccessToken,
   readAuthTokensFromSearchParams,
   setAuthTokens,
@@ -22,6 +23,8 @@ import {
 
 const LOGIN_PATH = '/login';
 const PRIVATE_PATH_PREFIXES = ['/analysis', '/data', '/history'];
+const AUTH_REDIRECT_PATH = '/analysis';
+const AUTH_ENTRY_PATHS = new Set(['/', '/login']);
 
 type AuthContextValue = {
   hasAccessToken: boolean;
@@ -50,13 +53,18 @@ function isPrivatePath(pathname: string) {
   );
 }
 
+function shouldRedirectAuthenticatedUser(pathname: string) {
+  return AUTH_ENTRY_PATHS.has(pathname);
+}
+
+function replaceLocation(pathname: string) {
+  window.location.replace(pathname);
+}
+
 export default function AuthProvider({ children }: { children: ReactNode }) {
-  const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
-  const [hasAccessToken, setHasAccessToken] = useState(
-    () => typeof window !== 'undefined' && Boolean(getAccessToken()),
-  );
+  const [hasAccessToken, setHasAccessToken] = useState(false);
 
   useEffect(() => {
     const syncAccessToken = () => {
@@ -64,13 +72,15 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
       setHasAccessToken(nextHasAccessToken);
 
-      if (nextHasAccessToken) return;
+      if (!nextHasAccessToken) {
+        queryClient.clear();
 
-      queryClient.clear();
-
-      if (isPrivatePath(pathname)) {
-        router.replace(LOGIN_PATH);
+        if (isPrivatePath(pathname)) {
+          replaceLocation(LOGIN_PATH);
+        }
       }
+
+      return nextHasAccessToken;
     };
 
     const currentUrl = new URL(window.location.href);
@@ -81,9 +91,24 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     if (redirectedTokens) {
       setAuthTokens(redirectedTokens);
       removeTokenParamsFromCurrentUrl(currentUrl);
+      replaceLocation(AUTH_REDIRECT_PATH);
+      return;
     }
 
-    syncAccessToken();
+    const nextHasAccessToken = syncAccessToken();
+    const shouldBypassAuthEntryRedirect =
+      shouldRedirectAuthenticatedUser(pathname) &&
+      consumeAuthEntryRedirectBypass();
+
+    if (
+      !redirectedTokens &&
+      nextHasAccessToken &&
+      shouldRedirectAuthenticatedUser(pathname) &&
+      !shouldBypassAuthEntryRedirect
+    ) {
+      replaceLocation(AUTH_REDIRECT_PATH);
+      return;
+    }
 
     const handleStorage = (event: StorageEvent) => {
       if (
@@ -102,7 +127,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener(AUTH_TOKENS_CHANGED_EVENT, syncAccessToken);
       window.removeEventListener('storage', handleStorage);
     };
-  }, [pathname, queryClient, router]);
+  }, [pathname, queryClient]);
 
   const value = useMemo(
     () => ({

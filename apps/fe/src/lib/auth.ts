@@ -7,6 +7,8 @@ export const ACCESS_TOKEN_STORAGE_KEY = 'accessToken';
 export const REFRESH_TOKEN_STORAGE_KEY = 'refreshToken';
 export const LEGACY_ACCESS_TOKEN_STORAGE_KEY = 'token';
 export const AUTH_TOKENS_CHANGED_EVENT = 'logue:auth-tokens-changed';
+const AUTH_ENTRY_REDIRECT_BYPASS_STORAGE_KEY =
+  'logue:auth-entry-redirect-bypass';
 
 const MAX_AUTH_TOKEN_LENGTH = 8192;
 
@@ -15,6 +17,16 @@ function getOptionalLocalStorage() {
 
   try {
     return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function getOptionalSessionStorage() {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    return window.sessionStorage;
   } catch {
     return null;
   }
@@ -101,6 +113,31 @@ export function clearAuthTokens() {
   removeStorageItem(REFRESH_TOKEN_STORAGE_KEY);
   removeStorageItem(LEGACY_ACCESS_TOKEN_STORAGE_KEY);
   notifyAuthTokensChanged();
+}
+
+export function skipNextAuthEntryRedirect() {
+  const storage = getOptionalSessionStorage();
+  if (!storage) return;
+
+  try {
+    storage.setItem(AUTH_ENTRY_REDIRECT_BYPASS_STORAGE_KEY, 'true');
+  } catch {
+    // Ignore browsers that block sessionStorage.
+  }
+}
+
+export function consumeAuthEntryRedirectBypass() {
+  const storage = getOptionalSessionStorage();
+  if (!storage) return false;
+
+  try {
+    const shouldBypass =
+      storage.getItem(AUTH_ENTRY_REDIRECT_BYPASS_STORAGE_KEY) === 'true';
+    storage.removeItem(AUTH_ENTRY_REDIRECT_BYPASS_STORAGE_KEY);
+    return shouldBypass;
+  } catch {
+    return false;
+  }
 }
 
 export function readAuthTokensFromSearchParams(
