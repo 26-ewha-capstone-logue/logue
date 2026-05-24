@@ -1,6 +1,12 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
+import {
+  useEffect,
+  useId,
+  useRef,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
+} from 'react';
 import { createPortal } from 'react-dom';
 
 export type ModalProps = {
@@ -14,10 +20,41 @@ export type ModalProps = {
   /** 모달 내부 설명 영역 id */
   ariaDescribedBy?: string;
   contentClassName?: string;
+  closeOnOverlayClick?: boolean;
+  closeOnEscape?: boolean;
 };
 
 const DEFAULT_CONTENT_CLASS_NAME =
   'relative z-10 w-full max-w-[60rem] rounded-20 bg-white p-32 shadow-[0_0.8rem_3.2rem_rgba(0,0,0,0.12)]';
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'textarea:not([disabled])',
+  'input:not([disabled]):not([type="hidden"])',
+  'select:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
+
+function isFocusableElementVisible(element: HTMLElement) {
+  if (
+    element.hasAttribute('disabled') ||
+    element.getAttribute('aria-hidden') === 'true' ||
+    element.closest('[aria-hidden="true"]')
+  ) {
+    return false;
+  }
+
+  const style = window.getComputedStyle(element);
+  if (style.display === 'none' || style.visibility === 'hidden') return false;
+
+  return element.getClientRects().length > 0;
+}
+
+function getFocusableElements(container: HTMLElement) {
+  return Array.from(
+    container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+  ).filter(isFocusableElementVisible);
+}
 
 export default function Modal({
   open,
@@ -27,15 +64,20 @@ export default function Modal({
   ariaLabelledBy,
   ariaDescribedBy,
   contentClassName = DEFAULT_CONTENT_CLASS_NAME,
+  closeOnOverlayClick = true,
+  closeOnEscape = true,
 }: ModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previousActiveElementRef = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
-    if (!open) return;
-    const handleKey = (e: KeyboardEvent) => {
+    if (!open || !closeOnEscape) return;
+    const handleKey = (e: globalThis.KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
-  }, [open, onClose]);
+  }, [closeOnEscape, open, onClose]);
 
   // body 스크롤 잠금
   useEffect(() => {
@@ -46,6 +88,60 @@ export default function Modal({
       document.body.style.overflow = prevOverflow;
     };
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    previousActiveElementRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+
+    const frameId = window.requestAnimationFrame(() => {
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+
+      const firstFocusableElement = getFocusableElements(dialog)[0];
+      (firstFocusableElement ?? dialog).focus();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      previousActiveElementRef.current?.focus();
+      previousActiveElementRef.current = null;
+    };
+  }, [open]);
+
+  const handleDialogKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Tab') return;
+
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const focusableElements = getFocusableElements(dialog);
+    if (focusableElements.length === 0) {
+      event.preventDefault();
+      dialog.focus();
+      return;
+    }
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+    const activeElement = document.activeElement;
+
+    if (event.shiftKey) {
+      if (activeElement === firstElement || !dialog.contains(activeElement)) {
+        event.preventDefault();
+        lastElement.focus();
+      }
+      return;
+    }
+
+    if (activeElement === lastElement) {
+      event.preventDefault();
+      firstElement.focus();
+    }
+  };
 
   if (!open) return null;
   // SSR 환경에서는 document 가 없으므로 client mount 후에만 portal 렌더
@@ -67,7 +163,7 @@ export default function Modal({
       }}
     >
       <div
-        onClick={onClose}
+        onClick={closeOnOverlayClick ? onClose : undefined}
         aria-hidden
         style={{
           position: 'absolute',
@@ -79,11 +175,14 @@ export default function Modal({
         }}
       />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={ariaLabelledBy ? undefined : ariaLabel}
         aria-labelledby={ariaLabelledBy}
         aria-describedby={ariaDescribedBy}
+        tabIndex={-1}
+        onKeyDown={handleDialogKeyDown}
         className={contentClassName}
         style={{ position: 'relative', zIndex: 10 }}
       >
@@ -115,13 +214,26 @@ export function ConfirmModal({
   cancelLabel = '취소하기',
   icon,
 }: ConfirmModalProps) {
+  const titleId = useId();
+  const descriptionId = useId();
+
   return (
-    <Modal open={open} onClose={onClose}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      ariaLabelledBy={titleId}
+      ariaDescribedBy={description ? descriptionId : undefined}
+      closeOnOverlayClick={false}
+    >
       <div className="flex flex-col items-center gap-16 text-center">
         {icon && <div className="mb-8">{icon}</div>}
-        <h2 className="text-head4 text-gray-900">{title}</h2>
+        <h2 id={titleId} className="text-head4 text-gray-900">
+          {title}
+        </h2>
         {description && (
-          <p className="text-body2 text-gray-600">{description}</p>
+          <p id={descriptionId} className="text-body2 text-gray-600">
+            {description}
+          </p>
         )}
         <div className="mt-16 flex w-full gap-12">
           <button

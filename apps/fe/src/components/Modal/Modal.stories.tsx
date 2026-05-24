@@ -19,3 +19,14 @@ export const Delete: Story = {
     cancelLabel: '취소하기',
   },
 };
+
+export const LongText: Story = {
+  args: {
+    open: true,
+    title: '선택한 데이터 소스를 삭제하시겠어요?',
+    description:
+      '삭제 후에는 이 데이터 소스를 사용하는 임시 분석 결과와 연결 정보를 다시 불러올 수 없습니다.',
+    confirmLabel: '삭제하기',
+    cancelLabel: '취소하기',
+  },
+};

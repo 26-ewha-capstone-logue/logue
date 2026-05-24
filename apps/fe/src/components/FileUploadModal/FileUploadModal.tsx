@@ -99,6 +99,7 @@ export default function FileUploadModal({
     <Modal
       open={open}
       onClose={handleClose}
+      ariaLabel="CSV 파일 업로드"
       contentClassName={UPLOAD_MODAL_CONTENT_CLASS_NAME}
     >
       <FileUploadZone

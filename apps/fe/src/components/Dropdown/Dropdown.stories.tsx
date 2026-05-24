@@ -30,3 +30,18 @@ export const WithValue: Story = {
     value: 'this_week',
   },
 };
+
+export const ManyOptions: Story = {
+  args: {
+    options: [
+      { label: '사용량 많은 순', value: 'usage' },
+      { label: '최근 업로드 순', value: 'recent' },
+      { label: '이름 오름차순', value: 'name_asc' },
+      { label: '이름 내림차순', value: 'name_desc' },
+      { label: '파일 크기 큰 순', value: 'size_desc' },
+      { label: '파일 크기 작은 순', value: 'size_asc' },
+    ],
+    value: 'recent',
+    helperText: '정렬 기준',
+  },
+};
