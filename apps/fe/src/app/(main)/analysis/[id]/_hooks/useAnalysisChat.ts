@@ -166,7 +166,15 @@ function createMessageId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-export function useAnalysisChat(routeConversationId: string) {
+type UseAnalysisChatParams = {
+  hasAccessToken: boolean;
+  routeConversationId: string;
+};
+
+export function useAnalysisChat({
+  hasAccessToken,
+  routeConversationId,
+}: UseAnalysisChatParams) {
   const searchParams = useSearchParams();
   const conversationId = parsePositiveNumber(routeConversationId);
   const analysisFlowId = parsePositiveNumber(
@@ -212,7 +220,7 @@ export function useAnalysisChat(routeConversationId: string) {
       if (dataSourceId === null) throw new Error(INVALID_ROUTE_MESSAGE);
       return getDataSource(dataSourceId);
     },
-    enabled: dataSourceId !== null,
+    enabled: hasAccessToken && dataSourceId !== null,
   });
 
   const { summary, summaryErrorMessage, summaryPending, summaryQuery } =
@@ -223,7 +231,7 @@ export function useAnalysisChat(routeConversationId: string) {
         'CSV 데이터 요약에 실패했어요. 파일을 확인하고 다시 시도해 주세요.',
       getSummaryErrorMessage: GET_SUMMARY_ERROR_MESSAGE,
       invalidRouteMessage: INVALID_ROUTE_MESSAGE,
-      routeReady,
+      routeReady: hasAccessToken && routeReady,
       statusPollIntervalMs: STATUS_POLL_INTERVAL_MS,
     });
   const { questionAnalysisMutation, updateCriteriaMutation } = useCriteriaPhase(
