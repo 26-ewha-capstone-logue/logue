@@ -26,10 +26,11 @@ export default function AnalysisChatPage({
   params: Promise<PageParams>;
 }) {
   const { id } = use(params);
-  const { hasAccessToken } = useAuthSession();
+  const { status } = useAuthSession();
+  const isAuthenticated = status === 'authenticated';
   const [isChatCollapsed, setIsChatCollapsed] = useState(false);
   const chat = useAnalysisChat({
-    hasAccessToken,
+    hasAccessToken: isAuthenticated,
     routeConversationId: id,
   });
 

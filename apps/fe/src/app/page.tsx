@@ -7,6 +7,7 @@ import IntroCarousel from './_components/IntroCarousel';
 import IntroCtaSection from './_components/IntroCtaSection';
 import IntroHeader from './_components/IntroHeader';
 import IntroHeroSection from './_components/IntroHeroSection';
+import { startOAuthLogin } from '@/lib/authRedirect';
 
 const SOLUTION_CARDS = [
   {
@@ -67,7 +68,7 @@ export default function IntroPage() {
   const [scrolled, setScrolled] = useState(false);
 
   const goToLogin = () => {
-    window.location.assign('/login');
+    startOAuthLogin();
   };
 
   const goToAnalysis = () => {
