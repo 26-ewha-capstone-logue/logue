@@ -44,7 +44,8 @@ export default function DataDetailPage({
   const { id } = use(params);
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { hasAccessToken } = useAuthSession();
+  const { hasAccessToken, status } = useAuthSession();
+  const isAuthenticated = status === 'authenticated';
   const [deleteOpen, setDeleteOpen] = useState(false);
   const { toast, showToast } = useToast();
 
@@ -59,7 +60,7 @@ export default function DataDetailPage({
   } = useQuery({
     queryKey: dataSourceKeys.detail(dataSourceId),
     queryFn: () => getDataSource(dataSourceId),
-    enabled: hasAccessToken && isValidDataSourceId,
+    enabled: isAuthenticated && isValidDataSourceId,
   });
 
   const deleteMutation = useMutation({
@@ -91,6 +92,10 @@ export default function DataDetailPage({
 
   if (!isValidDataSourceId) {
     return <DataDetailStatus message="올바르지 않은 데이터 소스입니다." />;
+  }
+
+  if (status === 'initializing') {
+    return <DataDetailStatus message="데이터 소스를 불러오는 중입니다." />;
   }
 
   if (!hasAccessToken) {

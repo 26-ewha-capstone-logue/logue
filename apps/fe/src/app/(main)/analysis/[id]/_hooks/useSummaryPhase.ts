@@ -53,7 +53,9 @@ export function useSummaryPhase({
       return shouldPollJobStatus(status) ? statusPollIntervalMs : false;
     },
   });
-  const summaryStatus = summaryStatusQuery.data?.status;
+  const summaryStatus = routeReady
+    ? summaryStatusQuery.data?.status
+    : undefined;
 
   const summaryQuery = useQuery({
     queryKey: analysisQueryKeys.summary(
@@ -71,7 +73,7 @@ export function useSummaryPhase({
     select: normalizeSummary,
   });
 
-  const summary = summaryQuery.data;
+  const summary = routeReady ? summaryQuery.data : undefined;
   const summaryError = !routeReady
     ? normalizeAnalysisError(
         new Error(invalidRouteMessage),

@@ -88,6 +88,18 @@ export function withMockDataSource(
   };
 }
 
+export function getMockDataSourceListResponse(
+  params: GetDataSourceListParams,
+): GetDataSourceListResponse {
+  return {
+    sort: params.sort,
+    page: params.page,
+    size: params.size,
+    totalPages: 1,
+    dataSources: params.page === 0 ? [MOCK_MARKETING_CVR_SUMMARY] : [],
+  };
+}
+
 export async function getMockDataSource(): Promise<GetFileResponse> {
   return {
     fileName: MOCK_MARKETING_CVR_FILE_NAME,
