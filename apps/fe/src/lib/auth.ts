@@ -82,17 +82,18 @@ function normalizeToken(token: string | null | undefined) {
 
 export function getAccessToken() {
   return (
-    getStorageItem(ACCESS_TOKEN_STORAGE_KEY) ??
-    getStorageItem(LEGACY_ACCESS_TOKEN_STORAGE_KEY)
+    normalizeToken(getStorageItem(ACCESS_TOKEN_STORAGE_KEY)) ??
+    normalizeToken(getStorageItem(LEGACY_ACCESS_TOKEN_STORAGE_KEY))
   );
 }
 
 export function getRefreshToken() {
-  return getStorageItem(REFRESH_TOKEN_STORAGE_KEY);
+  return normalizeToken(getStorageItem(REFRESH_TOKEN_STORAGE_KEY));
 }
 
 export function setAuthTokens(tokens: AuthTokens) {
   const accessToken = normalizeToken(tokens.accessToken);
+  const refreshToken = normalizeToken(tokens.refreshToken);
 
   if (!accessToken) return;
 
@@ -100,12 +101,21 @@ export function setAuthTokens(tokens: AuthTokens) {
     ACCESS_TOKEN_STORAGE_KEY,
     accessToken,
   );
-  setStorageItem(LEGACY_ACCESS_TOKEN_STORAGE_KEY, accessToken);
-  // Refresh rotation is not implemented in the FE yet, so avoid persisting an
-  // unused long-lived credential in browser storage.
-  removeStorageItem(REFRESH_TOKEN_STORAGE_KEY);
+  const didStoreLegacyAccessToken = setStorageItem(
+    LEGACY_ACCESS_TOKEN_STORAGE_KEY,
+    accessToken,
+  );
+  const didUpdateRefreshToken = refreshToken
+    ? setStorageItem(REFRESH_TOKEN_STORAGE_KEY, refreshToken)
+    : removeStorageItem(REFRESH_TOKEN_STORAGE_KEY);
 
-  if (didStoreAccessToken) notifyAuthTokensChanged();
+  if (
+    didStoreAccessToken ||
+    didStoreLegacyAccessToken ||
+    didUpdateRefreshToken
+  ) {
+    notifyAuthTokensChanged();
+  }
 }
 
 export function clearAuthTokens() {
