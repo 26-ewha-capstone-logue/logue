@@ -10,6 +10,7 @@ import {
   type UpdateQuestionCriteriaRequest,
 } from '@/apis/analysis';
 import type { CriteriaInitialMode } from './useAnalysisChat';
+import { normalizeCriteria } from '../_adapters/normalizeCriteria';
 import { useJobPoller } from './useJobPoller';
 
 export type QuestionAnalysisVariables = {
@@ -66,7 +67,7 @@ export function useCriteriaPhase({
       };
 
       await waitForCriteriaSuccess(criteriaParams);
-      return getCriteria(criteriaParams);
+      return normalizeCriteria(await getCriteria(criteriaParams));
     },
   });
 

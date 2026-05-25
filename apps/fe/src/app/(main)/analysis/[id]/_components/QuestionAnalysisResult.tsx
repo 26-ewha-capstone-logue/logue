@@ -1,41 +1,27 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type {
-  CriteriaInfo,
-  FilterInfo,
-  UpdateQuestionCriteriaRequest,
-} from '@/apis/analysis';
 import AlertIcon from '@/assets/icons/alert.svg';
+import { createCriteriaEditValues } from '../_adapters/normalizeCriteria';
+import type {
+  AnalysisFilterViewModel,
+  CriteriaEditValues,
+  CriteriaViewModel,
+} from '../_models/analysisViewModels';
 import CriterionSelect from './CriterionSelect';
-
-export type EditableValues = {
-  baseDateColumn: string;
-  standardPeriod: string;
-  comparePeriod: string;
-  groupBy: string[];
-  sortBy: string;
-  sortDirection: string;
-  limitNum: number | null;
-  filters: FilterInfo[];
-};
 
 type Mode = 'normal' | 'edit';
 
 export type QuestionAnalysisResultProps = {
-  criteria?: CriteriaInfo | null;
+  criteria: CriteriaViewModel;
   baseDateColumnOptions?: string[];
   groupByOptions?: string[];
   sortByOptions?: string[];
   sortDirectionOptions?: string[];
   initialMode?: Mode;
-  /** 수정하기 클릭 시 노출할 데이터 경고 목록 */
-  warnings?: string[];
   isSubmitting?: boolean;
-  /** 카드 외부 콜백 — 수정하기 클릭 */
   onEdit?: () => void;
-  /** 카드 외부 콜백 — 이 기준으로 계속 클릭 */
-  onContinue?: (values: UpdateQuestionCriteriaRequest) => void;
+  onContinue?: (values: CriteriaEditValues) => void;
 };
 
 type StaticRow = { kind: 'static'; label: string; value: string };
@@ -43,7 +29,7 @@ type SingleRow = {
   kind: 'single';
   label: string;
   key: keyof Pick<
-    EditableValues,
+    CriteriaEditValues,
     | 'baseDateColumn'
     | 'standardPeriod'
     | 'comparePeriod'
@@ -62,34 +48,9 @@ type MultiRow = {
 };
 
 type RowSpec = StaticRow | SingleRow | MultiRow;
-type DefaultCriteria = {
-  analysisType: string;
-  metricName: string;
-  baseDateColumn: string;
-  standardPeriod: string;
-  comparePeriod: string;
-  groupBy: string[];
-  sortBy: string;
-  sortDirection: string;
-  limitNum: number;
-  filters: FilterInfo[];
-};
-
-const DEFAULT_CRITERIA: DefaultCriteria = {
-  analysisType: '비교 분석',
-  metricName: '가입 전환율',
-  baseDateColumn: '가입일',
-  standardPeriod: '이번 주',
-  comparePeriod: '지난 주',
-  groupBy: ['채널', '디바이스'],
-  sortBy: '전환율 변화량',
-  sortDirection: '낮은 순',
-  limitNum: 5,
-  filters: [{ field: 'internal_text', operator: 'exclude', value: true }],
-};
 
 const DEFAULT_PERIOD_OPTIONS = ['이번 주', '지난 주', '이번 달', '지난 달'];
-const DEFAULT_SORT_DIRECTION_OPTIONS = ['ASC', 'DESC', '높은 순', '낮은 순'];
+const DEFAULT_SORT_DIRECTION_OPTIONS = ['ASC', 'DESC', 'asc', 'desc'];
 
 function compactStrings(values: Array<string | null | undefined>) {
   return values
@@ -101,51 +62,13 @@ function uniqueOptions(values: Array<string | null | undefined>) {
   return Array.from(new Set(compactStrings(values)));
 }
 
-function createEditableValues(criteria?: CriteriaInfo | null): EditableValues {
-  return {
-    baseDateColumn: criteria?.baseDateColumn ?? DEFAULT_CRITERIA.baseDateColumn,
-    standardPeriod: criteria?.standardPeriod ?? DEFAULT_CRITERIA.standardPeriod,
-    comparePeriod: criteria?.comparePeriod ?? DEFAULT_CRITERIA.comparePeriod,
-    groupBy:
-      criteria?.groupBy && criteria.groupBy.length > 0
-        ? criteria.groupBy
-        : DEFAULT_CRITERIA.groupBy,
-    sortBy: criteria?.sortBy ?? DEFAULT_CRITERIA.sortBy,
-    sortDirection: criteria?.sortDirection ?? DEFAULT_CRITERIA.sortDirection,
-    limitNum: criteria?.limitNum ?? DEFAULT_CRITERIA.limitNum,
-    filters: criteria?.filters ?? DEFAULT_CRITERIA.filters,
-  };
-}
-
-function formatFilters(filters: FilterInfo[]) {
+function formatFilters(filters: AnalysisFilterViewModel[]) {
   if (filters.length === 0) return '없음';
 
   return filters
-    .map((filter) =>
-      compactStrings([
-        filter.field ?? undefined,
-        filter.operator ?? undefined,
-        filter.value == null ? undefined : String(filter.value),
-      ]).join(' '),
-    )
+    .map((filter) => filter.label)
     .filter(Boolean)
     .join(', ');
-}
-
-function createUpdateRequest(
-  values: EditableValues,
-): UpdateQuestionCriteriaRequest {
-  return {
-    baseDateColumn: values.baseDateColumn || undefined,
-    standardPeriod: values.standardPeriod || undefined,
-    comparePeriod: values.comparePeriod || undefined,
-    groupBy: values.groupBy,
-    sortBy: values.sortBy || undefined,
-    sortDirection: values.sortDirection || undefined,
-    limitNum: values.limitNum ?? undefined,
-    filters: values.filters,
-    confirmed: true,
-  };
 }
 
 function DataWarningBlock({ warnings }: { warnings: string[] }) {
@@ -173,30 +96,19 @@ export default function QuestionAnalysisResult({
   sortByOptions,
   sortDirectionOptions,
   initialMode = 'normal',
-  warnings,
   isSubmitting = false,
   onEdit,
   onContinue,
 }: QuestionAnalysisResultProps) {
   const [mode, setMode] = useState<Mode>(initialMode);
-  const [values, setValues] = useState<EditableValues>(() =>
-    createEditableValues(criteria),
+  const [values, setValues] = useState<CriteriaEditValues>(() =>
+    createCriteriaEditValues(criteria),
   );
 
-  const criteriaWarnings = useMemo(() => {
-    const dataWarnings =
-      criteria?.dataWarning
-        ?.slice()
-        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-        .map((warning) => warning.content)
-        .filter((content): content is string => Boolean(content)) ?? [];
-    const needConfirm = criteria?.needConfirm ?? [];
-
-    return [...dataWarnings, ...needConfirm];
-  }, [criteria]);
-
-  const warningTexts =
-    warnings ?? (criteriaWarnings.length > 0 ? criteriaWarnings : []);
+  const warningTexts = useMemo(
+    () => criteria.warnings.map((warning) => warning.message),
+    [criteria.warnings],
+  );
 
   const rows = useMemo<RowSpec[]>(() => {
     const groupBy = values.groupBy.length > 0 ? values.groupBy : [''];
@@ -205,12 +117,12 @@ export default function QuestionAnalysisResult({
       {
         kind: 'static',
         label: '분석 방식',
-        value: criteria?.analysisType ?? DEFAULT_CRITERIA.analysisType,
+        value: criteria.analysisType.label,
       },
       {
         kind: 'static',
         label: '지표',
-        value: criteria?.metricName ?? DEFAULT_CRITERIA.metricName,
+        value: criteria.metric.label,
       },
       {
         kind: 'single',
@@ -219,7 +131,6 @@ export default function QuestionAnalysisResult({
         options: uniqueOptions([
           values.baseDateColumn,
           ...(baseDateColumnOptions ?? []),
-          DEFAULT_CRITERIA.baseDateColumn,
         ]),
       },
       {
@@ -244,23 +155,15 @@ export default function QuestionAnalysisResult({
         kind: 'multi',
         label: '비교 기준',
         key: 'groupBy',
-        options: uniqueOptions([
-          ...groupBy,
-          ...(groupByOptions ?? []),
-          ...DEFAULT_CRITERIA.groupBy,
-        ]),
+        options: uniqueOptions([...groupBy, ...(groupByOptions ?? [])]),
         maxSelect: 5,
-        headerLabel: '여러 개 선택 가능',
+        headerLabel: '여러 값 선택 가능',
       },
       {
         kind: 'single',
         label: '정렬 기준',
         key: 'sortBy',
-        options: uniqueOptions([
-          values.sortBy,
-          ...(sortByOptions ?? []),
-          DEFAULT_CRITERIA.sortBy,
-        ]),
+        options: uniqueOptions([values.sortBy, ...(sortByOptions ?? [])]),
       },
       {
         kind: 'single',
@@ -284,8 +187,8 @@ export default function QuestionAnalysisResult({
     ];
   }, [
     baseDateColumnOptions,
-    criteria?.analysisType,
-    criteria?.metricName,
+    criteria.analysisType.label,
+    criteria.metric.label,
     groupByOptions,
     sortByOptions,
     sortDirectionOptions,
@@ -299,11 +202,11 @@ export default function QuestionAnalysisResult({
 
   const handleCancelEdit = () => {
     setMode('normal');
-    setValues(createEditableValues(criteria));
+    setValues(createCriteriaEditValues(criteria));
   };
 
   const handleContinue = () => {
-    onContinue?.(createUpdateRequest(values));
+    onContinue?.(values);
   };
 
   const renderStaticValue = (row: RowSpec) => {

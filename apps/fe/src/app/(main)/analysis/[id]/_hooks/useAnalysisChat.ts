@@ -4,12 +4,6 @@ import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import {
-  type GetQuestionCriteriaResponse,
-  type GetQuestionResultResponse,
-  type GetSummaryResponse,
-  type UpdateQuestionCriteriaRequest,
-} from '@/apis/analysis';
-import {
   dataSourceKeys,
   getDataSource,
   type FilePreview,
@@ -23,8 +17,13 @@ import {
   type AnalysisStartPayload,
 } from '@/lib/analysisStartPayload';
 import type { PromptInputValue } from '../../_components/PromptInput';
-import type { ColumnCandidate } from '../_components/AnalysisResult';
+import { createUpdateCriteriaRequest } from '../_adapters/normalizeCriteria';
 import type { DataTableColumn } from '../_components/DataTablePreview';
+import type {
+  CriteriaEditValues,
+  CriteriaViewModel,
+  QuestionResultViewModel,
+} from '../_models/analysisViewModels';
 import {
   analysisChatFlowReducer,
   initialAnalysisChatFlowState,
@@ -46,14 +45,14 @@ export type ChatMessage =
       id: string;
       role: 'bot';
       kind: 'criteria';
-      criteria: GetQuestionCriteriaResponse;
+      criteria: CriteriaViewModel;
       initialMode?: CriteriaInitialMode;
     }
   | {
       id: string;
       role: 'bot';
       kind: 'verification';
-      result: GetQuestionResultResponse;
+      result: QuestionResultViewModel;
     }
   | {
       id: string;
@@ -63,7 +62,7 @@ export type ChatMessage =
       tone?: 'default' | 'error';
     };
 
-const DEFAULT_PROMPT = 'CSV 파일을 분석해주세요';
+const DEFAULT_PROMPT = 'CSV 파일을 분석해 주세요';
 const STATUS_POLL_INTERVAL_MS = 1500;
 const QUESTION_ANALYSIS_TIMEOUT_MS = 120000;
 const RESULT_ANALYSIS_TIMEOUT_MS = 120000;
@@ -80,11 +79,6 @@ const UPDATE_CRITERIA_ERROR_MESSAGE =
 const GET_RESULT_ERROR_MESSAGE =
   '최종 분석 결과를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
 
-const SUMMARY_WARNING_MESSAGE_MAP: Record<string, string> = {
-  date_field_conflict:
-    '날짜 기준을 하나로 정할 수 없어요. 어떤 날짜를 기준으로 볼지 선택해 주세요.',
-};
-
 function parsePositiveNumber(value: string | null | undefined) {
   if (!value) return null;
 
@@ -98,7 +92,7 @@ function compactStrings(values: Array<string | null | undefined>) {
     .filter((value): value is string => Boolean(value));
 }
 
-export function uniqueStrings(values: Array<string | null | undefined>) {
+function uniqueStrings(values: Array<string | null | undefined>) {
   return Array.from(new Set(compactStrings(values)));
 }
 
@@ -117,49 +111,6 @@ function createPreviewTable(preview?: FilePreview | null) {
   );
 
   return { columns, rows };
-}
-
-export function createSummaryCandidates(summary: GetSummaryResponse) {
-  const groups = [
-    { name: '데이터 기준', values: summary.dataCriteria },
-    { name: '지표', values: summary.measure },
-    { name: '차원', values: summary.dimension },
-    { name: '상태 조건', values: summary.statusCondition },
-    { name: '플래그', values: summary.flag },
-    { name: '식별 기준', values: summary.idCriteria },
-  ];
-
-  return groups.flatMap<ColumnCandidate>((group) =>
-    group.values.map((value) => ({
-      name: group.name,
-      example: value,
-    })),
-  );
-}
-
-function mapSummaryWarning(value: string) {
-  const normalized = value.trim();
-  return SUMMARY_WARNING_MESSAGE_MAP[normalized] ?? normalized;
-}
-
-export function createSummaryWarnings(summary?: GetSummaryResponse) {
-  const warning = summary?.sourceDataWarning?.trim();
-  if (!warning) return [];
-
-  return warning.split('\n').map(mapSummaryWarning).filter(Boolean);
-}
-
-function getSummaryColumnOptions(summary?: GetSummaryResponse) {
-  if (!summary) return [];
-
-  return uniqueStrings([
-    ...summary.dataCriteria,
-    ...summary.measure,
-    ...summary.dimension,
-    ...summary.statusCondition,
-    ...summary.flag,
-    ...summary.idCriteria,
-  ]);
 }
 
 function createMessageId(prefix: string) {
@@ -378,7 +329,7 @@ export function useAnalysisChat(routeConversationId: string) {
 
   function handleConfirmCriteria(
     messageId: number,
-    request: UpdateQuestionCriteriaRequest,
+    values: CriteriaEditValues,
   ) {
     if (criteriaSubmissionLocked) return;
 
@@ -394,11 +345,11 @@ export function useAnalysisChat(routeConversationId: string) {
         targetConversationId: conversationId,
         targetAnalysisFlowId: analysisFlowId,
         messageId,
-        request,
+        request: createUpdateCriteriaRequest(values),
       },
       {
         onSuccess: ({ analysisCriteriaId }) => {
-          appendNotice('분석 기준을 확정했어요.');
+          appendNotice('분석 기준이 확정되었어요.');
           resultAnalysisMutation.mutate(
             {
               targetConversationId: conversationId,
@@ -412,7 +363,10 @@ export function useAnalysisChat(routeConversationId: string) {
                 setMessages((prev) => [
                   ...prev,
                   {
-                    id: `result-${result.resultId}`,
+                    id:
+                      result.resultId === null
+                        ? createMessageId('result')
+                        : `result-${result.resultId}`,
                     role: 'bot',
                     kind: 'verification',
                     result,
@@ -513,7 +467,7 @@ export function useAnalysisChat(routeConversationId: string) {
     ) {
       return;
     }
-    if (createSummaryWarnings(summaryQuery.data).length > 0) return;
+    if (summaryQuery.data.warnings.length > 0) return;
 
     const timer = window.setTimeout(() => {
       startInitialQuestion();
@@ -528,7 +482,11 @@ export function useAnalysisChat(routeConversationId: string) {
     summaryQuery.data,
   ]);
 
-  const summaryColumnOptions = getSummaryColumnOptions(summary);
+  const summaryColumnOptions = summary?.columnOptions ?? [];
+  const summarySortOptions = uniqueStrings([
+    ...(summary?.measureOptions ?? []),
+    ...summaryColumnOptions,
+  ]);
   const shouldShowAnalyzing =
     summaryPending ||
     isQuestionAnalysisPending ||
@@ -546,7 +504,7 @@ export function useAnalysisChat(routeConversationId: string) {
     isQuestionAnalysisPending ||
     updateCriteriaMutation.isPending ||
     resultAnalysisMutation.isPending;
-  const summaryWarnings = createSummaryWarnings(summary);
+  const summaryWarnings = summary?.warnings ?? [];
   const summaryActionDisabled =
     hasStartedInitialQuestion ||
     !hasResolvedStartPayload ||
@@ -575,6 +533,7 @@ export function useAnalysisChat(routeConversationId: string) {
     summaryActionDisabled,
     summaryColumnOptions,
     summaryErrorMessage,
+    summarySortOptions,
     summaryWarnings,
     toast,
   };
