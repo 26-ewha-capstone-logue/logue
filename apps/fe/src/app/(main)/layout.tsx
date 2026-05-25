@@ -1,10 +1,10 @@
 'use client';
 
 import { Suspense, useEffect, useState, type CSSProperties } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { logoutAuth } from '@/apis/auth';
-import { getMyInfo, userKeys, type GetUserInfoResponse } from '@/apis/user';
+import { userKeys, type GetUserInfoResponse } from '@/apis/user';
 import { Header, type NavItem } from '@/components';
 import FileIcon from '@/assets/icons/file.svg';
 import GTapIcon from '@/assets/icons/G-tap.svg';
@@ -16,6 +16,7 @@ import {
   skipNextPrivatePathRedirect,
   skipNextAuthEntryRedirect,
 } from '@/lib/auth';
+import { useMyInfo } from '@/hooks/useMyInfo';
 import { useAuthSession } from '@/providers/AuthProvider';
 
 const NAV_ITEMS: NavItem[] = [
@@ -26,8 +27,6 @@ const NAV_ITEMS: NavItem[] = [
 
 const SEARCH_PARAM_KEY = 'q';
 const SEARCH_DEBOUNCE_MS = 250;
-const USER_INFO_STALE_TIME = 5 * 60 * 1000;
-
 function DataSourceSearchInput({ pathname }: { pathname: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -156,12 +155,7 @@ export default function MainLayout({
     data: myInfo,
     isError: isUserInfoError,
     isLoading: isUserInfoLoading,
-  } = useQuery({
-    queryKey: userKeys.me(),
-    queryFn: getMyInfo,
-    enabled: hasAccessToken,
-    staleTime: USER_INFO_STALE_TIME,
-  });
+  } = useMyInfo(hasAccessToken);
 
   const showDataSearch = pathname.startsWith('/data');
   const handleLogout = () => {
