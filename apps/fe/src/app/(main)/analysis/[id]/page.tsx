@@ -1,7 +1,8 @@
 'use client';
 
 import { use, useState } from 'react';
-import { ChatBubble, ToastAlert } from '@/components';
+import { ChatBubble, ToastPortal } from '@/components';
+import { useAuthSession } from '@/providers/AuthProvider';
 import PromptInput from '../_components/PromptInput';
 import AnalysisResult from './_components/AnalysisResult';
 import AnalyzingIndicator from './_components/AnalyzingIndicator';
@@ -10,12 +11,7 @@ import LoadingDataPreview from './_components/LoadingDataPreview';
 import QuestionAnalysisResult from './_components/QuestionAnalysisResult';
 import ResizableSplit from './_components/ResizableSplit';
 import VerificationResult from './_components/VerificationResult';
-import {
-  createSummaryCandidates,
-  uniqueStrings,
-  useAnalysisChat,
-  type ChatMessage,
-} from './_hooks/useAnalysisChat';
+import { useAnalysisChat, type ChatMessage } from './_hooks/useAnalysisChat';
 
 type PageParams = { id: string };
 
@@ -25,8 +21,13 @@ export default function AnalysisChatPage({
   params: Promise<PageParams>;
 }) {
   const { id } = use(params);
+  const { status } = useAuthSession();
+  const isAuthenticated = status === 'authenticated';
   const [isChatCollapsed, setIsChatCollapsed] = useState(false);
-  const chat = useAnalysisChat(id);
+  const chat = useAnalysisChat({
+    hasAccessToken: isAuthenticated,
+    routeConversationId: id,
+  });
 
   const renderSummaryMessage = () => {
     if (!chat.summary) return null;
@@ -37,10 +38,7 @@ export default function AnalysisChatPage({
       <div key="summary" className="flex w-full justify-start">
         <div className="w-full max-w-[80%]">
           <AnalysisResult
-            rowCount={chat.summary.rowCount}
-            columnCount={chat.summary.columnCount}
-            candidates={createSummaryCandidates(chat.summary)}
-            warnings={chat.summaryWarnings}
+            summary={chat.summary}
             warningActions={
               hasWarnings
                 ? {
@@ -111,18 +109,15 @@ export default function AnalysisChatPage({
       <div key={message.id} className="flex w-full justify-start">
         <div className="w-full max-w-[80%]">
           <QuestionAnalysisResult
-            criteria={message.criteria.criteria}
+            criteria={message.criteria}
             initialMode={message.initialMode}
             baseDateColumnOptions={
-              chat.summary?.dataCriteria.length
-                ? chat.summary.dataCriteria
+              chat.summary?.dateFieldOptions.length
+                ? chat.summary.dateFieldOptions
                 : chat.summaryColumnOptions
             }
             groupByOptions={chat.summaryColumnOptions}
-            sortByOptions={uniqueStrings([
-              ...(chat.summary?.measure ?? []),
-              ...chat.summaryColumnOptions,
-            ])}
+            sortByOptions={chat.summarySortOptions}
             isSubmitting={chat.criteriaSubmitting}
             onContinue={(values) =>
               chat.handleConfirmCriteria(message.criteria.messageId, values)
@@ -173,11 +168,7 @@ export default function AnalysisChatPage({
             />
           </div>
 
-          {chat.toast && (
-            <div className="pointer-events-none fixed bottom-[4.4rem] left-1/2 z-[60] -translate-x-1/2">
-              <ToastAlert role="alert">{chat.toast.message}</ToastAlert>
-            </div>
-          )}
+          <ToastPortal toast={chat.toast} />
         </div>
       }
     />

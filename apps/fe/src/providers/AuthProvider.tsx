@@ -21,14 +21,23 @@ import {
   readAuthTokensFromSearchParams,
   setAuthTokens,
 } from '@/lib/auth';
-
-const LOGIN_PATH = '/login';
-const PRIVATE_PATH_PREFIXES = ['/analysis', '/data', '/history'];
-const AUTH_REDIRECT_PATH = '/analysis';
-const ONBOARDING_PATH = '/onboarding';
-const AUTH_ENTRY_PATHS = new Set(['/', '/login']);
+import {
+  consumeOAuthPopupState,
+  getOAuthPopupCallbackRelay,
+  isAllowedOAuthPopupOrigin,
+  readOAuthPopupCallbackMessage,
+} from '@/lib/authRedirect';
+import {
+  AUTH_REDIRECT_PATH,
+  getLoginRedirectPath,
+  getPostAuthRedirectPath,
+  shouldRedirectAuthenticatedUser,
+  shouldRedirectPrivatePath,
+  type AuthStatus,
+} from '@/lib/authSession';
 
 type AuthContextValue = {
+  status: AuthStatus;
   hasAccessToken: boolean;
 };
 
@@ -49,47 +58,35 @@ function removeTokenParamsFromCurrentUrl(url: URL) {
   );
 }
 
-function isPrivatePath(pathname: string) {
-  return PRIVATE_PATH_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
-}
-
-function shouldRedirectAuthenticatedUser(pathname: string) {
-  return AUTH_ENTRY_PATHS.has(pathname);
-}
-
 function replaceLocation(pathname: string) {
   window.location.replace(pathname);
-}
-
-function getPostAuthRedirectPath(pathname: string) {
-  if (pathname === ONBOARDING_PATH) return ONBOARDING_PATH;
-  if (shouldRedirectAuthenticatedUser(pathname)) return AUTH_REDIRECT_PATH;
-
-  return pathname;
 }
 
 export default function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const queryClient = useQueryClient();
-  const [hasAccessToken, setHasAccessToken] = useState(false);
+  const [status, setStatus] = useState<AuthStatus>('initializing');
 
   useEffect(() => {
     const syncAccessToken = () => {
-      const nextHasAccessToken = Boolean(getAccessToken());
+      const nextStatus: AuthStatus = getAccessToken()
+        ? 'authenticated'
+        : 'anonymous';
 
-      setHasAccessToken(nextHasAccessToken);
+      setStatus(nextStatus);
 
-      if (!nextHasAccessToken) {
+      if (nextStatus === 'anonymous') {
         queryClient.clear();
 
-        if (isPrivatePath(pathname) && !consumePrivatePathRedirectBypass()) {
-          replaceLocation(LOGIN_PATH);
+        if (
+          shouldRedirectPrivatePath(nextStatus, pathname) &&
+          !consumePrivatePathRedirectBypass()
+        ) {
+          replaceLocation(getLoginRedirectPath(new URL(window.location.href)));
         }
       }
 
-      return nextHasAccessToken;
+      return nextStatus;
     };
 
     const currentUrl = new URL(window.location.href);
@@ -98,20 +95,29 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     if (redirectedTokens) {
+      const popupRelay = getOAuthPopupCallbackRelay(currentUrl, window.name);
+
+      if (popupRelay && window.opener) {
+        removeTokenParamsFromCurrentUrl(currentUrl);
+        window.opener.postMessage(popupRelay.message, popupRelay.targetOrigin);
+        window.close();
+        return;
+      }
+
       setAuthTokens(redirectedTokens);
       removeTokenParamsFromCurrentUrl(currentUrl);
+      queryClient.clear();
       replaceLocation(getPostAuthRedirectPath(pathname));
       return;
     }
 
-    const nextHasAccessToken = syncAccessToken();
+    const nextStatus = syncAccessToken();
     const shouldBypassAuthEntryRedirect =
       shouldRedirectAuthenticatedUser(pathname) &&
       consumeAuthEntryRedirectBypass();
 
     if (
-      !redirectedTokens &&
-      nextHasAccessToken &&
+      nextStatus === 'authenticated' &&
       shouldRedirectAuthenticatedUser(pathname) &&
       !shouldBypassAuthEntryRedirect
     ) {
@@ -129,20 +135,37 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
+    const handleMessage = (event: MessageEvent) => {
+      if (!isAllowedOAuthPopupOrigin(event.origin)) return;
+
+      const message = readOAuthPopupCallbackMessage(event.data);
+      if (!message) return;
+      if (!consumeOAuthPopupState(message.state)) return;
+
+      setAuthTokens(message.tokens);
+      queryClient.clear();
+      setStatus('authenticated');
+      replaceLocation(message.redirectPath);
+    };
+
     window.addEventListener(AUTH_TOKENS_CHANGED_EVENT, syncAccessToken);
+    window.addEventListener('message', handleMessage);
     window.addEventListener('storage', handleStorage);
 
     return () => {
       window.removeEventListener(AUTH_TOKENS_CHANGED_EVENT, syncAccessToken);
+      window.removeEventListener('message', handleMessage);
       window.removeEventListener('storage', handleStorage);
     };
   }, [pathname, queryClient]);
 
+  const hasAccessToken = status === 'authenticated';
   const value = useMemo(
     () => ({
+      status,
       hasAccessToken,
     }),
-    [hasAccessToken],
+    [hasAccessToken, status],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

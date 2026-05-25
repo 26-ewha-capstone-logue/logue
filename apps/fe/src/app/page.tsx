@@ -7,6 +7,10 @@ import IntroCarousel from './_components/IntroCarousel';
 import IntroCtaSection from './_components/IntroCtaSection';
 import IntroHeader from './_components/IntroHeader';
 import IntroHeroSection from './_components/IntroHeroSection';
+import {
+  OAUTH_LOGIN_POPUP_BLOCKED_MESSAGE,
+  startOAuthLogin,
+} from '@/lib/authRedirect';
 
 const SOLUTION_CARDS = [
   {
@@ -67,7 +71,9 @@ export default function IntroPage() {
   const [scrolled, setScrolled] = useState(false);
 
   const goToLogin = () => {
-    window.location.assign('/login');
+    if (startOAuthLogin() !== 'opened') {
+      window.alert(OAUTH_LOGIN_POPUP_BLOCKED_MESSAGE);
+    }
   };
 
   const goToAnalysis = () => {

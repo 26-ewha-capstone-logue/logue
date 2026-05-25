@@ -16,6 +16,10 @@ import {
   skipNextPrivatePathRedirect,
   skipNextAuthEntryRedirect,
 } from '@/lib/auth';
+import {
+  OAUTH_LOGIN_POPUP_BLOCKED_MESSAGE,
+  startOAuthLogin,
+} from '@/lib/authRedirect';
 import { useMyInfo } from '@/hooks/useMyInfo';
 import { useAuthSession } from '@/providers/AuthProvider';
 
@@ -150,12 +154,13 @@ export default function MainLayout({
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
-  const { hasAccessToken } = useAuthSession();
+  const { status } = useAuthSession();
+  const isAuthenticated = status === 'authenticated';
   const {
     data: myInfo,
     isError: isUserInfoError,
     isLoading: isUserInfoLoading,
-  } = useMyInfo(hasAccessToken);
+  } = useMyInfo(isAuthenticated);
 
   const showDataSearch = pathname.startsWith('/data');
   const handleLogout = () => {
@@ -175,7 +180,7 @@ export default function MainLayout({
     router.push('/');
   };
 
-  const profileSlot = hasAccessToken ? (
+  const profileSlot = isAuthenticated ? (
     <div className="flex items-center gap-12">
       <UserProfileSlot
         user={myInfo}
@@ -193,7 +198,9 @@ export default function MainLayout({
   ) : undefined;
 
   const handleProfileClick = () => {
-    window.location.assign('/login');
+    if (startOAuthLogin() !== 'opened') {
+      window.alert(OAUTH_LOGIN_POPUP_BLOCKED_MESSAGE);
+    }
   };
 
   return (
@@ -211,7 +218,7 @@ export default function MainLayout({
         }
         onLogoClick={handleLogoClick}
         onNavClick={(href) => router.push(href)}
-        onProfileClick={hasAccessToken ? undefined : handleProfileClick}
+        onProfileClick={isAuthenticated ? undefined : handleProfileClick}
       />
       {children}
     </div>
