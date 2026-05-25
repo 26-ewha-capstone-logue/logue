@@ -1,5 +1,7 @@
 'use client';
 
+import IntroStartButton from './IntroStartButton';
+
 const HERO_BG = `conic-gradient(
   from -40deg at 81.42% 33.69%,
   var(--color-orange-200) 6.43deg,
@@ -39,13 +41,7 @@ export default function IntroHeroSection({ onStart }: IntroHeroSectionProps) {
             당신의 업무 효율을 극대화하는 파트너, Logue.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onStart}
-          className="self-start rounded-full bg-orange-500 px-24 py-12 text-body2 font-semibold text-white transition-colors hover:bg-orange-600"
-        >
-          Logue 체험하기
-        </button>
+        <IntroStartButton onClick={onStart} />
       </div>
     </section>
   );

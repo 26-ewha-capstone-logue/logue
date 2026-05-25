@@ -31,8 +31,7 @@ export default function IntroHeader({
 }: IntroHeaderProps) {
   return (
     <header
-      style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50 }}
-      className={`flex items-center px-32 py-16 transition-colors duration-200 ${
+      className={`fixed left-0 right-0 top-0 z-50 flex items-center px-32 py-16 transition-colors duration-200 ${
         scrolled
           ? 'bg-white shadow-[0_0.1rem_0.4rem_rgba(0,0,0,0.06)]'
           : 'bg-[rgba(17,17,17,0.20)] shadow-[0_0.1rem_1.2rem_rgba(252,131,32,0.20)] backdrop-blur-[0.71rem]'
@@ -41,6 +40,7 @@ export default function IntroHeader({
       <button
         type="button"
         onClick={onLogoClick}
+        aria-label="Logue 홈으로 이동"
         className="mr-24 flex shrink-0 items-center gap-8"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}

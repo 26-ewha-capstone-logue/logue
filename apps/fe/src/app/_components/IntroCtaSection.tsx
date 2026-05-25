@@ -1,5 +1,7 @@
 'use client';
 
+import IntroStartButton from './IntroStartButton';
+
 const CTA_BG_IMAGE = '/illusts/intro/cta.png';
 
 export type IntroCtaSectionProps = {
@@ -37,13 +39,7 @@ export default function IntroCtaSection({ onStart }: IntroCtaSectionProps) {
             <br />
             AI 데이터 분석 파트너입니다.
           </h2>
-          <button
-            type="button"
-            onClick={onStart}
-            className="self-start rounded-full bg-orange-500 px-24 py-12 text-body2 font-semibold text-white transition-colors hover:bg-orange-600"
-          >
-            Logue 체험하기
-          </button>
+          <IntroStartButton onClick={onStart} />
         </div>
       </div>
     </section>

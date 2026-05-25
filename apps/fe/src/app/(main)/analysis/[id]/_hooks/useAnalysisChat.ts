@@ -506,20 +506,30 @@ export function useAnalysisChat(routeConversationId: string) {
     ],
   );
 
-  function handleSubmit(value: PromptInputValue) {
-    if (!summaryQuery.data) {
-      showToast(SUMMARY_NOT_READY_MESSAGE);
-      return;
-    }
+  const handleSubmit = useCallback(
+    (value: PromptInputValue) => {
+      if (!summaryQuery.data) {
+        showToast(SUMMARY_NOT_READY_MESSAGE);
+        return;
+      }
 
-    if (conversationId !== null) {
-      markAnalysisStartPayloadConsumed(conversationId);
-    }
-    setCanAutoStartInitialQuestion(false);
-    setHasStartedInitialQuestion(true);
-    openNextCriteriaInEditRef.current = false;
-    startQuestion(value.prompt);
-  }
+      if (conversationId !== null) {
+        markAnalysisStartPayloadConsumed(conversationId);
+      }
+      setCanAutoStartInitialQuestion(false);
+      setHasStartedInitialQuestion(true);
+      openNextCriteriaInEditRef.current = false;
+      startQuestion(value.prompt);
+    },
+    [
+      conversationId,
+      setCanAutoStartInitialQuestion,
+      setHasStartedInitialQuestion,
+      showToast,
+      startQuestion,
+      summaryQuery.data,
+    ],
+  );
 
   function handleConfirmCriteria(
     messageId: number,
