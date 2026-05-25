@@ -14,4 +14,7 @@ type Story = StoryObj<typeof Checkbox>;
 
 export const Default: Story = { args: { checked: false } };
 export const Selected: Story = { args: { checked: true } };
+export const Indeterminate: Story = {
+  args: { checked: false, indeterminate: true },
+};
 export const Medium: Story = { args: { checked: false, size: 'md' } };

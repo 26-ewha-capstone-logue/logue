@@ -28,6 +28,7 @@ import {
 } from '@/apis/datasource';
 import { getApiErrorMessage } from '@/apis/errors';
 import { ChatBubble, ToastAlert } from '@/components';
+import { useToast } from '@/hooks/useToast';
 import {
   hasAnalysisStartPayloadConsumed,
   markAnalysisStartPayloadConsumed,
@@ -82,7 +83,6 @@ const DEFAULT_PROMPT = 'CSV 파일을 분석해주세요';
 const STATUS_POLL_INTERVAL_MS = 1500;
 const QUESTION_ANALYSIS_TIMEOUT_MS = 120000;
 const RESULT_ANALYSIS_TIMEOUT_MS = 120000;
-const TOAST_DURATION_MS = 2500;
 const INVALID_ROUTE_MESSAGE = '분석 정보를 찾지 못했어요. 다시 시작해 주세요.';
 const SUMMARY_NOT_READY_MESSAGE = 'CSV 데이터 요약이 끝난 뒤 질문할 수 있어요.';
 const GET_SUMMARY_ERROR_MESSAGE =
@@ -281,7 +281,7 @@ export default function AnalysisChatPage({
       fileName: null,
     },
   ]);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const { toast, showToast } = useToast();
   const [isChatCollapsed, setIsChatCollapsed] = useState(false);
   const [hasStartedInitialQuestion, setHasStartedInitialQuestion] =
     useState(false);
@@ -427,7 +427,7 @@ export default function AnalysisChatPage({
       if (questionSubmissionLockedRef.current) return;
 
       if (conversationId === null || analysisFlowId === null) {
-        setToastMessage(INVALID_ROUTE_MESSAGE);
+        showToast(INVALID_ROUTE_MESSAGE);
         appendNotice(INVALID_ROUTE_MESSAGE, 'error');
         return;
       }
@@ -478,7 +478,7 @@ export default function AnalysisChatPage({
               error,
               CREATE_QUESTION_ERROR_MESSAGE,
             );
-            setToastMessage(message);
+            showToast(message);
             appendNotice(message, 'error');
           },
         },
@@ -490,7 +490,7 @@ export default function AnalysisChatPage({
       conversationId,
       mutateQuestionAnalysis,
       setMessages,
-      setToastMessage,
+      showToast,
     ],
   );
 
@@ -525,7 +525,7 @@ export default function AnalysisChatPage({
 
   function handleSubmit(value: PromptInputValue) {
     if (!summaryQuery.data) {
-      setToastMessage(SUMMARY_NOT_READY_MESSAGE);
+      showToast(SUMMARY_NOT_READY_MESSAGE);
       return;
     }
 
@@ -545,7 +545,7 @@ export default function AnalysisChatPage({
     if (criteriaSubmissionLockedRef.current) return;
 
     if (conversationId === null || analysisFlowId === null) {
-      setToastMessage(INVALID_ROUTE_MESSAGE);
+      showToast(INVALID_ROUTE_MESSAGE);
       return;
     }
 
@@ -587,7 +587,7 @@ export default function AnalysisChatPage({
                   error,
                   GET_RESULT_ERROR_MESSAGE,
                 );
-                setToastMessage(message);
+                showToast(message);
                 appendNotice(message, 'error');
               },
             },
@@ -599,21 +599,12 @@ export default function AnalysisChatPage({
             error,
             UPDATE_CRITERIA_ERROR_MESSAGE,
           );
-          setToastMessage(message);
+          showToast(message);
           appendNotice(message, 'error');
         },
       },
     );
   }
-
-  useEffect(() => {
-    if (!toastMessage) return;
-    const timer = window.setTimeout(
-      () => setToastMessage(null),
-      TOAST_DURATION_MS,
-    );
-    return () => window.clearTimeout(timer);
-  }, [toastMessage]);
 
   useEffect(() => {
     if (
@@ -887,9 +878,9 @@ export default function AnalysisChatPage({
             />
           </div>
 
-          {toastMessage && (
+          {toast && (
             <div className="pointer-events-none fixed bottom-[4.4rem] left-1/2 z-[60] -translate-x-1/2">
-              <ToastAlert role="alert">{toastMessage}</ToastAlert>
+              <ToastAlert role="alert">{toast.message}</ToastAlert>
             </div>
           )}
         </div>
