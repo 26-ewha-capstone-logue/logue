@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { startAnalysisFlowFromDataSource } from '@/apis/analysis';
 import {
   dataSourceKeys,
   deleteDataSources,
@@ -15,16 +14,20 @@ import {
 import { getApiErrorMessage } from '@/apis/errors';
 import ChatIcon from '@/assets/icons/chat.svg';
 import SuccessIcon from '@/assets/icons/success.svg';
-import { FileUploadModal, Modal, ToastAlert } from '@/components';
-import { writeAnalysisStartPayload } from '@/lib/analysisStartPayload';
+import {
+  Checkbox,
+  ConfirmModal,
+  FileUploadModal,
+  ToastAlert,
+} from '@/components';
+import { useStartAnalysis } from '@/hooks/useStartAnalysis';
+import { useToast } from '@/hooks/useToast';
 import { formatDateTime } from '@/lib/dateTime';
 import { formatFileSize, validateCsvFile } from '@/lib/fileValidation';
 import { useAuthSession } from '@/providers/AuthProvider';
-import Checkbox from './_components/Checkbox';
 import SortDropdown from './_components/SortDropdown';
 
 const DELETE_ILLUST_SRC = '/illusts/delete.svg';
-const TOAST_DURATION_MS = 2500;
 const DATA_SOURCE_PAGE_SIZE = 20;
 const LOGIN_REQUIRED_MESSAGE = '로그인이 필요해요. 다시 로그인해 주세요.';
 const LIST_ERROR_MESSAGE = '데이터 소스 목록을 불러오지 못했어요.';
@@ -34,11 +37,6 @@ const DELETE_ERROR_MESSAGE =
   '파일 삭제에 실패했어요. 잠시 후 다시 시도해 주세요.';
 const START_CHAT_ERROR_MESSAGE =
   '분석 채팅을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.';
-
-type ToastState = {
-  message: string;
-  tone: 'error' | 'success';
-};
 
 const SORT_OPTIONS = [
   { value: 'MOST_USED', label: '사용량 많은 순' },
@@ -55,14 +53,17 @@ export default function DataPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { hasAccessToken } = useAuthSession();
+  const { toast, showToast } = useToast();
   const [sortKey, setSortKey] = useState<DataSourceSort>('LATEST');
   const [page, setPage] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [toast, setToast] = useState<ToastState | null>(null);
-  const deleteTitleId = useId();
-  const deleteDescriptionId = useId();
+  const startAnalysis = useStartAnalysis({
+    loginRequiredMessage: LOGIN_REQUIRED_MESSAGE,
+    fallbackErrorMessage: START_CHAT_ERROR_MESSAGE,
+    onError: (message) => showToast(message, 'error'),
+  });
 
   const listParams = useMemo(
     () => ({ sort: sortKey, page, size: DATA_SOURCE_PAGE_SIZE }),
@@ -83,16 +84,8 @@ export default function DataPage() {
     mutationFn: deleteDataSources,
   });
 
-  const startChatMutation = useMutation({
-    mutationFn: startAnalysisFlowFromDataSource,
-  });
-
   const dataSources = dataSourcesQuery.data?.dataSources ?? [];
-  const chatPendingDataSourceId =
-    startChatMutation.isPending &&
-    typeof startChatMutation.variables === 'number'
-      ? startChatMutation.variables
-      : null;
+  const chatPendingDataSourceId = startAnalysis.pendingDataSourceId;
   const allSelected =
     dataSources.length > 0 &&
     dataSources.every((dataSource) => selectedIds.has(dataSource.dataSourceId));
@@ -107,16 +100,6 @@ export default function DataPage() {
         : dataSources.length === 0
           ? '업로드된 데이터 소스가 없습니다.'
           : null;
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = window.setTimeout(() => setToast(null), TOAST_DURATION_MS);
-    return () => window.clearTimeout(timer);
-  }, [toast]);
-
-  const showToast = (message: string, tone: ToastState['tone']) => {
-    setToast({ message, tone });
-  };
 
   const toggleAll = () => {
     if (allSelected) {
@@ -198,22 +181,10 @@ export default function DataPage() {
       return;
     }
 
-    startChatMutation.mutate(dataSource.dataSourceId, {
-      onSuccess: ({ conversationId, analysisFlowId, dataSourceId }) => {
-        writeAnalysisStartPayload(conversationId, {
-          fileName: dataSource.fileName,
-        });
-
-        const params = new URLSearchParams({
-          analysisFlowId: String(analysisFlowId),
-          dataSourceId: String(dataSourceId),
-        });
-
-        router.push(`/analysis/${conversationId}?${params.toString()}`);
-      },
-      onError: (error) => {
-        showToast(getApiErrorMessage(error, START_CHAT_ERROR_MESSAGE), 'error');
-      },
+    startAnalysis.startAnalysis({
+      type: 'dataSource',
+      dataSourceId: dataSource.dataSourceId,
+      fileName: dataSource.fileName,
     });
   };
 
@@ -261,9 +232,11 @@ export default function DataPage() {
             <tr className="bg-gray-200 text-gray-900">
               <th className="w-[5.6rem] py-16 pl-24 text-left">
                 <Checkbox
+                  size="md"
                   checked={allSelected}
                   indeterminate={partiallySelected}
-                  onChange={toggleAll}
+                  onCheckedChange={toggleAll}
+                  aria-label="데이터 소스 전체 선택"
                 />
               </th>
               <th className="py-16 text-left font-semibold">파일명</th>
@@ -303,8 +276,10 @@ export default function DataPage() {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Checkbox
+                        size="md"
                         checked={checked}
-                        onChange={() => toggleOne(row.dataSourceId)}
+                        onCheckedChange={() => toggleOne(row.dataSourceId)}
+                        aria-label={`${row.fileName} 선택`}
                       />
                     </td>
                     <td className="py-16 text-gray-900">
@@ -330,7 +305,7 @@ export default function DataPage() {
                       <button
                         type="button"
                         onClick={() => handleChat(row)}
-                        disabled={startChatMutation.isPending}
+                        disabled={startAnalysis.isPending}
                         aria-label={`${row.fileName} 분석 채팅 시작`}
                         className="inline-flex items-center gap-4 rounded-full border border-gray-300 bg-white px-12 py-6 text-body4 text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                       >
@@ -357,52 +332,27 @@ export default function DataPage() {
         onUpload={handleUploaded}
       />
 
-      {/* 삭제 확인 모달 */}
-      <Modal
+      <ConfirmModal
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
-        ariaLabelledBy={deleteTitleId}
-        ariaDescribedBy={deleteDescriptionId}
-        closeOnOverlayClick={false}
-      >
-        <div className="flex flex-col items-center gap-24">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={DELETE_ILLUST_SRC}
-            alt=""
-            aria-hidden
-            className="h-[8rem] w-auto"
-          />
-          <div className="flex flex-col items-center gap-4">
-            <h3
-              id={deleteTitleId}
-              className="text-head4 font-semibold text-gray-900"
-            >
-              파일을 삭제하시겠어요?
-            </h3>
-            <p id={deleteDescriptionId} className="text-body4 text-gray-700">
-              삭제 후엔 복구할 수 없어요.
-            </p>
-          </div>
-          <div className="flex w-full justify-center gap-8">
-            <button
-              type="button"
-              onClick={() => setDeleteOpen(false)}
-              className="min-w-[12rem] rounded-full bg-gray-300 px-20 py-12 text-body2 font-medium text-gray-700 transition-colors hover:bg-gray-400"
-            >
-              취소하기
-            </button>
-            <button
-              type="button"
-              onClick={() => void handleDeleteConfirm()}
-              disabled={deleteMutation.isPending}
-              className="min-w-[12rem] rounded-full bg-orange-500 px-20 py-12 text-body2 font-medium text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-400"
-            >
-              삭제하기
-            </button>
-          </div>
-        </div>
-      </Modal>
+        onConfirm={() => void handleDeleteConfirm()}
+        title="파일을 삭제하시겠어요?"
+        description="삭제 후엔 복구할 수 없어요."
+        confirmLabel="삭제하기"
+        cancelLabel="취소하기"
+        confirmDisabled={deleteMutation.isPending}
+        icon={
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={DELETE_ILLUST_SRC}
+              alt=""
+              aria-hidden
+              className="h-[8rem] w-auto"
+            />
+          </>
+        }
+      />
 
       {toast && (
         <div className="pointer-events-none fixed bottom-[4.4rem] left-1/2 z-[60] -translate-x-1/2">

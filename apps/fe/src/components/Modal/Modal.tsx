@@ -201,6 +201,8 @@ export type ConfirmModalProps = {
   description?: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  confirmDisabled?: boolean;
+  cancelDisabled?: boolean;
   icon?: ReactNode;
 };
 
@@ -212,6 +214,8 @@ export function ConfirmModal({
   description,
   confirmLabel = '삭제하기',
   cancelLabel = '취소하기',
+  confirmDisabled = false,
+  cancelDisabled = false,
   icon,
 }: ConfirmModalProps) {
   const titleId = useId();
@@ -239,14 +243,16 @@ export function ConfirmModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-12 border border-gray-300 bg-white py-12 text-body3 text-gray-700 transition-colors hover:bg-gray-100"
+            disabled={cancelDisabled}
+            className="flex-1 rounded-12 border border-gray-300 bg-white py-12 text-body3 text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {cancelLabel}
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="flex-1 rounded-12 bg-orange-500 py-12 text-body3 text-white transition-colors hover:bg-orange-600"
+            disabled={confirmDisabled}
+            className="flex-1 rounded-12 bg-orange-500 py-12 text-body3 text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-400"
           >
             {confirmLabel}
           </button>
