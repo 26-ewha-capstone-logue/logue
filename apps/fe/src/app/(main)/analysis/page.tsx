@@ -23,23 +23,24 @@ const ANALYSIS_FILE_MESSAGES = {
 };
 
 export default function AnalysisPage() {
-  const { hasAccessToken } = useAuthSession();
+  const { status } = useAuthSession();
+  const isAuthenticated = status === 'authenticated';
   const { toast, showToast } = useToast();
   const {
     data: myInfo,
     isError: isUserInfoError,
     isLoading: isUserInfoLoading,
-  } = useMyInfo(hasAccessToken);
+  } = useMyInfo(isAuthenticated);
   const startAnalysis = useStartAnalysis({
     loginRequiredMessage: LOGIN_REQUIRED_MESSAGE,
     fallbackErrorMessage: START_ANALYSIS_ERROR_MESSAGE,
     onError: showToast,
   });
 
-  const shouldShowUserInfoLoading = hasAccessToken && isUserInfoLoading;
-  const shouldShowUserInfoError = hasAccessToken && isUserInfoError;
+  const shouldShowUserInfoLoading = isAuthenticated && isUserInfoLoading;
+  const shouldShowUserInfoError = isAuthenticated && isUserInfoError;
   const shouldUseFetchedUserName =
-    hasAccessToken && !isUserInfoLoading && !isUserInfoError;
+    isAuthenticated && !isUserInfoLoading && !isUserInfoError;
   const userName = shouldUseFetchedUserName
     ? (myInfo?.name ?? FALLBACK_USER_NAME)
     : FALLBACK_USER_NAME;

@@ -2,6 +2,7 @@
 
 import { use, useState } from 'react';
 import { ChatBubble, ToastPortal } from '@/components';
+import { useAuthSession } from '@/providers/AuthProvider';
 import PromptInput from '../_components/PromptInput';
 import AnalysisResult from './_components/AnalysisResult';
 import AnalyzingIndicator from './_components/AnalyzingIndicator';
@@ -25,8 +26,13 @@ export default function AnalysisChatPage({
   params: Promise<PageParams>;
 }) {
   const { id } = use(params);
+  const { status } = useAuthSession();
+  const isAuthenticated = status === 'authenticated';
   const [isChatCollapsed, setIsChatCollapsed] = useState(false);
-  const chat = useAnalysisChat(id);
+  const chat = useAnalysisChat({
+    hasAccessToken: isAuthenticated,
+    routeConversationId: id,
+  });
 
   const renderSummaryMessage = () => {
     if (!chat.summary) return null;

@@ -42,7 +42,8 @@ const DATA_FILE_MESSAGES = {
 
 export default function DataPage() {
   const router = useRouter();
-  const { hasAccessToken } = useAuthSession();
+  const { hasAccessToken, status } = useAuthSession();
+  const isAuthenticated = status === 'authenticated';
   const { toast, showToast } = useToast();
   const [sortKey, setSortKey] = useState<DataSourceSort>('LATEST');
   const [page, setPage] = useState(0);
@@ -56,7 +57,7 @@ export default function DataPage() {
   });
 
   const dataSourcesQuery = useDataSourceList({
-    enabled: hasAccessToken,
+    enabled: isAuthenticated,
     fallbackErrorMessage: LIST_ERROR_MESSAGE,
     page,
     sort: sortKey,
@@ -91,15 +92,16 @@ export default function DataPage() {
     dataSources.every((dataSource) => selectedIds.has(dataSource.dataSourceId));
   const partiallySelected = !allSelected && selectedIds.size > 0;
   const hasSelection = selectedIds.size > 0;
-  const tableMessage = !hasAccessToken
-    ? LOGIN_REQUIRED_MESSAGE
-    : dataSourcesQuery.isLoading
-      ? '데이터 소스 목록을 불러오는 중이에요.'
-      : dataSourcesQuery.isError
-        ? dataSourcesQuery.errorMessage
-        : dataSources.length === 0
-          ? '업로드된 데이터 소스가 없습니다.'
-          : null;
+  const tableMessage =
+    !hasAccessToken && status !== 'initializing'
+      ? LOGIN_REQUIRED_MESSAGE
+      : status === 'initializing' || dataSourcesQuery.isLoading
+        ? '데이터 소스 목록을 불러오는 중이에요.'
+        : dataSourcesQuery.isError
+          ? dataSourcesQuery.errorMessage
+          : dataSources.length === 0
+            ? '업로드된 데이터 소스가 없습니다.'
+            : null;
 
   const toggleAll = () => {
     if (allSelected) {
