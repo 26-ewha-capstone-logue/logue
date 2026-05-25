@@ -8,6 +8,7 @@ import {
   type DataSourceSort,
 } from '@/apis/datasource';
 import { getApiErrorMessage } from '@/apis/errors';
+import { getMockDataSourceListResponse } from '@/apis/mockDataSource';
 
 const DATA_SOURCE_PAGE_SIZE = 20;
 
@@ -34,12 +35,19 @@ export function useDataSourceList({
     queryFn: () => getDataSources(listParams),
     enabled,
   });
+  const dataSources =
+    query.data?.dataSources ??
+    getMockDataSourceListResponse(listParams).dataSources;
+  const hasDataSources = dataSources.length > 0;
 
   return {
     ...query,
-    dataSources: query.data?.dataSources ?? [],
-    errorMessage: query.isError
-      ? getApiErrorMessage(query.error, fallbackErrorMessage)
-      : null,
+    dataSources,
+    isError: query.isError && !hasDataSources,
+    isLoading: query.isLoading && !hasDataSources,
+    errorMessage:
+      query.isError && !hasDataSources
+        ? getApiErrorMessage(query.error, fallbackErrorMessage)
+        : null,
   };
 }

@@ -1,6 +1,7 @@
 import instance from '@/lib/axios';
 import {
   getMockDataSource,
+  getMockDataSourceListResponse,
   isMockDataSourceId,
   withMockDataSource,
 } from './mockDataSource';
@@ -64,12 +65,16 @@ export const dataSourceKeys = {
 };
 
 export async function getDataSources(params: GetDataSourceListParams) {
-  const { data } = await instance.get<ApiResponse<GetDataSourceListResponse>>(
-    '/api/datasources',
-    { params },
-  );
+  try {
+    const { data } = await instance.get<ApiResponse<GetDataSourceListResponse>>(
+      '/api/datasources',
+      { params },
+    );
 
-  return withMockDataSource(unwrapApiResponse(data), params);
+    return withMockDataSource(unwrapApiResponse(data), params);
+  } catch {
+    return getMockDataSourceListResponse(params);
+  }
 }
 
 export async function uploadDataSource(file: File) {
