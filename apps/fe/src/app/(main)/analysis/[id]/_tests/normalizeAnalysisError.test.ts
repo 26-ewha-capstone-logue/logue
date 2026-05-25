@@ -58,6 +58,19 @@ describe('normalizeAnalysisError', () => {
     });
   });
 
+  it('normalizes CANCELLED alias statuses to non-retryable canceled errors', () => {
+    const error = normalizeAnalysisStatusError(
+      'CANCELLED',
+      '분석이 취소되었습니다.',
+    );
+
+    expect(normalizeAnalysisStatus('CANCELLED')).toBe('canceled');
+    expect(error).toMatchObject({
+      code: 'CANCELED',
+      retryable: false,
+    });
+  });
+
   it('treats unexpected status strings as failed status', () => {
     expect(normalizeAnalysisStatus('SOMETHING_NEW')).toBe('failed');
   });

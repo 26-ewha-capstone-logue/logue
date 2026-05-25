@@ -50,7 +50,7 @@ type MultiRow = {
 type RowSpec = StaticRow | SingleRow | MultiRow;
 
 const DEFAULT_PERIOD_OPTIONS = ['이번 주', '지난 주', '이번 달', '지난 달'];
-const DEFAULT_SORT_DIRECTION_OPTIONS = ['ASC', 'DESC', 'asc', 'desc'];
+const DEFAULT_SORT_DIRECTION_OPTIONS = ['ASC', 'DESC'];
 
 function compactStrings(values: Array<string | null | undefined>) {
   return values

@@ -5,6 +5,8 @@ import {
 } from '../_fixtures/analysis.fixtures';
 import { normalizeSummary } from '../_adapters/normalizeSummary';
 
+const EMPTY_SUMMARY_MESSAGE = '요약할 데이터 정보를 찾지 못했습니다.';
+
 describe('normalizeSummary', () => {
   it('creates a safe summary view model from a normal response', () => {
     const summary = normalizeSummary(normalSummaryResponse);
@@ -27,6 +29,24 @@ describe('normalizeSummary', () => {
     expect(summary.rowCount).toBe(0);
     expect(summary.columnOptions).toEqual([]);
     expect(summary.keyPoints).toEqual([]);
-    expect(summary.emptyMessage).toBe('요약할 데이터 정보를 찾지 못했습니다.');
+    expect(summary.emptyMessage).toBe(EMPTY_SUMMARY_MESSAGE);
+  });
+
+  it('keeps null summary responses renderable', () => {
+    const summary = normalizeSummary(null);
+
+    expect(summary.rowCount).toBe(0);
+    expect(summary.columnOptions).toEqual([]);
+    expect(summary.keyPoints).toEqual([]);
+    expect(summary.emptyMessage).toBe(EMPTY_SUMMARY_MESSAGE);
+  });
+
+  it('keeps undefined summary responses renderable', () => {
+    const summary = normalizeSummary(undefined);
+
+    expect(summary.rowCount).toBe(0);
+    expect(summary.columnOptions).toEqual([]);
+    expect(summary.keyPoints).toEqual([]);
+    expect(summary.emptyMessage).toBe(EMPTY_SUMMARY_MESSAGE);
   });
 });

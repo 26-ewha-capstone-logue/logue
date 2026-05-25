@@ -38,6 +38,10 @@ function normalizeString(value: string | null | undefined) {
   return trimmed || null;
 }
 
+function normalizeSortDirection(value: string | null | undefined) {
+  return normalizeString(value)?.toUpperCase() ?? null;
+}
+
 function normalizeStringList(values: string[] | null | undefined) {
   return Array.isArray(values)
     ? Array.from(
@@ -150,7 +154,7 @@ export function normalizeCriteria(
   const comparePeriod = normalizeString(criteria?.comparePeriod);
   const groupBy = normalizeStringList(criteria?.groupBy);
   const sortBy = normalizeString(criteria?.sortBy);
-  const sortDirection = normalizeString(criteria?.sortDirection);
+  const sortDirection = normalizeSortDirection(criteria?.sortDirection);
   const missingFields = getMissingFields(criteria);
   const missingWarning = createMissingFieldWarning(missingFields, 'criteria');
   const warnings = [
@@ -212,13 +216,15 @@ export function createCriteriaEditValues(
 export function createUpdateCriteriaRequest(
   values: CriteriaEditValues,
 ): UpdateQuestionCriteriaRequest {
+  const sortDirection = normalizeSortDirection(values.sortDirection);
+
   return {
     baseDateColumn: values.baseDateColumn || undefined,
     standardPeriod: values.standardPeriod || undefined,
     comparePeriod: values.comparePeriod || undefined,
     groupBy: values.groupBy,
     sortBy: values.sortBy || undefined,
-    sortDirection: values.sortDirection || undefined,
+    sortDirection: sortDirection ?? undefined,
     limitNum: values.limitNum ?? undefined,
     filters: values.filters.map((filter) => ({
       field: filter.field,

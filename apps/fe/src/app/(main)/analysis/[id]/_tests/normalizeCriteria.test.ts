@@ -66,6 +66,7 @@ describe('normalizeCriteria', () => {
       standardPeriod: '이번 주',
       comparePeriod: '지난 주',
       groupBy: ['channel', 'device'],
+      sortDirection: 'ASC',
       confirmed: true,
     });
   });
