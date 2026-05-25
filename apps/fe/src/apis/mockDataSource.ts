@@ -27,7 +27,13 @@ function parseCsvLine(line: string) {
 }
 
 function parseCsvPreview(csv: string): FilePreview {
-  const [headerLine, ...rowLines] = csv.trim().split(/\r?\n/);
+  const trimmedCsv = csv.trim();
+
+  if (!trimmedCsv) {
+    return { headers: [], rows: [] };
+  }
+
+  const [headerLine, ...rowLines] = trimmedCsv.split(/\r?\n/);
 
   return {
     headers: parseCsvLine(headerLine),
@@ -47,8 +53,12 @@ async function fetchMockMarketingCvrCsv() {
 
 async function getMockMarketingCvrPreview() {
   if (!mockMarketingCvrPreviewPromise) {
-    mockMarketingCvrPreviewPromise =
-      fetchMockMarketingCvrCsv().then(parseCsvPreview);
+    mockMarketingCvrPreviewPromise = fetchMockMarketingCvrCsv()
+      .then(parseCsvPreview)
+      .catch((error) => {
+        mockMarketingCvrPreviewPromise = null;
+        throw error;
+      });
   }
 
   return mockMarketingCvrPreviewPromise;
