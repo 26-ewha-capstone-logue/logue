@@ -3,6 +3,7 @@ import type {
   SummaryKeyPointViewModel,
   SummaryViewModel,
 } from '../_models/analysisViewModels';
+import { compactStrings, uniqueStrings } from '../_utils/stringList';
 import { normalizeWarningLines } from './normalizeWarnings';
 
 const SUMMARY_GROUPS = [
@@ -13,18 +14,6 @@ const SUMMARY_GROUPS = [
   { name: '플래그', key: 'flag' },
   { name: '식별 기준', key: 'idCriteria' },
 ] as const;
-
-function compactStrings(values: unknown) {
-  return Array.isArray(values)
-    ? values
-        .map((value) => (typeof value === 'string' ? value.trim() : ''))
-        .filter(Boolean)
-    : [];
-}
-
-function uniqueStrings(values: string[]) {
-  return Array.from(new Set(values));
-}
 
 function asNonNegativeNumber(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) && value > 0

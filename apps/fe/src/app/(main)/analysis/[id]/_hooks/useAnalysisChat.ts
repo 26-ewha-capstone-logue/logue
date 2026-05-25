@@ -24,6 +24,7 @@ import type {
   CriteriaViewModel,
   QuestionResultViewModel,
 } from '../_models/analysisViewModels';
+import { uniqueStrings } from '../_utils/stringList';
 import {
   analysisChatFlowReducer,
   initialAnalysisChatFlowState,
@@ -84,16 +85,6 @@ function parsePositiveNumber(value: string | null | undefined) {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-}
-
-function compactStrings(values: Array<string | null | undefined>) {
-  return values
-    .map((value) => value?.trim())
-    .filter((value): value is string => Boolean(value));
-}
-
-function uniqueStrings(values: Array<string | null | undefined>) {
-  return Array.from(new Set(compactStrings(values)));
 }
 
 function createPreviewTable(preview?: FilePreview | null) {
@@ -552,3 +543,5 @@ export function useAnalysisChat({
     toast,
   };
 }
+
+export type UseAnalysisChatResult = ReturnType<typeof useAnalysisChat>;

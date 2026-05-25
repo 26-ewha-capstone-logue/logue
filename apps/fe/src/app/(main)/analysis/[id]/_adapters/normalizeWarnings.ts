@@ -3,6 +3,7 @@ import type {
   AnalysisWarningSource,
   AnalysisWarningViewModel,
 } from '../_models/analysisWarningTypes';
+import { compactStrings, uniqueStrings } from '../_utils/stringList';
 
 const WARNING_MESSAGE_BY_CODE: Record<string, string> = {
   DATE_FIELD_CONFLICT:
@@ -16,16 +17,6 @@ const WARNING_MESSAGE_BY_CODE: Record<string, string> = {
 const LEGACY_WARNING_CODE_MAP: Record<string, string> = {
   date_field_conflict: 'DATE_FIELD_CONFLICT',
 };
-
-function compactStrings(values: Array<string | null | undefined>) {
-  return values
-    .map((value) => value?.trim())
-    .filter((value): value is string => Boolean(value));
-}
-
-function uniqueStrings(values: Array<string | null | undefined>) {
-  return Array.from(new Set(compactStrings(values)));
-}
 
 function looksLikeCode(value: string) {
   return /^[A-Z][A-Z0-9_]*$/.test(value);
