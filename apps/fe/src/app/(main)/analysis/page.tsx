@@ -1,14 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
-import { startAnalysisFlowFromDataSource } from '@/apis/analysis';
-import { dataSourceKeys, uploadDataSource } from '@/apis/datasource';
-import { getApiErrorMessage } from '@/apis/errors';
-import { getMyInfo, userKeys } from '@/apis/user';
 import { ToastAlert } from '@/components';
-import { writeAnalysisStartPayload } from '@/lib/analysisStartPayload';
+import { useMyInfo } from '@/hooks/useMyInfo';
+import { useStartAnalysis } from '@/hooks/useStartAnalysis';
+import { useToast } from '@/hooks/useToast';
 import { validateCsvFile } from '@/lib/fileValidation';
 import { useAuthSession } from '@/providers/AuthProvider';
 import GreetingSection from './_components/GreetingSection';
@@ -16,8 +11,6 @@ import PromptInput, { type PromptInputValue } from './_components/PromptInput';
 import SampleDataSection from './_components/SampleDataSection';
 
 const FALLBACK_USER_NAME = '사용자';
-const USER_INFO_STALE_TIME = 5 * 60 * 1000;
-const TOAST_DURATION_MS = 2500;
 const MISSING_FILE_MESSAGE = '분석할 CSV 파일을 먼저 추가해 주세요.';
 const LOGIN_REQUIRED_MESSAGE = '로그인이 필요해요. 다시 로그인해 주세요.';
 const START_ANALYSIS_ERROR_MESSAGE =
@@ -30,19 +23,17 @@ const ANALYSIS_FILE_MESSAGES = {
 };
 
 export default function AnalysisPage() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const { hasAccessToken } = useAuthSession();
+  const { toast, showToast } = useToast();
   const {
     data: myInfo,
     isError: isUserInfoError,
     isLoading: isUserInfoLoading,
-  } = useQuery({
-    queryKey: userKeys.me(),
-    queryFn: getMyInfo,
-    enabled: hasAccessToken,
-    staleTime: USER_INFO_STALE_TIME,
+  } = useMyInfo(hasAccessToken);
+  const startAnalysis = useStartAnalysis({
+    loginRequiredMessage: LOGIN_REQUIRED_MESSAGE,
+    fallbackErrorMessage: START_ANALYSIS_ERROR_MESSAGE,
+    onError: showToast,
   });
 
   const shouldShowUserInfoLoading = hasAccessToken && isUserInfoLoading;
@@ -52,68 +43,21 @@ export default function AnalysisPage() {
   const userName = shouldUseFetchedUserName
     ? (myInfo?.name ?? FALLBACK_USER_NAME)
     : FALLBACK_USER_NAME;
-  const startAnalysisMutation = useMutation({
-    mutationFn: async (value: PromptInputValue) => {
-      if (!hasAccessToken) {
-        throw new Error(LOGIN_REQUIRED_MESSAGE);
-      }
-
-      if (!value.file) {
-        throw new Error(MISSING_FILE_MESSAGE);
-      }
-
-      const uploadedDataSource = await uploadDataSource(value.file);
-      await queryClient.invalidateQueries({
-        queryKey: dataSourceKeys.lists(),
-      });
-      const analysisFlow = await startAnalysisFlowFromDataSource(
-        uploadedDataSource.dataSourceId,
-      );
-
-      return {
-        conversationId: analysisFlow.conversationId,
-        analysisFlowId: analysisFlow.analysisFlowId,
-        dataSourceId: analysisFlow.dataSourceId,
-        prompt: value.prompt,
-        fileName: value.file.name,
-      };
-    },
-    onSuccess: ({
-      conversationId,
-      analysisFlowId,
-      dataSourceId,
-      prompt,
-      fileName,
-    }) => {
-      writeAnalysisStartPayload(conversationId, { prompt, fileName });
-
-      const params = new URLSearchParams({
-        analysisFlowId: String(analysisFlowId),
-        dataSourceId: String(dataSourceId),
-      });
-
-      router.push(`/analysis/${conversationId}?${params.toString()}`);
-    },
-    onError: (error) => {
-      setToastMessage(getApiErrorMessage(error, START_ANALYSIS_ERROR_MESSAGE));
-    },
-  });
-
-  useEffect(() => {
-    if (!toastMessage) return;
-    const timer = window.setTimeout(
-      () => setToastMessage(null),
-      TOAST_DURATION_MS,
-    );
-    return () => window.clearTimeout(timer);
-  }, [toastMessage]);
-
   const handleSubmit = (value: PromptInputValue) => {
-    startAnalysisMutation.mutate(value);
+    if (!value.file) {
+      showToast(MISSING_FILE_MESSAGE);
+      return;
+    }
+
+    startAnalysis.startAnalysis({
+      type: 'file',
+      file: value.file,
+      prompt: value.prompt,
+    });
   };
 
   const handlePromptError = (message: string) => {
-    setToastMessage(message);
+    showToast(message);
   };
 
   return (
@@ -137,16 +81,16 @@ export default function AnalysisPage() {
 
       <PromptInput
         validateFile={(file) => validateCsvFile(file, ANALYSIS_FILE_MESSAGES)}
-        submitDisabled={startAnalysisMutation.isPending}
+        submitDisabled={startAnalysis.isPending}
         onSubmit={handleSubmit}
         onError={handlePromptError}
       />
 
       <SampleDataSection />
 
-      {toastMessage && (
+      {toast && (
         <div className="pointer-events-none fixed bottom-[4.4rem] left-1/2 z-[60] -translate-x-1/2">
-          <ToastAlert role="alert">{toastMessage}</ToastAlert>
+          <ToastAlert role="alert">{toast.message}</ToastAlert>
         </div>
       )}
     </main>
