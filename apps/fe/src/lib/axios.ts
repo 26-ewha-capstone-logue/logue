@@ -1,8 +1,21 @@
-import axios from 'axios';
-import { clearAuthTokens, getAccessToken } from './auth';
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import { reissueAuthTokens } from '../apis/auth';
+import {
+  clearAuthTokens,
+  getAccessToken,
+  getRefreshToken,
+  setAuthTokens,
+  type AuthTokens,
+} from './auth';
 import { getApiBaseUrl } from './apiBaseUrl';
 
 const API_BASE_URL = getApiBaseUrl();
+
+type AuthRetryRequestConfig = InternalAxiosRequestConfig & {
+  _authRetry?: boolean;
+};
+
+let reissueTokensRequest: Promise<AuthTokens> | null = null;
 
 const instance = axios.create({
   baseURL: API_BASE_URL,
@@ -22,14 +35,64 @@ instance.interceptors.request.use((config) => {
   return config;
 });
 
+function getReissuedAuthTokens(refreshToken: string) {
+  reissueTokensRequest ??= reissueAuthTokens(refreshToken).finally(() => {
+    reissueTokensRequest = null;
+  });
+
+  return reissueTokensRequest;
+}
+
+function getRequestPath(config: InternalAxiosRequestConfig) {
+  if (!config.url) return null;
+
+  try {
+    return new URL(config.url, config.baseURL ?? API_BASE_URL).pathname;
+  } catch {
+    return null;
+  }
+}
+
+function isUserInfoRequest(config: InternalAxiosRequestConfig) {
+  return getRequestPath(config) === '/api/user/me';
+}
+
 instance.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      clearAuthTokens();
+  async (error: AxiosError) => {
+    const originalRequest = error.config as AuthRetryRequestConfig | undefined;
+
+    if (!originalRequest) {
+      return Promise.reject(error);
     }
 
-    return Promise.reject(error);
+    if (error.response?.status === 404 && isUserInfoRequest(originalRequest)) {
+      clearAuthTokens();
+      return Promise.reject(error);
+    }
+
+    if (error.response?.status !== 401) {
+      return Promise.reject(error);
+    }
+
+    const refreshToken = getRefreshToken();
+
+    if (!refreshToken || originalRequest._authRetry) {
+      clearAuthTokens();
+      return Promise.reject(error);
+    }
+
+    originalRequest._authRetry = true;
+
+    try {
+      const nextTokens = await getReissuedAuthTokens(refreshToken);
+      setAuthTokens(nextTokens);
+      originalRequest.headers.Authorization = `Bearer ${nextTokens.accessToken}`;
+      return instance(originalRequest);
+    } catch (refreshError) {
+      clearAuthTokens();
+      return Promise.reject(refreshError);
+    }
   },
 );
 

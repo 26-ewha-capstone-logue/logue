@@ -24,6 +24,7 @@ import {
 const LOGIN_PATH = '/login';
 const PRIVATE_PATH_PREFIXES = ['/analysis', '/data', '/history'];
 const AUTH_REDIRECT_PATH = '/analysis';
+const ONBOARDING_PATH = '/onboarding';
 const AUTH_ENTRY_PATHS = new Set(['/', '/login']);
 
 type AuthContextValue = {
@@ -61,6 +62,13 @@ function replaceLocation(pathname: string) {
   window.location.replace(pathname);
 }
 
+function getPostAuthRedirectPath(pathname: string) {
+  if (pathname === ONBOARDING_PATH) return ONBOARDING_PATH;
+  if (shouldRedirectAuthenticatedUser(pathname)) return AUTH_REDIRECT_PATH;
+
+  return pathname;
+}
+
 export default function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const queryClient = useQueryClient();
@@ -91,7 +99,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     if (redirectedTokens) {
       setAuthTokens(redirectedTokens);
       removeTokenParamsFromCurrentUrl(currentUrl);
-      replaceLocation(AUTH_REDIRECT_PATH);
+      replaceLocation(getPostAuthRedirectPath(pathname));
       return;
     }
 
