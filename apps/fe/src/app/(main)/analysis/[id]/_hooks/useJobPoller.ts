@@ -5,6 +5,11 @@ import type {
   AnalysisJobStatus,
   AnalysisStatusResponse,
 } from '@/apis/analysis';
+import {
+  isFailedAnalysisStatus,
+  normalizeAnalysisStatusError,
+  shouldPollAnalysisStatus,
+} from '../_adapters/normalizeAnalysisError';
 
 type FetchStatus<TParams> = (
   params: TParams,
@@ -21,16 +26,11 @@ function wait(ms: number) {
 }
 
 export function shouldPollJobStatus(status?: AnalysisJobStatus) {
-  return (
-    !status ||
-    status === 'QUEUED' ||
-    status === 'RUNNING' ||
-    status === 'RETRYING'
-  );
+  return shouldPollAnalysisStatus(status);
 }
 
 export function isFailedJobStatus(status?: AnalysisJobStatus) {
-  return status === 'FAILED' || status === 'CANCELED' || status === 'CANCELLED';
+  return isFailedAnalysisStatus(status);
 }
 
 export function useJobPoller<TParams>(
@@ -46,7 +46,10 @@ export function useJobPoller<TParams>(
 
         if (status === 'SUCCESS') return;
         if (isFailedJobStatus(status)) {
-          throw new Error(errorMessage);
+          throw new Error(
+            normalizeAnalysisStatusError(status, errorMessage)?.message ??
+              errorMessage,
+          );
         }
 
         await wait(intervalMs);

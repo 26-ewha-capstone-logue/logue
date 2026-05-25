@@ -6,6 +6,7 @@ import {
   getResultStatus,
   type QuestionResultParams,
 } from '@/apis/analysis';
+import { normalizeResult } from '../_adapters/normalizeResult';
 import { useJobPoller } from './useJobPoller';
 
 export type ResultAnalysisVariables = {
@@ -50,7 +51,7 @@ export function useResultPhase({
       };
 
       await waitForResultSuccess(resultParams);
-      return getResult(resultParams);
+      return normalizeResult(await getResult(resultParams));
     },
   });
 }

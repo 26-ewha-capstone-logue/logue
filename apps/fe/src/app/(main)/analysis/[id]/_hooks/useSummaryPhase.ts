@@ -6,7 +6,11 @@ import {
   getSummary,
   getSummaryStatus,
 } from '@/apis/analysis';
-import { getApiErrorMessage } from '@/apis/errors';
+import {
+  normalizeAnalysisError,
+  normalizeAnalysisStatusError,
+} from '../_adapters/normalizeAnalysisError';
+import { normalizeSummary } from '../_adapters/normalizeSummary';
 import { isFailedJobStatus, shouldPollJobStatus } from './useJobPoller';
 
 type UseSummaryPhaseParams = {
@@ -66,27 +70,31 @@ export function useSummaryPhase({
       return getSummary({ conversationId, analysisFlowId });
     },
     enabled: routeReady && summaryStatus === 'SUCCESS',
+    select: normalizeSummary,
   });
 
   const summary = routeReady ? summaryQuery.data : undefined;
+  const summaryError = !routeReady
+    ? normalizeAnalysisError(
+        new Error(invalidRouteMessage),
+        invalidRouteMessage,
+      )
+    : summaryStatusQuery.isError
+      ? normalizeAnalysisError(summaryStatusQuery.error, getSummaryErrorMessage)
+      : summaryQuery.isError
+        ? normalizeAnalysisError(summaryQuery.error, getSummaryErrorMessage)
+        : normalizeAnalysisStatusError(summaryStatus, failedSummaryMessage);
   const summaryPending =
     routeReady &&
     !summaryStatusQuery.isError &&
     !summaryQuery.isError &&
     !summary &&
     !isFailedJobStatus(summaryStatus);
-  const summaryErrorMessage = !routeReady
-    ? invalidRouteMessage
-    : summaryStatusQuery.isError
-      ? getApiErrorMessage(summaryStatusQuery.error, getSummaryErrorMessage)
-      : summaryQuery.isError
-        ? getApiErrorMessage(summaryQuery.error, getSummaryErrorMessage)
-        : isFailedJobStatus(summaryStatus)
-          ? failedSummaryMessage
-          : null;
+  const summaryErrorMessage = summaryError?.message ?? null;
 
   return {
     summary,
+    summaryError,
     summaryErrorMessage,
     summaryPending,
     summaryQuery,

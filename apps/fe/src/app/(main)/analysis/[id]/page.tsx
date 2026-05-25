@@ -11,12 +11,7 @@ import LoadingDataPreview from './_components/LoadingDataPreview';
 import QuestionAnalysisResult from './_components/QuestionAnalysisResult';
 import ResizableSplit from './_components/ResizableSplit';
 import VerificationResult from './_components/VerificationResult';
-import {
-  createSummaryCandidates,
-  uniqueStrings,
-  useAnalysisChat,
-  type ChatMessage,
-} from './_hooks/useAnalysisChat';
+import { useAnalysisChat, type ChatMessage } from './_hooks/useAnalysisChat';
 
 type PageParams = { id: string };
 
@@ -43,10 +38,7 @@ export default function AnalysisChatPage({
       <div key="summary" className="flex w-full justify-start">
         <div className="w-full max-w-[80%]">
           <AnalysisResult
-            rowCount={chat.summary.rowCount}
-            columnCount={chat.summary.columnCount}
-            candidates={createSummaryCandidates(chat.summary)}
-            warnings={chat.summaryWarnings}
+            summary={chat.summary}
             warningActions={
               hasWarnings
                 ? {
@@ -117,18 +109,15 @@ export default function AnalysisChatPage({
       <div key={message.id} className="flex w-full justify-start">
         <div className="w-full max-w-[80%]">
           <QuestionAnalysisResult
-            criteria={message.criteria.criteria}
+            criteria={message.criteria}
             initialMode={message.initialMode}
             baseDateColumnOptions={
-              chat.summary?.dataCriteria.length
-                ? chat.summary.dataCriteria
+              chat.summary?.dateFieldOptions.length
+                ? chat.summary.dateFieldOptions
                 : chat.summaryColumnOptions
             }
             groupByOptions={chat.summaryColumnOptions}
-            sortByOptions={uniqueStrings([
-              ...(chat.summary?.measure ?? []),
-              ...chat.summaryColumnOptions,
-            ])}
+            sortByOptions={chat.summarySortOptions}
             isSubmitting={chat.criteriaSubmitting}
             onContinue={(values) =>
               chat.handleConfirmCriteria(message.criteria.messageId, values)
