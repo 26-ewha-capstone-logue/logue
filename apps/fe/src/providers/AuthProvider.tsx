@@ -16,6 +16,7 @@ import {
   LEGACY_ACCESS_TOKEN_STORAGE_KEY,
   REFRESH_TOKEN_STORAGE_KEY,
   consumeAuthEntryRedirectBypass,
+  consumePrivatePathRedirectBypass,
   getAccessToken,
   readAuthTokensFromSearchParams,
   setAuthTokens,
@@ -77,7 +78,10 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       if (nextStatus === 'anonymous') {
         queryClient.clear();
 
-        if (shouldRedirectPrivatePath(nextStatus, pathname)) {
+        if (
+          shouldRedirectPrivatePath(nextStatus, pathname) &&
+          !consumePrivatePathRedirectBypass()
+        ) {
           replaceLocation(getLoginRedirectPath(new URL(window.location.href)));
         }
       }

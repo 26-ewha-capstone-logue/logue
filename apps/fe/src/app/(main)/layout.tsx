@@ -13,6 +13,7 @@ import SearchIcon from '@/assets/icons/search.svg';
 import {
   clearAuthTokens,
   getRefreshToken,
+  skipNextPrivatePathRedirect,
   skipNextAuthEntryRedirect,
 } from '@/lib/auth';
 import {
@@ -165,6 +166,7 @@ export default function MainLayout({
   const handleLogout = () => {
     const refreshToken = getRefreshToken();
 
+    skipNextPrivatePathRedirect();
     clearAuthTokens();
     queryClient.removeQueries({ queryKey: userKeys.me() });
     router.replace('/');
