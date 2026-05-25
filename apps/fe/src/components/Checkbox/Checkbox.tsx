@@ -77,7 +77,7 @@ const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Checkbox(
       />
       <span
         aria-hidden
-        className={`inline-flex items-center justify-center rounded-2 transition-colors ${
+        className={`inline-flex items-center justify-center rounded-2 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-orange-500 peer-focus-visible:ring-offset-2 ${
           checked || isIndeterminate
             ? 'bg-orange-500'
             : 'border border-gray-400 bg-white'

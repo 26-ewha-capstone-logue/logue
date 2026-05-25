@@ -228,6 +228,7 @@ export function ConfirmModal({
       ariaLabelledBy={titleId}
       ariaDescribedBy={description ? descriptionId : undefined}
       closeOnOverlayClick={false}
+      closeOnEscape={!cancelDisabled}
     >
       <div className="flex flex-col items-center gap-16 text-center">
         {icon && <div className="mb-8">{icon}</div>}
