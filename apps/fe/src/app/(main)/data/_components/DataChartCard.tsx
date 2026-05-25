@@ -9,6 +9,7 @@ export type DataChartCardProps = {
   fileSize: string;
   uploadedAt: string;
   preview?: FilePreview | null;
+  chatDisabled?: boolean;
   onChat?: () => void;
   onDelete?: () => void;
 };
@@ -85,6 +86,7 @@ export default function DataChartCard({
   fileSize,
   uploadedAt,
   preview,
+  chatDisabled = false,
   onChat,
   onDelete,
 }: DataChartCardProps) {
@@ -102,11 +104,12 @@ export default function DataChartCard({
         <div className="flex shrink-0 items-center gap-12">
           <button
             type="button"
+            disabled={chatDisabled}
             onClick={(e) => {
               e.stopPropagation();
               onChat?.();
             }}
-            className="inline-flex items-center gap-4 rounded-full bg-orange-500 px-12 py-8 text-body4 font-medium text-white transition-colors hover:bg-orange-600"
+            className="inline-flex items-center gap-4 rounded-full bg-orange-500 px-12 py-8 text-body4 font-medium text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-400"
           >
             <ChatIcon aria-hidden className="icon-12 text-white" />
             <span>채팅</span>

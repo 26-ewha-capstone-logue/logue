@@ -1,9 +1,12 @@
 import { getApiBaseUrl } from './apiBaseUrl';
 import { readAuthTokensFromSearchParams, type AuthTokens } from './auth';
+import {
+  AUTH_NEXT_SEARCH_PARAM,
+  getPostAuthRedirectPath,
+  normalizeAuthNextPath,
+} from './authSession';
 
 const AUTH_CALLBACK_PATH = '/';
-const AUTH_REDIRECT_PATH = '/analysis';
-const ONBOARDING_PATH = '/onboarding';
 const LOGIN_PATH = '/login';
 const OAUTH_POPUP_WINDOW_NAME_PREFIX = 'logue-oauth:';
 const OAUTH_POPUP_STATE_STORAGE_KEY = 'logue:oauth-popup-state';
@@ -16,19 +19,19 @@ const ALLOWED_HTTPS_HOSTS = new Set([
   'www.asklogue.co',
   'logue-git-dev-maetelson-s-projects.vercel.app',
 ]);
-const ALLOWED_VERCEL_HOST_SUFFIX = '-maetelson-s-projects.vercel.app';
+const ALLOWED_VERCEL_HOST_PATTERN =
+  /^logue(?:-[a-z0-9-]+)?-maetelson-s-projects\.vercel\.app$/;
 
 export const OAUTH_POPUP_CALLBACK_MESSAGE_TYPE = 'logue:oauth-popup-callback';
 export const OAUTH_LOGIN_POPUP_BLOCKED_MESSAGE =
   '로그인 팝업이 차단됐어요. 브라우저 팝업을 허용한 뒤 다시 시도해 주세요.';
 
-type OAuthRedirectPath = typeof AUTH_REDIRECT_PATH | typeof ONBOARDING_PATH;
 export type OAuthLoginStartResult = 'opened' | 'blocked' | 'unsupported';
 
 export type OAuthPopupCallbackMessage = {
   type: typeof OAUTH_POPUP_CALLBACK_MESSAGE_TYPE;
   tokens: AuthTokens;
-  redirectPath: OAuthRedirectPath;
+  redirectPath: string;
   state: string;
 };
 
@@ -41,15 +44,26 @@ export function getOAuthLoginUrl() {
   return new URL('/oauth2/authorization/google', getApiBaseUrl()).toString();
 }
 
-export function getOAuthCallbackRedirectUrl(requestUrl: URL) {
+export function getOAuthCallbackRedirectUrl(
+  requestUrl: URL,
+  nextPath?: string | null,
+) {
   const tokens = readAuthTokensFromSearchParams(requestUrl.searchParams);
 
   if (!tokens) return null;
   const redirectUrl = new URL(AUTH_CALLBACK_PATH, requestUrl.origin);
+  const normalizedNextPath = normalizeAuthNextPath(
+    nextPath ?? requestUrl.searchParams.get(AUTH_NEXT_SEARCH_PARAM),
+  );
+
   redirectUrl.searchParams.set('accessToken', tokens.accessToken);
 
   if (tokens.refreshToken) {
     redirectUrl.searchParams.set('refreshToken', tokens.refreshToken);
+  }
+
+  if (normalizedNextPath) {
+    redirectUrl.searchParams.set(AUTH_NEXT_SEARCH_PARAM, normalizedNextPath);
   }
 
   return redirectUrl;
@@ -154,7 +168,7 @@ export function isAllowedOAuthPopupOrigin(origin: string) {
 
   return (
     ALLOWED_HTTPS_HOSTS.has(hostname) ||
-    hostname.endsWith(ALLOWED_VERCEL_HOST_SUFFIX)
+    ALLOWED_VERCEL_HOST_PATTERN.test(hostname)
   );
 }
 
@@ -205,8 +219,11 @@ function getOAuthPopupTargetOrigin(windowName: string) {
   }
 }
 
-function getPostOAuthRedirectPath(pathname: string): OAuthRedirectPath {
-  return pathname === ONBOARDING_PATH ? ONBOARDING_PATH : AUTH_REDIRECT_PATH;
+function getPostOAuthRedirectPath(requestUrl: URL) {
+  return getPostAuthRedirectPath(
+    requestUrl.pathname,
+    requestUrl.searchParams.get(AUTH_NEXT_SEARCH_PARAM),
+  );
 }
 
 export function getOAuthPopupCallbackRelay(
@@ -223,7 +240,7 @@ export function getOAuthPopupCallbackRelay(
     message: {
       type: OAUTH_POPUP_CALLBACK_MESSAGE_TYPE,
       tokens,
-      redirectPath: getPostOAuthRedirectPath(requestUrl.pathname),
+      redirectPath: getPostOAuthRedirectPath(requestUrl),
       state: target.state,
     },
   };
@@ -249,10 +266,8 @@ function readMessageTokens(value: unknown) {
   return readAuthTokensFromSearchParams(params);
 }
 
-function readRedirectPath(value: unknown): OAuthRedirectPath | null {
-  if (value === AUTH_REDIRECT_PATH || value === ONBOARDING_PATH) return value;
-
-  return null;
+function readRedirectPath(value: unknown) {
+  return typeof value === 'string' ? normalizeAuthNextPath(value) : null;
 }
 
 export function readOAuthPopupCallbackMessage(

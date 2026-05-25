@@ -84,6 +84,17 @@ describe('getOAuthCallbackRedirectUrl', () => {
     );
   });
 
+  it('preserves a safe post-auth next path on token callbacks', () => {
+    const redirectUrl = getOAuthCallbackRedirectUrl(
+      new URL('https://www.asklogue.co/login?accessToken=access-token'),
+      '/data/12?q=csv#preview',
+    );
+
+    expect(redirectUrl?.toString()).toBe(
+      'https://www.asklogue.co/?accessToken=access-token&next=%2Fdata%2F12%3Fq%3Dcsv%23preview',
+    );
+  });
+
   it('keeps plain login requests on the OAuth start path', () => {
     expect(
       getOAuthCallbackRedirectUrl(new URL('https://www.asklogue.co/login')),
@@ -145,8 +156,26 @@ describe('OAuth popup relay helpers', () => {
     expect(relay?.message.redirectPath).toBe('/onboarding');
   });
 
+  it('routes popup callbacks to a safe next path when present', () => {
+    const windowName = getOAuthPopupWindowName(
+      'https://www.asklogue.co',
+      'state-1',
+    );
+    const relay = getOAuthPopupCallbackRelay(
+      new URL(
+        'https://www.asklogue.co/?accessToken=access-token&next=%2Fdata%2F12%3Fq%3Dcsv',
+      ),
+      windowName ?? '',
+    );
+
+    expect(relay?.message.redirectPath).toBe('/data/12?q=csv');
+  });
+
   it('rejects untrusted popup origins and malformed messages', () => {
     expect(isAllowedOAuthPopupOrigin('https://evil.example.com')).toBe(false);
+    expect(
+      isAllowedOAuthPopupOrigin('https://evil-maetelson-s-projects.vercel.app'),
+    ).toBe(false);
     expect(
       getOAuthPopupWindowName('https://evil.example.com', 'state-1'),
     ).toBeNull();

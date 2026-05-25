@@ -27,6 +27,7 @@ import {
   readOAuthPopupCallbackMessage,
 } from '@/lib/authRedirect';
 import {
+  AUTH_NEXT_SEARCH_PARAM,
   AUTH_REDIRECT_PATH,
   getLoginRedirectPath,
   getPostAuthRedirectPath,
@@ -103,7 +104,12 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       setAuthTokens(redirectedTokens);
       removeTokenParamsFromCurrentUrl(currentUrl);
       queryClient.clear();
-      replaceLocation(getPostAuthRedirectPath(pathname));
+      replaceLocation(
+        getPostAuthRedirectPath(
+          pathname,
+          currentUrl.searchParams.get(AUTH_NEXT_SEARCH_PARAM),
+        ),
+      );
       return;
     }
 

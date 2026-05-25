@@ -9,6 +9,7 @@ import {
   getDataSource,
 } from '@/apis/datasource';
 import { ConfirmModal, ToastPortal } from '@/components';
+import { useStartAnalysis } from '@/hooks/useStartAnalysis';
 import { useToast } from '@/hooks/useToast';
 import { formatDateTime } from '@/lib/dateTime';
 import { formatFileSize } from '@/lib/fileValidation';
@@ -18,6 +19,9 @@ import DataChartCard from '../_components/DataChartCard';
 type PageParams = { id: string };
 
 const DELETE_ILLUST_SRC = '/illusts/delete.svg';
+const LOGIN_REQUIRED_MESSAGE = '로그인이 필요해요. 다시 로그인해 주세요.';
+const START_CHAT_ERROR_MESSAGE =
+  '분석 채팅을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.';
 
 function DataDetailStatus({ message }: { message: string }) {
   const router = useRouter();
@@ -48,6 +52,11 @@ export default function DataDetailPage({
   const isAuthenticated = status === 'authenticated';
   const [deleteOpen, setDeleteOpen] = useState(false);
   const { toast, showToast } = useToast();
+  const startAnalysis = useStartAnalysis({
+    loginRequiredMessage: LOGIN_REQUIRED_MESSAGE,
+    fallbackErrorMessage: START_CHAT_ERROR_MESSAGE,
+    onError: showToast,
+  });
 
   const dataSourceId = Number(id);
   const isValidDataSourceId =
@@ -76,7 +85,13 @@ export default function DataDetailPage({
   });
 
   const handleChat = () => {
-    router.push(`/analysis/${id}`);
+    if (!detail) return;
+
+    startAnalysis.startAnalysis({
+      type: 'dataSource',
+      dataSourceId,
+      fileName: detail.fileName,
+    });
   };
 
   const handleDeleteConfirm = async () => {
@@ -119,6 +134,7 @@ export default function DataDetailPage({
         fileSize={formatFileSize(detail.fileSize)}
         uploadedAt={formatDateTime(detail.uploadedAt)}
         preview={detail.preview}
+        chatDisabled={startAnalysis.isPending}
         onChat={handleChat}
         onDelete={() => setDeleteOpen(true)}
       />
