@@ -1,6 +1,6 @@
 import axios from 'axios';
-import type { AuthTokens } from '@/lib/auth';
-import { getApiBaseUrl } from '@/lib/apiBaseUrl';
+import { getApiBaseUrl } from '../lib/apiBaseUrl';
+import type { AuthTokens } from '../lib/auth';
 import { unwrapApiResponse, type ApiResponse } from './types';
 
 const AUTH_API_BASE_URL = getApiBaseUrl();

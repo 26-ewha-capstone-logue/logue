@@ -1,5 +1,5 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
-import { reissueAuthTokens } from '@/apis/auth';
+import { reissueAuthTokens } from '../apis/auth';
 import {
   clearAuthTokens,
   getAccessToken,
@@ -43,12 +43,35 @@ function getReissuedAuthTokens(refreshToken: string) {
   return reissueTokensRequest;
 }
 
+function getRequestPath(config: InternalAxiosRequestConfig) {
+  if (!config.url) return null;
+
+  try {
+    return new URL(config.url, config.baseURL ?? API_BASE_URL).pathname;
+  } catch {
+    return null;
+  }
+}
+
+function isUserInfoRequest(config: InternalAxiosRequestConfig) {
+  return getRequestPath(config) === '/api/user/me';
+}
+
 instance.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as AuthRetryRequestConfig | undefined;
 
-    if (error.response?.status !== 401 || !originalRequest) {
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
+    if (error.response?.status === 404 && isUserInfoRequest(originalRequest)) {
+      clearAuthTokens();
+      return Promise.reject(error);
+    }
+
+    if (error.response?.status !== 401) {
       return Promise.reject(error);
     }
 
