@@ -15,7 +15,10 @@ import {
   getRefreshToken,
   skipNextAuthEntryRedirect,
 } from '@/lib/auth';
-import { startOAuthLogin } from '@/lib/authRedirect';
+import {
+  OAUTH_LOGIN_POPUP_BLOCKED_MESSAGE,
+  startOAuthLogin,
+} from '@/lib/authRedirect';
 import { useMyInfo } from '@/hooks/useMyInfo';
 import { useAuthSession } from '@/providers/AuthProvider';
 
@@ -193,7 +196,9 @@ export default function MainLayout({
   ) : undefined;
 
   const handleProfileClick = () => {
-    startOAuthLogin();
+    if (startOAuthLogin() !== 'opened') {
+      window.alert(OAUTH_LOGIN_POPUP_BLOCKED_MESSAGE);
+    }
   };
 
   return (

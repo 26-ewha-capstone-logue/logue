@@ -21,6 +21,7 @@ import {
   setAuthTokens,
 } from '@/lib/auth';
 import {
+  consumeOAuthPopupState,
   getOAuthPopupCallbackRelay,
   isAllowedOAuthPopupOrigin,
   readOAuthPopupCallbackMessage,
@@ -135,6 +136,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 
       const message = readOAuthPopupCallbackMessage(event.data);
       if (!message) return;
+      if (!consumeOAuthPopupState(message.state)) return;
 
       setAuthTokens(message.tokens);
       queryClient.clear();
