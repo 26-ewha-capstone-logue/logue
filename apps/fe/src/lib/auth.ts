@@ -9,6 +9,8 @@ export const LEGACY_ACCESS_TOKEN_STORAGE_KEY = 'token';
 export const AUTH_TOKENS_CHANGED_EVENT = 'logue:auth-tokens-changed';
 const AUTH_ENTRY_REDIRECT_BYPASS_STORAGE_KEY =
   'logue:auth-entry-redirect-bypass';
+const PRIVATE_PATH_REDIRECT_BYPASS_STORAGE_KEY =
+  'logue:private-path-redirect-bypass';
 
 const MAX_AUTH_TOKEN_LENGTH = 8192;
 
@@ -144,6 +146,31 @@ export function consumeAuthEntryRedirectBypass() {
     const shouldBypass =
       storage.getItem(AUTH_ENTRY_REDIRECT_BYPASS_STORAGE_KEY) === 'true';
     storage.removeItem(AUTH_ENTRY_REDIRECT_BYPASS_STORAGE_KEY);
+    return shouldBypass;
+  } catch {
+    return false;
+  }
+}
+
+export function skipNextPrivatePathRedirect() {
+  const storage = getOptionalSessionStorage();
+  if (!storage) return;
+
+  try {
+    storage.setItem(PRIVATE_PATH_REDIRECT_BYPASS_STORAGE_KEY, 'true');
+  } catch {
+    // Ignore browsers that block sessionStorage.
+  }
+}
+
+export function consumePrivatePathRedirectBypass() {
+  const storage = getOptionalSessionStorage();
+  if (!storage) return false;
+
+  try {
+    const shouldBypass =
+      storage.getItem(PRIVATE_PATH_REDIRECT_BYPASS_STORAGE_KEY) === 'true';
+    storage.removeItem(PRIVATE_PATH_REDIRECT_BYPASS_STORAGE_KEY);
     return shouldBypass;
   } catch {
     return false;

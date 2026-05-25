@@ -4,10 +4,12 @@ import {
   LEGACY_ACCESS_TOKEN_STORAGE_KEY,
   REFRESH_TOKEN_STORAGE_KEY,
   clearAuthTokens,
+  consumePrivatePathRedirectBypass,
   getAccessToken,
   getRefreshToken,
   readAuthTokensFromSearchParams,
   setAuthTokens,
+  skipNextPrivatePathRedirect,
 } from './auth';
 
 function createStorage() {
@@ -43,7 +45,7 @@ function installWindowStorage() {
     },
   });
 
-  return { dispatchEvent, localStorage };
+  return { dispatchEvent, localStorage, sessionStorage };
 }
 
 afterEach(() => {
@@ -100,6 +102,17 @@ describe('auth token storage', () => {
     expect(localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)).toBeNull();
     expect(localStorage.getItem(LEGACY_ACCESS_TOKEN_STORAGE_KEY)).toBeNull();
     expect(localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)).toBeNull();
+  });
+});
+
+describe('private path redirect bypass', () => {
+  it('consumes an intentional logout redirect bypass once', () => {
+    installWindowStorage();
+
+    skipNextPrivatePathRedirect();
+
+    expect(consumePrivatePathRedirectBypass()).toBe(true);
+    expect(consumePrivatePathRedirectBypass()).toBe(false);
   });
 });
 
