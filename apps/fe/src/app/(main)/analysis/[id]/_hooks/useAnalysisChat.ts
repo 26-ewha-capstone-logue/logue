@@ -223,17 +223,19 @@ export function useAnalysisChat({
     enabled: hasAccessToken && dataSourceId !== null,
   });
 
-  const { summary, summaryErrorMessage, summaryPending, summaryQuery } =
-    useSummaryPhase({
-      analysisFlowId,
-      conversationId,
-      failedSummaryMessage:
-        'CSV 데이터 요약에 실패했어요. 파일을 확인하고 다시 시도해 주세요.',
-      getSummaryErrorMessage: GET_SUMMARY_ERROR_MESSAGE,
-      invalidRouteMessage: INVALID_ROUTE_MESSAGE,
-      routeReady: hasAccessToken && routeReady,
-      statusPollIntervalMs: STATUS_POLL_INTERVAL_MS,
-    });
+  const { summary, summaryErrorMessage, summaryPending } = useSummaryPhase({
+    analysisFlowId,
+    conversationId,
+    failedSummaryMessage:
+      'CSV 데이터 요약에 실패했어요. 파일을 확인하고 다시 시도해 주세요.',
+    getSummaryErrorMessage: GET_SUMMARY_ERROR_MESSAGE,
+    invalidRouteMessage: INVALID_ROUTE_MESSAGE,
+    routeReady: hasAccessToken && routeReady,
+    statusPollIntervalMs: STATUS_POLL_INTERVAL_MS,
+  });
+  const dataSourcePreview = hasAccessToken
+    ? dataSourceQuery.data?.preview
+    : undefined;
   const { questionAnalysisMutation, updateCriteriaMutation } = useCriteriaPhase(
     {
       getCriteriaErrorMessage: GET_CRITERIA_ERROR_MESSAGE,
@@ -345,6 +347,7 @@ export function useAnalysisChat({
   const startInitialQuestion = useCallback(
     (initialMode: CriteriaInitialMode = 'normal') => {
       if (
+        !hasAccessToken ||
         hasStartedInitialQuestion ||
         !hasResolvedStartPayload ||
         !canAutoStartInitialQuestion ||
@@ -360,6 +363,7 @@ export function useAnalysisChat({
     [
       canAutoStartInitialQuestion,
       conversationId,
+      hasAccessToken,
       hasResolvedStartPayload,
       hasStartedInitialQuestion,
       initialPrompt,
@@ -370,7 +374,7 @@ export function useAnalysisChat({
 
   const handleSubmit = useCallback(
     (value: PromptInputValue) => {
-      if (!summaryQuery.data) {
+      if (!summary) {
         showToast(SUMMARY_NOT_READY_MESSAGE);
         return;
       }
@@ -381,7 +385,7 @@ export function useAnalysisChat({
       dispatchFlow({ type: 'initial-question-started' });
       startQuestion(value.prompt);
     },
-    [conversationId, dispatchFlow, showToast, startQuestion, summaryQuery.data],
+    [conversationId, dispatchFlow, showToast, startQuestion, summary],
   );
 
   function handleConfirmCriteria(
@@ -514,14 +518,15 @@ export function useAnalysisChat({
 
   useEffect(() => {
     if (
-      !summaryQuery.data ||
+      !hasAccessToken ||
+      !summary ||
       hasStartedInitialQuestion ||
       !hasResolvedStartPayload ||
       !canAutoStartInitialQuestion
     ) {
       return;
     }
-    if (createSummaryWarnings(summaryQuery.data).length > 0) return;
+    if (createSummaryWarnings(summary).length > 0) return;
 
     const timer = window.setTimeout(() => {
       startInitialQuestion();
@@ -530,10 +535,11 @@ export function useAnalysisChat({
     return () => window.clearTimeout(timer);
   }, [
     canAutoStartInitialQuestion,
+    hasAccessToken,
     hasResolvedStartPayload,
     hasStartedInitialQuestion,
     startInitialQuestion,
-    summaryQuery.data,
+    summary,
   ]);
 
   const summaryColumnOptions = getSummaryColumnOptions(summary);
@@ -574,8 +580,8 @@ export function useAnalysisChat({
     handleSubmit,
     initialMessage,
     inputDisabled,
-    isDataSourceLoading: dataSourceQuery.isLoading,
-    previewTable: createPreviewTable(dataSourceQuery.data?.preview),
+    isDataSourceLoading: hasAccessToken && dataSourceQuery.isLoading,
+    previewTable: createPreviewTable(dataSourcePreview),
     restMessages,
     shouldShowAnalyzing,
     startInitialQuestion,
