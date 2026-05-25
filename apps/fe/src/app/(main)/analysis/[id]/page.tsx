@@ -1,7 +1,7 @@
 'use client';
 
 import { use, useState } from 'react';
-import { ChatBubble, ToastAlert } from '@/components';
+import { ChatBubble, ToastPortal } from '@/components';
 import PromptInput from '../_components/PromptInput';
 import AnalysisResult from './_components/AnalysisResult';
 import AnalyzingIndicator from './_components/AnalyzingIndicator';
@@ -173,11 +173,7 @@ export default function AnalysisChatPage({
             />
           </div>
 
-          {chat.toast && (
-            <div className="pointer-events-none fixed bottom-[4.4rem] left-1/2 z-[60] -translate-x-1/2">
-              <ToastAlert role="alert">{chat.toast.message}</ToastAlert>
-            </div>
-          )}
+          <ToastPortal toast={chat.toast} />
         </div>
       }
     />
