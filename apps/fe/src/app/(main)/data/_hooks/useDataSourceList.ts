@@ -2,11 +2,8 @@
 
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  dataSourceKeys,
-  getDataSources,
-  type DataSourceSort,
-} from '@/apis/datasource';
+import { dataSourceKeys, type DataSourceSort } from '@/apis/datasource';
+import { getDataSources } from '@/apis/dataSourceRepository';
 import { getApiErrorMessage } from '@/apis/errors';
 import { getMockDataSourceListResponse } from '@/apis/mockDataSource';
 
