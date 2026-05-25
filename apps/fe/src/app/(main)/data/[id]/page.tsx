@@ -8,7 +8,7 @@ import {
   deleteDataSource,
   getDataSource,
 } from '@/apis/datasource';
-import { ConfirmModal, ToastAlert } from '@/components';
+import { ConfirmModal, ToastPortal } from '@/components';
 import { useToast } from '@/hooks/useToast';
 import { formatDateTime } from '@/lib/dateTime';
 import { formatFileSize } from '@/lib/fileValidation';
@@ -141,11 +141,7 @@ export default function DataDetailPage({
         }
       />
 
-      {toast && (
-        <div className="pointer-events-none fixed bottom-[4.4rem] left-1/2 z-[60] -translate-x-1/2">
-          <ToastAlert role="alert">{toast.message}</ToastAlert>
-        </div>
-      )}
+      <ToastPortal toast={toast} />
     </main>
   );
 }

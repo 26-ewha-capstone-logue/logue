@@ -1,6 +1,6 @@
 'use client';
 
-import { ToastAlert } from '@/components';
+import { ToastPortal } from '@/components';
 import { useMyInfo } from '@/hooks/useMyInfo';
 import { useStartAnalysis } from '@/hooks/useStartAnalysis';
 import { useToast } from '@/hooks/useToast';
@@ -88,11 +88,7 @@ export default function AnalysisPage() {
 
       <SampleDataSection />
 
-      {toast && (
-        <div className="pointer-events-none fixed bottom-[4.4rem] left-1/2 z-[60] -translate-x-1/2">
-          <ToastAlert role="alert">{toast.message}</ToastAlert>
-        </div>
-      )}
+      <ToastPortal toast={toast} />
     </main>
   );
 }
