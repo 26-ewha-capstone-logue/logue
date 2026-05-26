@@ -17,6 +17,7 @@ import type {
   BarChartViewModel,
   QuestionResultViewModel,
 } from '../_models/analysisViewModels';
+import AnalysisCard from './AnalysisCard';
 import AnalysisWarningList from './AnalysisWarningList';
 
 export type VerificationResultProps = {
@@ -93,7 +94,7 @@ export default function VerificationResult({
   const hasMultipleSeries = seriesKeys.length > 1;
 
   return (
-    <div className="flex w-full flex-col gap-20 rounded-20 bg-white p-24 shadow-[0_0.2rem_1.2rem_rgba(0,0,0,0.06)]">
+    <AnalysisCard className="gap-20">
       <div className="flex flex-col gap-4">
         <p className="text-body3 font-semibold text-gray-900">{result.title}</p>
         <p className="text-body2 text-gray-900">{result.insight}</p>
@@ -206,6 +207,6 @@ export default function VerificationResult({
       </div>
 
       <AnalysisWarningList warnings={result.warnings} />
-    </div>
+    </AnalysisCard>
   );
 }

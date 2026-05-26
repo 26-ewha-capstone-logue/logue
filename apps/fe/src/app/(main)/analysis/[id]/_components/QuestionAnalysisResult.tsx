@@ -8,6 +8,8 @@ import type {
   CriteriaViewModel,
 } from '../_models/analysisViewModels';
 import { uniqueStrings as uniqueOptions } from '../_utils/stringList';
+import AnalysisActionButtons from './AnalysisActionButtons';
+import AnalysisCard from './AnalysisCard';
 import AnalysisWarningList from './AnalysisWarningList';
 import CriterionSelect from './CriterionSelect';
 
@@ -184,7 +186,7 @@ export default function QuestionAnalysisResult({
   };
 
   return (
-    <div className="flex w-full flex-col gap-16 rounded-20 bg-white p-24 shadow-[0_0.2rem_1.2rem_rgba(0,0,0,0.06)]">
+    <AnalysisCard>
       <div className="flex flex-col gap-4">
         <p className="text-body3 font-semibold text-gray-900">
           질문 분석이 완료되었어요.
@@ -246,46 +248,23 @@ export default function QuestionAnalysisResult({
       <AnalysisWarningList warnings={criteria.warnings} />
 
       {mode === 'normal' ? (
-        <div className="flex justify-end gap-8">
-          <button
-            type="button"
-            onClick={handleEdit}
-            disabled={isSubmitting}
-            className="rounded-20 bg-gray-300 px-16 py-8 text-body2 text-gray-700 transition-colors hover:bg-gray-400 disabled:cursor-not-allowed disabled:text-gray-500"
-          >
-            수정하기
-          </button>
-          <button
-            type="button"
-            onClick={handleContinue}
-            disabled={isSubmitting}
-            className="rounded-20 bg-orange-500 px-16 py-8 text-body2 text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:text-gray-600"
-          >
-            {isSubmitting ? '확정 중' : '이 기준으로 계속 할게요'}
-          </button>
-        </div>
+        <AnalysisActionButtons
+          disabled={isSubmitting}
+          continueLabel={isSubmitting ? '확정 중' : '이 기준으로 계속 할게요'}
+          onEdit={handleEdit}
+          onContinue={handleContinue}
+        />
       ) : (
         <div className="flex flex-col gap-16">
-          <div className="flex justify-end gap-8">
-            <button
-              type="button"
-              onClick={handleCancelEdit}
-              disabled={isSubmitting}
-              className="rounded-20 bg-gray-300 px-16 py-8 text-body2 text-gray-700 transition-colors hover:bg-gray-400 disabled:cursor-not-allowed disabled:text-gray-500"
-            >
-              취소
-            </button>
-            <button
-              type="button"
-              onClick={handleContinue}
-              disabled={isSubmitting}
-              className="rounded-20 bg-orange-500 px-16 py-8 text-body2 text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:text-gray-600"
-            >
-              {isSubmitting ? '확정 중' : '이 기준으로 계속 할게요'}
-            </button>
-          </div>
+          <AnalysisActionButtons
+            editLabel="취소"
+            disabled={isSubmitting}
+            continueLabel={isSubmitting ? '확정 중' : '이 기준으로 계속 할게요'}
+            onEdit={handleCancelEdit}
+            onContinue={handleContinue}
+          />
         </div>
       )}
-    </div>
+    </AnalysisCard>
   );
 }

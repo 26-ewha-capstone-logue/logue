@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import ArrowDownIcon from '@/assets/icons/arrow-down.svg';
 import type { SummaryViewModel } from '../_models/analysisViewModels';
+import AnalysisActionButtons from './AnalysisActionButtons';
+import AnalysisCard from './AnalysisCard';
 import AnalysisWarningList from './AnalysisWarningList';
 
 export type AnalysisResultProps = {
@@ -24,7 +26,7 @@ export default function AnalysisResult({
   const hasWarnings = summary.warnings.length > 0;
 
   return (
-    <div className="flex w-full flex-col gap-16 rounded-20 bg-white p-24 shadow-[0_0.2rem_1.2rem_rgba(0,0,0,0.06)]">
+    <AnalysisCard>
       <div className="flex flex-col gap-8">
         <p className="text-body2 text-gray-900">{summary.title}</p>
         <p className="text-body2 text-gray-900">
@@ -105,27 +107,17 @@ export default function AnalysisResult({
             listClassName="ml-20 list-disc text-body2 text-gray-900"
           />
           {warningActions && (
-            <div className="mt-8 flex justify-end gap-8">
-              <button
-                type="button"
-                onClick={warningActions.onEdit}
-                disabled={warningActions.disabled}
-                className="rounded-20 bg-gray-300 px-16 py-8 text-body2 text-gray-700 transition-colors hover:bg-gray-400 disabled:cursor-not-allowed disabled:text-gray-500"
-              >
-                {warningActions.editLabel ?? '수정하기'}
-              </button>
-              <button
-                type="button"
-                onClick={warningActions.onContinue}
-                disabled={warningActions.disabled}
-                className="rounded-20 bg-orange-500 px-16 py-8 text-body2 text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:text-gray-600"
-              >
-                {warningActions.continueLabel ?? '이 기준으로 계속 할게요'}
-              </button>
-            </div>
+            <AnalysisActionButtons
+              className="mt-8"
+              editLabel={warningActions.editLabel}
+              continueLabel={warningActions.continueLabel}
+              disabled={warningActions.disabled}
+              onEdit={warningActions.onEdit}
+              onContinue={warningActions.onContinue}
+            />
           )}
         </div>
       )}
-    </div>
+    </AnalysisCard>
   );
 }
