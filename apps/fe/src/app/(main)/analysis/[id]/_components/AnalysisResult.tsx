@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import ArrowDownIcon from '@/assets/icons/arrow-down.svg';
-import AlertIcon from '@/assets/icons/alert.svg';
 import type { SummaryViewModel } from '../_models/analysisViewModels';
+import AnalysisWarningList from './AnalysisWarningList';
 
 export type AnalysisResultProps = {
   summary: SummaryViewModel;
@@ -99,17 +99,11 @@ export default function AnalysisResult({
 
       {hasWarnings && (
         <div className="flex flex-col gap-8">
-          <div className="inline-flex items-center gap-4 text-body4 text-orange-500">
-            <AlertIcon aria-hidden className="icon-16 text-orange-500" />
-            <span>데이터 경고</span>
-          </div>
-          <ul className="ml-20 list-disc text-body2 text-gray-900">
-            {summary.warnings.map((warning) => (
-              <li key={`${warning.code}-${warning.message}`}>
-                {warning.message}
-              </li>
-            ))}
-          </ul>
+          <AnalysisWarningList
+            warnings={summary.warnings}
+            titleClassName="text-body4"
+            listClassName="ml-20 list-disc text-body2 text-gray-900"
+          />
           {warningActions && (
             <div className="mt-8 flex justify-end gap-8">
               <button

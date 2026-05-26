@@ -13,11 +13,11 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import AlertIcon from '@/assets/icons/alert.svg';
 import type {
   BarChartViewModel,
   QuestionResultViewModel,
 } from '../_models/analysisViewModels';
+import AnalysisWarningList from './AnalysisWarningList';
 
 export type VerificationResultProps = {
   result: QuestionResultViewModel;
@@ -205,21 +205,7 @@ export default function VerificationResult({
         )}
       </div>
 
-      {result.warnings.length > 0 && (
-        <div className="flex flex-col gap-8">
-          <div className="inline-flex items-center gap-4 text-body2 font-semibold text-orange-500">
-            <AlertIcon aria-hidden className="icon-16 text-orange-500" />
-            <span>데이터 경고</span>
-          </div>
-          <ul className="ml-20 flex list-disc flex-col gap-8 text-body2 text-gray-900">
-            {result.warnings.map((warning) => (
-              <li key={`${warning.code}-${warning.message}`}>
-                {warning.message}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <AnalysisWarningList warnings={result.warnings} />
     </div>
   );
 }

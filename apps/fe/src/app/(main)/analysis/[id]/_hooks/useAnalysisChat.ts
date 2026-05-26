@@ -14,6 +14,7 @@ import type { PromptInputValue } from '../../_components/PromptInput';
 import { createUpdateCriteriaRequest } from '../_adapters/normalizeCriteria';
 import type { DataTableColumn } from '../_components/DataTablePreview';
 import type { CriteriaEditValues } from '../_models/analysisViewModels';
+import { uniqueStrings } from '../_utils/stringList';
 import {
   useAnalysisChatMessages,
   type CriteriaInitialMode,
@@ -49,16 +50,6 @@ const UPDATE_CRITERIA_ERROR_MESSAGE =
   '분석 기준을 확정하지 못했어요. 잠시 후 다시 시도해 주세요.';
 const GET_RESULT_ERROR_MESSAGE =
   '최종 분석 결과를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
-
-function compactStrings(values: Array<string | null | undefined>) {
-  return values
-    .map((value) => value?.trim())
-    .filter((value): value is string => Boolean(value));
-}
-
-function uniqueStrings(values: Array<string | null | undefined>) {
-  return Array.from(new Set(compactStrings(values)));
-}
 
 function createPreviewTable(preview?: FilePreview | null) {
   if (!preview || preview.headers.length === 0) return null;
@@ -408,3 +399,5 @@ export function useAnalysisChat({
     toast,
   };
 }
+
+export type UseAnalysisChatResult = ReturnType<typeof useAnalysisChat>;

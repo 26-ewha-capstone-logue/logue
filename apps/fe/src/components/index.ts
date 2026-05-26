@@ -77,6 +77,11 @@ export type {
   ListboxDropdownProps,
   ListboxDropdownRenderProps,
 } from './ListboxDropdown/ListboxDropdown';
+export { default as ListboxDropdownShell } from './ListboxDropdownShell/ListboxDropdownShell';
+export type {
+  ListboxDropdownShellPanelProps,
+  ListboxDropdownShellProps,
+} from './ListboxDropdownShell/ListboxDropdownShell';
 
 export { default as MenuTab } from './MenuTab/MenuTab';
 export type { MenuTabProps } from './MenuTab/MenuTab';

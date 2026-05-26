@@ -1,13 +1,14 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import AlertIcon from '@/assets/icons/alert.svg';
 import { createCriteriaEditValues } from '../_adapters/normalizeCriteria';
 import type {
   AnalysisFilterViewModel,
   CriteriaEditValues,
   CriteriaViewModel,
 } from '../_models/analysisViewModels';
+import { uniqueStrings as uniqueOptions } from '../_utils/stringList';
+import AnalysisWarningList from './AnalysisWarningList';
 import CriterionSelect from './CriterionSelect';
 
 type Mode = 'normal' | 'edit';
@@ -52,16 +53,6 @@ type RowSpec = StaticRow | SingleRow | MultiRow;
 const DEFAULT_PERIOD_OPTIONS = ['이번 주', '지난 주', '이번 달', '지난 달'];
 const DEFAULT_SORT_DIRECTION_OPTIONS = ['ASC', 'DESC'];
 
-function compactStrings(values: Array<string | null | undefined>) {
-  return values
-    .map((value) => value?.trim())
-    .filter((value): value is string => Boolean(value));
-}
-
-function uniqueOptions(values: Array<string | null | undefined>) {
-  return Array.from(new Set(compactStrings(values)));
-}
-
 function formatFilters(filters: AnalysisFilterViewModel[]) {
   if (filters.length === 0) return '없음';
 
@@ -69,24 +60,6 @@ function formatFilters(filters: AnalysisFilterViewModel[]) {
     .map((filter) => filter.label)
     .filter(Boolean)
     .join(', ');
-}
-
-function DataWarningBlock({ warnings }: { warnings: string[] }) {
-  if (warnings.length === 0) return null;
-
-  return (
-    <div className="flex flex-col gap-8">
-      <div className="inline-flex items-center gap-4 text-body2 font-semibold text-orange-500">
-        <AlertIcon aria-hidden className="icon-16 text-orange-500" />
-        <span>데이터 경고</span>
-      </div>
-      <ul className="ml-20 flex list-disc flex-col gap-8 text-body2 text-gray-900">
-        {warnings.map((warning) => (
-          <li key={warning}>{warning}</li>
-        ))}
-      </ul>
-    </div>
-  );
 }
 
 export default function QuestionAnalysisResult({
@@ -103,11 +76,6 @@ export default function QuestionAnalysisResult({
   const [mode, setMode] = useState<Mode>(initialMode);
   const [values, setValues] = useState<CriteriaEditValues>(() =>
     createCriteriaEditValues(criteria),
-  );
-
-  const warningTexts = useMemo(
-    () => criteria.warnings.map((warning) => warning.message),
-    [criteria.warnings],
   );
 
   const rows = useMemo<RowSpec[]>(() => {
@@ -275,7 +243,7 @@ export default function QuestionAnalysisResult({
         </table>
       </div>
 
-      <DataWarningBlock warnings={warningTexts} />
+      <AnalysisWarningList warnings={criteria.warnings} />
 
       {mode === 'normal' ? (
         <div className="flex justify-end gap-8">

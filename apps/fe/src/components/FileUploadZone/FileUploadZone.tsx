@@ -242,7 +242,7 @@ export default function FileUploadZone({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`flex h-[18.2rem] cursor-pointer flex-col items-center justify-center rounded-8 border-[1.5px] border-dashed transition-colors ${dropzoneBorderClass} ${
+          className={`flex h-[18.2rem] w-full cursor-pointer flex-col items-center justify-center rounded-8 border-[1.5px] border-dashed transition-colors ${dropzoneBorderClass} ${
             disabled ? 'cursor-not-allowed' : ''
           }`}
         >
