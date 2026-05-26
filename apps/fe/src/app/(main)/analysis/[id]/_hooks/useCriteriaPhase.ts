@@ -11,7 +11,7 @@ import {
 } from '@/apis/analysis';
 import type { CriteriaInitialMode } from './useAnalysisChat';
 import { normalizeCriteria } from '../_adapters/normalizeCriteria';
-import { useJobPoller } from './useJobPoller';
+import { createPolledFetcher, useJobPoller } from './useJobPoller';
 
 export type QuestionAnalysisVariables = {
   initialMode: CriteriaInitialMode;
@@ -46,6 +46,11 @@ export function useCriteriaPhase({
       timeoutMs: questionAnalysisTimeoutMs,
     },
   );
+  const getCriteriaAfterPolling = createPolledFetcher(
+    waitForCriteriaSuccess,
+    async (params: QuestionCriteriaParams) =>
+      normalizeCriteria(await getCriteria(params)),
+  );
 
   const questionAnalysisMutation = useMutation({
     mutationFn: async ({
@@ -66,8 +71,7 @@ export function useCriteriaPhase({
         messageId: createdQuestion.messageId,
       };
 
-      await waitForCriteriaSuccess(criteriaParams);
-      return normalizeCriteria(await getCriteria(criteriaParams));
+      return getCriteriaAfterPolling(criteriaParams);
     },
   });
 

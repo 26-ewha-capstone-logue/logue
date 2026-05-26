@@ -2,7 +2,8 @@
 
 import { useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { dataSourceKeys, deleteDataSources } from '@/apis/datasource';
+import { deleteDataSources } from '@/apis/dataSourceRepository';
+import { dataSourceKeys } from '@/apis/datasource';
 import { getApiErrorMessage } from '@/apis/errors';
 
 type UseDeleteDataSourcesOptions = {
