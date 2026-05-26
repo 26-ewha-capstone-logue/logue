@@ -2,13 +2,14 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { usePathname } from 'next/navigation';
 import {
   ACCESS_TOKEN_STORAGE_KEY,
@@ -43,6 +44,8 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+type SetAuthStatus = (status: AuthStatus) => void;
+
 function removeTokenParamsFromCurrentUrl(url: URL) {
   const shouldReplace =
     url.searchParams.has('accessToken') || url.searchParams.has('refreshToken');
@@ -62,54 +65,118 @@ function replaceLocation(pathname: string) {
   window.location.replace(pathname);
 }
 
-export default function AuthProvider({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
-  const queryClient = useQueryClient();
-  const [status, setStatus] = useState<AuthStatus>('initializing');
+function useAuthTokenSync({
+  pathname,
+  queryClient,
+  setStatus,
+}: {
+  pathname: string;
+  queryClient: QueryClient;
+  setStatus: SetAuthStatus;
+}) {
+  return useCallback(() => {
+    const nextStatus: AuthStatus = getAccessToken()
+      ? 'authenticated'
+      : 'anonymous';
 
-  useEffect(() => {
-    const syncAccessToken = () => {
-      const nextStatus: AuthStatus = getAccessToken()
-        ? 'authenticated'
-        : 'anonymous';
+    setStatus(nextStatus);
 
-      setStatus(nextStatus);
+    if (nextStatus === 'anonymous') {
+      queryClient.clear();
 
-      if (nextStatus === 'anonymous') {
-        queryClient.clear();
-
-        if (
-          shouldRedirectPrivatePath(nextStatus, pathname) &&
-          !consumePrivatePathRedirectBypass()
-        ) {
-          replaceLocation(getLoginRedirectPath(new URL(window.location.href)));
-        }
+      if (
+        shouldRedirectPrivatePath(nextStatus, pathname) &&
+        !consumePrivatePathRedirectBypass()
+      ) {
+        replaceLocation(getLoginRedirectPath(new URL(window.location.href)));
       }
+    }
 
-      return nextStatus;
-    };
+    return nextStatus;
+  }, [pathname, queryClient, setStatus]);
+}
 
+function useOAuthCallbackHandler({
+  pathname,
+  queryClient,
+}: {
+  pathname: string;
+  queryClient: QueryClient;
+}) {
+  return useCallback(() => {
     const currentUrl = new URL(window.location.href);
     const redirectedTokens = readAuthTokensFromSearchParams(
       currentUrl.searchParams,
     );
 
-    if (redirectedTokens) {
-      const popupRelay = getOAuthPopupCallbackRelay(currentUrl, window.name);
+    if (!redirectedTokens) return false;
 
-      if (popupRelay && window.opener) {
-        removeTokenParamsFromCurrentUrl(currentUrl);
-        window.opener.postMessage(popupRelay.message, popupRelay.targetOrigin);
-        window.close();
-        return;
-      }
+    const popupRelay = getOAuthPopupCallbackRelay(currentUrl, window.name);
 
-      setAuthTokens(redirectedTokens);
+    if (popupRelay && window.opener) {
       removeTokenParamsFromCurrentUrl(currentUrl);
-      queryClient.clear();
-      replaceLocation(getPostAuthRedirectPath(pathname));
-      return;
+      window.opener.postMessage(popupRelay.message, popupRelay.targetOrigin);
+      window.close();
+      return true;
     }
+
+    setAuthTokens(redirectedTokens);
+    removeTokenParamsFromCurrentUrl(currentUrl);
+    queryClient.clear();
+    replaceLocation(getPostAuthRedirectPath(pathname));
+    return true;
+  }, [pathname, queryClient]);
+}
+
+function useOAuthPopupMessageHandler({
+  queryClient,
+  setStatus,
+}: {
+  queryClient: QueryClient;
+  setStatus: SetAuthStatus;
+}) {
+  return useCallback(
+    (event: MessageEvent) => {
+      if (!isAllowedOAuthPopupOrigin(event.origin)) return;
+
+      const message = readOAuthPopupCallbackMessage(event.data);
+      if (!message) return;
+      if (!consumeOAuthPopupState(message.state)) return;
+
+      setAuthTokens(message.tokens);
+      queryClient.clear();
+      setStatus('authenticated');
+      replaceLocation(message.redirectPath);
+    },
+    [queryClient, setStatus],
+  );
+}
+
+function useAuthLifecycle({
+  pathname,
+  queryClient,
+  setStatus,
+}: {
+  pathname: string;
+  queryClient: QueryClient;
+  setStatus: SetAuthStatus;
+}) {
+  const syncAccessToken = useAuthTokenSync({
+    pathname,
+    queryClient,
+    setStatus,
+  });
+  const handleOAuthCallback = useOAuthCallbackHandler({
+    pathname,
+    queryClient,
+  });
+  const handleMessage = useOAuthPopupMessageHandler({
+    queryClient,
+    setStatus,
+  });
+
+  useEffect(() => {
+    if (handleOAuthCallback()) return;
 
     const nextStatus = syncAccessToken();
     const shouldBypassAuthEntryRedirect =
@@ -135,19 +202,6 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    const handleMessage = (event: MessageEvent) => {
-      if (!isAllowedOAuthPopupOrigin(event.origin)) return;
-
-      const message = readOAuthPopupCallbackMessage(event.data);
-      if (!message) return;
-      if (!consumeOAuthPopupState(message.state)) return;
-
-      setAuthTokens(message.tokens);
-      queryClient.clear();
-      setStatus('authenticated');
-      replaceLocation(message.redirectPath);
-    };
-
     window.addEventListener(AUTH_TOKENS_CHANGED_EVENT, syncAccessToken);
     window.addEventListener('message', handleMessage);
     window.addEventListener('storage', handleStorage);
@@ -157,7 +211,19 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('message', handleMessage);
       window.removeEventListener('storage', handleStorage);
     };
-  }, [pathname, queryClient]);
+  }, [handleMessage, handleOAuthCallback, pathname, syncAccessToken]);
+}
+
+export default function AuthProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const queryClient = useQueryClient();
+  const [status, setStatus] = useState<AuthStatus>('initializing');
+
+  useAuthLifecycle({
+    pathname,
+    queryClient,
+    setStatus,
+  });
 
   const hasAccessToken = status === 'authenticated';
   const value = useMemo(
