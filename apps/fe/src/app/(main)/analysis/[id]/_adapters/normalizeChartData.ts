@@ -6,6 +6,7 @@ import type {
   ChartViewModel,
   EmptyChartViewModel,
 } from '../_models/analysisViewModels';
+import { uniqueStrings } from '../_utils/stringList';
 
 const EMPTY_CHART_MESSAGES: Record<EmptyChartViewModel['reason'], string> = {
   missing: '표시할 차트 데이터가 없습니다.',
@@ -42,12 +43,6 @@ function asNumberArray(value: unknown) {
           typeof item === 'number' && Number.isFinite(item),
       )
     : [];
-}
-
-function uniqueStrings(values: string[]) {
-  return Array.from(
-    new Set(values.map((value) => value.trim()).filter(Boolean)),
-  );
 }
 
 function getChartEmptyReason(value: unknown): EmptyChartViewModel['reason'] {
