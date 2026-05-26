@@ -4,6 +4,7 @@ import {
   getDataSource as getDataSourceRequest,
   getDataSources as getDataSourcesRequest,
   type GetDataSourceListParams,
+  type GetFileResponse,
 } from './datasource';
 import {
   getMockDataSource,
@@ -11,6 +12,47 @@ import {
   isMockDataSourceId,
   withMockDataSource,
 } from './mockDataSource';
+
+type DataSourceDetailReader = (
+  dataSourceId: number,
+) => Promise<GetFileResponse>;
+type DataSourcesDeleteRequest = (dataSourceIds: number[]) => Promise<void>;
+type DataSourceDeleteRequest = (dataSourceId: number) => Promise<void>;
+
+function getServerDataSourceIds(dataSourceIds: number[]) {
+  return dataSourceIds.filter(
+    (dataSourceId) => !isMockDataSourceId(dataSourceId),
+  );
+}
+
+async function getMockAwareDataSource(
+  dataSourceId: number,
+  readDataSource: DataSourceDetailReader,
+) {
+  return isMockDataSourceId(dataSourceId)
+    ? getMockDataSource()
+    : readDataSource(dataSourceId);
+}
+
+async function deleteMockAwareDataSources(
+  dataSourceIds: number[],
+  deleteDataSources: DataSourcesDeleteRequest,
+) {
+  const serverDataSourceIds = getServerDataSourceIds(dataSourceIds);
+
+  if (serverDataSourceIds.length === 0) return;
+
+  return deleteDataSources(serverDataSourceIds);
+}
+
+async function deleteMockAwareDataSource(
+  dataSourceId: number,
+  deleteDataSource: DataSourceDeleteRequest,
+) {
+  if (isMockDataSourceId(dataSourceId)) return;
+
+  return deleteDataSource(dataSourceId);
+}
 
 export async function getDataSources(params: GetDataSourceListParams) {
   try {
@@ -22,25 +64,13 @@ export async function getDataSources(params: GetDataSourceListParams) {
 }
 
 export async function getDataSource(dataSourceId: number) {
-  if (isMockDataSourceId(dataSourceId)) {
-    return getMockDataSource();
-  }
-
-  return getDataSourceRequest(dataSourceId);
+  return getMockAwareDataSource(dataSourceId, getDataSourceRequest);
 }
 
 export async function deleteDataSources(dataSourceIds: number[]) {
-  const serverDataSourceIds = dataSourceIds.filter(
-    (dataSourceId) => !isMockDataSourceId(dataSourceId),
-  );
-
-  if (serverDataSourceIds.length === 0) return;
-
-  return deleteDataSourcesRequest(serverDataSourceIds);
+  return deleteMockAwareDataSources(dataSourceIds, deleteDataSourcesRequest);
 }
 
 export async function deleteDataSource(dataSourceId: number) {
-  if (isMockDataSourceId(dataSourceId)) return;
-
-  return deleteDataSourceRequest(dataSourceId);
+  return deleteMockAwareDataSource(dataSourceId, deleteDataSourceRequest);
 }
