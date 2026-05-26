@@ -10,6 +10,12 @@ import type {
 import { uniqueStrings as uniqueOptions } from '../_utils/stringList';
 import AnalysisActionButtons from './AnalysisActionButtons';
 import AnalysisCard from './AnalysisCard';
+import {
+  AnalysisTable,
+  AnalysisTableCell,
+  AnalysisTableHeaderCell,
+  AnalysisTableRow,
+} from './AnalysisTable';
 import AnalysisWarningList from './AnalysisWarningList';
 import CriterionSelect from './CriterionSelect';
 
@@ -196,54 +202,49 @@ export default function QuestionAnalysisResult({
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-12 border border-gray-300">
-        <table className="w-full border-collapse text-body2">
-          <thead>
-            <tr>
-              <th className="w-[14rem] border-b border-gray-300 px-16 py-12 text-left font-semibold text-gray-900">
-                항목
-              </th>
-              <th className="border-b border-gray-300 px-16 py-12 text-left font-semibold text-gray-900">
-                필드명
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr
-                key={row.label}
-                className="border-b border-gray-200 last:border-b-0"
-              >
-                <td className="px-16 py-12 text-gray-700">{row.label}</td>
-                <td className="px-16 py-12 text-gray-900">
-                  {mode === 'normal' || row.kind === 'static' ? (
-                    renderStaticValue(row)
-                  ) : row.kind === 'single' ? (
-                    <CriterionSelect
-                      options={row.options}
-                      value={values[row.key]}
-                      onChange={(next) =>
-                        setValues((prev) => ({ ...prev, [row.key]: next }))
-                      }
-                    />
-                  ) : (
-                    <CriterionSelect
-                      multi
-                      options={row.options}
-                      values={values.groupBy}
-                      maxSelect={row.maxSelect}
-                      headerLabel={row.headerLabel}
-                      onChange={(next) =>
-                        setValues((prev) => ({ ...prev, groupBy: next }))
-                      }
-                    />
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <AnalysisTable>
+        <thead>
+          <tr>
+            <AnalysisTableHeaderCell className="w-[14rem]">
+              항목
+            </AnalysisTableHeaderCell>
+            <AnalysisTableHeaderCell>필드명</AnalysisTableHeaderCell>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <AnalysisTableRow key={row.label}>
+              <AnalysisTableCell className="text-gray-700">
+                {row.label}
+              </AnalysisTableCell>
+              <AnalysisTableCell className="text-gray-900">
+                {mode === 'normal' || row.kind === 'static' ? (
+                  renderStaticValue(row)
+                ) : row.kind === 'single' ? (
+                  <CriterionSelect
+                    options={row.options}
+                    value={values[row.key]}
+                    onChange={(next) =>
+                      setValues((prev) => ({ ...prev, [row.key]: next }))
+                    }
+                  />
+                ) : (
+                  <CriterionSelect
+                    multi
+                    options={row.options}
+                    values={values.groupBy}
+                    maxSelect={row.maxSelect}
+                    headerLabel={row.headerLabel}
+                    onChange={(next) =>
+                      setValues((prev) => ({ ...prev, groupBy: next }))
+                    }
+                  />
+                )}
+              </AnalysisTableCell>
+            </AnalysisTableRow>
+          ))}
+        </tbody>
+      </AnalysisTable>
 
       <AnalysisWarningList warnings={criteria.warnings} />
 

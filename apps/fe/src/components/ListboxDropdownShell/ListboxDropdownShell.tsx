@@ -5,6 +5,12 @@ import ListboxDropdown, {
   type ListboxDropdownListboxProps,
 } from '../ListboxDropdown/ListboxDropdown';
 
+export const LISTBOX_DROPDOWN_TRIGGER_BASE_CLASS =
+  'inline-flex min-w-[12rem] items-center justify-between gap-8 rounded-12 border border-gray-300 bg-white px-12 py-8 transition-colors hover:bg-gray-100';
+
+export const LISTBOX_DROPDOWN_PANEL_BASE_CLASS =
+  'absolute left-0 z-10 mt-4 overflow-hidden rounded-12 border border-gray-300 bg-white shadow-[0_0.4rem_1.2rem_rgba(0,0,0,0.08)]';
+
 export type ListboxDropdownShellPanelProps = {
   closeAndFocusButton: () => void;
   open: boolean;

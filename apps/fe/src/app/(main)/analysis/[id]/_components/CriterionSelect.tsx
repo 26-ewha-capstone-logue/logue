@@ -1,7 +1,11 @@
 'use client';
 
 import ArrowDownIcon from '@/assets/icons/arrow-down.svg';
-import { ListboxDropdownShell } from '@/components';
+import {
+  ListboxDropdownShell,
+  LISTBOX_DROPDOWN_PANEL_BASE_CLASS,
+  LISTBOX_DROPDOWN_TRIGGER_BASE_CLASS,
+} from '@/components';
 
 type CommonProps = {
   options: string[];
@@ -42,7 +46,7 @@ export default function CriterionSelect(props: CriterionSelectProps) {
     <ListboxDropdownShell
       className={props.className}
       optionSelector={optionFocusSelector}
-      triggerClassName="inline-flex min-w-[12rem] items-center justify-between gap-8 rounded-12 border border-gray-300 bg-white px-12 py-8 text-body2 text-gray-900 transition-colors hover:bg-gray-100"
+      triggerClassName={`${LISTBOX_DROPDOWN_TRIGGER_BASE_CLASS} text-body2 text-gray-900`}
       trigger={({ open }) => (
         <>
           <span>{buttonLabel}</span>
@@ -58,7 +62,7 @@ export default function CriterionSelect(props: CriterionSelectProps) {
         <div
           {...panelProps}
           aria-multiselectable={props.multi ? true : undefined}
-          className="absolute left-0 z-10 mt-4 w-max min-w-full overflow-hidden rounded-12 border border-gray-300 bg-white shadow-[0_0.4rem_1.2rem_rgba(0,0,0,0.08)]"
+          className={`${LISTBOX_DROPDOWN_PANEL_BASE_CLASS} w-max min-w-full`}
         >
           {props.multi && props.headerLabel && (
             <div className="border-b border-gray-200 px-12 py-8 text-body4 text-gray-600">
