@@ -1,10 +1,4 @@
 import instance from '@/lib/axios';
-import {
-  getMockDataSource,
-  getMockDataSourceListResponse,
-  isMockDataSourceId,
-  withMockDataSource,
-} from './mockDataSource';
 import { unwrapApiResponse, type ApiResponse } from './types';
 
 export type DataSourceSort = 'LATEST' | 'MOST_USED';
@@ -65,16 +59,12 @@ export const dataSourceKeys = {
 };
 
 export async function getDataSources(params: GetDataSourceListParams) {
-  try {
-    const { data } = await instance.get<ApiResponse<GetDataSourceListResponse>>(
-      '/api/datasources',
-      { params },
-    );
+  const { data } = await instance.get<ApiResponse<GetDataSourceListResponse>>(
+    '/api/datasources',
+    { params },
+  );
 
-    return withMockDataSource(unwrapApiResponse(data), params);
-  } catch {
-    return getMockDataSourceListResponse(params);
-  }
+  return unwrapApiResponse(data);
 }
 
 export async function uploadDataSource(file: File) {
@@ -90,24 +80,14 @@ export async function uploadDataSource(file: File) {
 }
 
 export async function deleteDataSources(dataSourceIds: number[]) {
-  const serverDataSourceIds = dataSourceIds.filter(
-    (dataSourceId) => !isMockDataSourceId(dataSourceId),
-  );
-
-  if (serverDataSourceIds.length === 0) return;
-
   const { data } = await instance.delete<ApiResponse<unknown>>(
-    getDeleteDataSourcesPath(serverDataSourceIds),
+    getDeleteDataSourcesPath(dataSourceIds),
   );
 
   unwrapApiResponse(data);
 }
 
 export async function getDataSource(dataSourceId: number) {
-  if (isMockDataSourceId(dataSourceId)) {
-    return getMockDataSource();
-  }
-
   const { data } = await instance.get<ApiResponse<GetFileResponse>>(
     `/api/datasources/${dataSourceId}`,
   );
@@ -116,8 +96,6 @@ export async function getDataSource(dataSourceId: number) {
 }
 
 export async function deleteDataSource(dataSourceId: number) {
-  if (isMockDataSourceId(dataSourceId)) return;
-
   const { data } = await instance.delete<ApiResponse<unknown>>(
     `/api/datasources/${dataSourceId}`,
   );
