@@ -1,7 +1,11 @@
 'use client';
 
 import DownIcon from '@/assets/icons/down.svg';
-import { ListboxDropdownShell } from '@/components';
+import {
+  ListboxDropdownShell,
+  LISTBOX_DROPDOWN_PANEL_BASE_CLASS,
+  LISTBOX_DROPDOWN_TRIGGER_BASE_CLASS,
+} from '@/components';
 
 export type SortOption<T extends string = string> = {
   value: T;
@@ -23,7 +27,7 @@ export default function SortDropdown<T extends string>({
 
   return (
     <ListboxDropdownShell
-      triggerClassName="inline-flex min-w-[12rem] items-center justify-between gap-8 rounded-12 border border-gray-300 bg-white px-12 py-8 text-body4 text-gray-700 transition-colors hover:bg-gray-100"
+      triggerClassName={`${LISTBOX_DROPDOWN_TRIGGER_BASE_CLASS} text-body4 text-gray-700`}
       trigger={({ open }) => (
         <>
           <span>{selectedLabel}</span>
@@ -38,7 +42,7 @@ export default function SortDropdown<T extends string>({
       panel={({ closeAndFocusButton, panelProps }) => (
         <div
           {...panelProps}
-          className="absolute left-0 z-10 mt-4 min-w-[14rem] overflow-hidden rounded-12 border border-gray-300 bg-white py-8 shadow-[0_0.4rem_1.2rem_rgba(0,0,0,0.08)]"
+          className={`${LISTBOX_DROPDOWN_PANEL_BASE_CLASS} min-w-[14rem] py-8`}
         >
           {options.map((opt) => {
             const selected = opt.value === value;

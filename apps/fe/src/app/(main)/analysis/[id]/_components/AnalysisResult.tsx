@@ -5,6 +5,12 @@ import ArrowDownIcon from '@/assets/icons/arrow-down.svg';
 import type { SummaryViewModel } from '../_models/analysisViewModels';
 import AnalysisActionButtons from './AnalysisActionButtons';
 import AnalysisCard from './AnalysisCard';
+import {
+  AnalysisTable,
+  AnalysisTableCell,
+  AnalysisTableHeaderCell,
+  AnalysisTableRow,
+} from './AnalysisTable';
 import AnalysisWarningList from './AnalysisWarningList';
 
 export type AnalysisResultProps = {
@@ -57,45 +63,42 @@ export default function AnalysisResult({
         </button>
 
         {summaryOpen && (
-          <div className="overflow-hidden rounded-12 border border-gray-300">
-            <table className="w-full border-collapse text-body4">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="w-[14rem] border-b border-gray-300 px-16 py-12 text-left font-semibold text-gray-900">
-                    Name
-                  </th>
-                  <th className="border-b border-gray-300 px-16 py-12 text-left font-semibold text-gray-900">
-                    예시
-                  </th>
+          <AnalysisTable tableClassName="text-body4">
+            <thead>
+              <tr className="bg-gray-100">
+                <AnalysisTableHeaderCell className="w-[14rem]">
+                  Name
+                </AnalysisTableHeaderCell>
+                <AnalysisTableHeaderCell>예시</AnalysisTableHeaderCell>
+              </tr>
+            </thead>
+            <tbody>
+              {summary.keyPoints.length === 0 ? (
+                <tr>
+                  <AnalysisTableCell
+                    colSpan={2}
+                    className="text-center text-gray-600"
+                  >
+                    {summary.emptyMessage ??
+                      '표시할 데이터 요약 항목이 없습니다.'}
+                  </AnalysisTableCell>
                 </tr>
-              </thead>
-              <tbody>
-                {summary.keyPoints.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={2}
-                      className="px-16 py-12 text-center text-gray-600"
-                    >
-                      {summary.emptyMessage ??
-                        '표시할 데이터 요약 항목이 없습니다.'}
-                    </td>
-                  </tr>
-                ) : (
-                  summary.keyPoints.map((item, index) => (
-                    <tr
-                      key={`${item.name}-${item.example}-${index}`}
-                      className="border-b border-gray-200 last:border-b-0"
-                    >
-                      <td className="px-16 py-12 text-gray-900">{item.name}</td>
-                      <td className="px-16 py-12 text-orange-500">
-                        {item.example}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+              ) : (
+                summary.keyPoints.map((item, index) => (
+                  <AnalysisTableRow
+                    key={`${item.name}-${item.example}-${index}`}
+                  >
+                    <AnalysisTableCell className="text-gray-900">
+                      {item.name}
+                    </AnalysisTableCell>
+                    <AnalysisTableCell className="text-orange-500">
+                      {item.example}
+                    </AnalysisTableCell>
+                  </AnalysisTableRow>
+                ))
+              )}
+            </tbody>
+          </AnalysisTable>
         )}
       </div>
 
