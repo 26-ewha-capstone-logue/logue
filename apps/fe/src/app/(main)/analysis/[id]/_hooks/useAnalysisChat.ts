@@ -1,8 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useSearchParams } from 'next/navigation';
 import {
   dataSourceKeys,
   getDataSource,
@@ -10,57 +9,29 @@ import {
 } from '@/apis/datasource';
 import { getApiErrorMessage } from '@/apis/errors';
 import { useToast } from '@/hooks/useToast';
-import {
-  hasAnalysisStartPayloadConsumed,
-  markAnalysisStartPayloadConsumed,
-  readAnalysisStartPayload,
-  type AnalysisStartPayload,
-} from '@/lib/analysisStartPayload';
+import { markAnalysisStartPayloadConsumed } from '@/lib/analysisStartPayload';
 import type { PromptInputValue } from '../../_components/PromptInput';
 import { createUpdateCriteriaRequest } from '../_adapters/normalizeCriteria';
 import type { DataTableColumn } from '../_components/DataTablePreview';
-import type {
-  CriteriaEditValues,
-  CriteriaViewModel,
-  QuestionResultViewModel,
-} from '../_models/analysisViewModels';
+import type { CriteriaEditValues } from '../_models/analysisViewModels';
+import {
+  useAnalysisChatMessages,
+  type CriteriaInitialMode,
+} from './useAnalysisChatMessages';
 import {
   analysisChatFlowReducer,
   initialAnalysisChatFlowState,
 } from './useAnalysisChatFlow';
+import { useAnalysisRouteParams } from './useAnalysisRouteParams';
+import { useAnalysisStartPayload } from './useAnalysisStartPayload';
 import { useCriteriaPhase } from './useCriteriaPhase';
 import { useResultPhase } from './useResultPhase';
 import { useSummaryPhase } from './useSummaryPhase';
 
-export type CriteriaInitialMode = 'normal' | 'edit';
-
-export type ChatMessage =
-  | {
-      id: string;
-      role: 'user';
-      content: string;
-      fileName?: string | null;
-    }
-  | {
-      id: string;
-      role: 'bot';
-      kind: 'criteria';
-      criteria: CriteriaViewModel;
-      initialMode?: CriteriaInitialMode;
-    }
-  | {
-      id: string;
-      role: 'bot';
-      kind: 'verification';
-      result: QuestionResultViewModel;
-    }
-  | {
-      id: string;
-      role: 'bot';
-      kind: 'notice';
-      content: string;
-      tone?: 'default' | 'error';
-    };
+export type {
+  ChatMessage,
+  CriteriaInitialMode,
+} from './useAnalysisChatMessages';
 
 const DEFAULT_PROMPT = 'CSV 파일을 분석해 주세요';
 const STATUS_POLL_INTERVAL_MS = 1500;
@@ -78,13 +49,6 @@ const UPDATE_CRITERIA_ERROR_MESSAGE =
   '분석 기준을 확정하지 못했어요. 잠시 후 다시 시도해 주세요.';
 const GET_RESULT_ERROR_MESSAGE =
   '최종 분석 결과를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
-
-function parsePositiveNumber(value: string | null | undefined) {
-  if (!value) return null;
-
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-}
 
 function compactStrings(values: Array<string | null | undefined>) {
   return values
@@ -113,10 +77,6 @@ function createPreviewTable(preview?: FilePreview | null) {
   return { columns, rows };
 }
 
-function createMessageId(prefix: string) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
 type UseAnalysisChatParams = {
   hasAccessToken: boolean;
   routeConversationId: string;
@@ -126,34 +86,27 @@ export function useAnalysisChat({
   hasAccessToken,
   routeConversationId,
 }: UseAnalysisChatParams) {
-  const searchParams = useSearchParams();
-  const conversationId = parsePositiveNumber(routeConversationId);
-  const analysisFlowId = parsePositiveNumber(
-    searchParams.get('analysisFlowId'),
-  );
-  const dataSourceId = parsePositiveNumber(searchParams.get('dataSourceId'));
-  const routeReady = conversationId !== null && analysisFlowId !== null;
-
-  const [startPayload, setStartPayload] = useState<AnalysisStartPayload>(
-    () => ({
-      prompt: DEFAULT_PROMPT,
-      fileName: null,
-    }),
-  );
-  const [messages, setMessages] = useState<ChatMessage[]>(() => [
-    {
-      id: 'init-user',
-      role: 'user',
-      content: DEFAULT_PROMPT,
-      fileName: null,
-    },
-  ]);
+  const { analysisFlowId, conversationId, dataSourceId, routeReady } =
+    useAnalysisRouteParams(routeConversationId);
   const { toast, showToast } = useToast();
   const [flow, dispatchFlow] = useReducer(
     analysisChatFlowReducer,
     initialAnalysisChatFlowState,
   );
-  const readStartPayloadConversationIdRef = useRef<number | null>(null);
+  const { fileName, initialPrompt } = useAnalysisStartPayload({
+    conversationId,
+    defaultPrompt: DEFAULT_PROMPT,
+    dispatchFlow,
+  });
+  const {
+    appendCriteriaMessage,
+    appendNotice,
+    appendResultMessage,
+    appendUserQuestion,
+    initialMessage,
+    restMessages,
+    updateInitialMessage,
+  } = useAnalysisChatMessages(DEFAULT_PROMPT);
   const {
     canAutoStartInitialQuestion,
     criteriaSubmissionLocked,
@@ -161,9 +114,6 @@ export function useAnalysisChat({
     hasStartedInitialQuestion,
     questionSubmissionLocked,
   } = flow;
-
-  const initialPrompt = startPayload.prompt || DEFAULT_PROMPT;
-  const fileName = startPayload.fileName ?? null;
 
   const dataSourceQuery = useQuery({
     queryKey: dataSourceKeys.detail(dataSourceId ?? 0),
@@ -204,22 +154,6 @@ export function useAnalysisChat({
     statusPollIntervalMs: STATUS_POLL_INTERVAL_MS,
   });
 
-  const appendNotice = useCallback(
-    (content: string, tone: 'default' | 'error' = 'default') => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: createMessageId('notice'),
-          role: 'bot',
-          kind: 'notice',
-          content,
-          tone,
-        },
-      ]);
-    },
-    [setMessages],
-  );
-
   const startQuestion = useCallback(
     (
       question: string,
@@ -240,14 +174,7 @@ export function useAnalysisChat({
       dispatchFlow({ type: 'question-submission-started' });
 
       if (appendUserMessage) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: createMessageId('user'),
-            role: 'user',
-            content: normalizedQuestion,
-          },
-        ]);
+        appendUserQuestion(normalizedQuestion);
       }
 
       mutateQuestionAnalysis(
@@ -260,16 +187,7 @@ export function useAnalysisChat({
         {
           onSuccess: (criteria, variables) => {
             dispatchFlow({ type: 'question-submission-finished' });
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: `criteria-${criteria.messageId}`,
-                role: 'bot',
-                kind: 'criteria',
-                criteria,
-                initialMode: variables.initialMode,
-              },
-            ]);
+            appendCriteriaMessage(criteria, variables.initialMode);
           },
           onError: (error) => {
             dispatchFlow({ type: 'question-submission-finished' });
@@ -285,12 +203,13 @@ export function useAnalysisChat({
     },
     [
       analysisFlowId,
+      appendCriteriaMessage,
       appendNotice,
+      appendUserQuestion,
       conversationId,
       dispatchFlow,
       mutateQuestionAnalysis,
       questionSubmissionLocked,
-      setMessages,
       showToast,
     ],
   );
@@ -372,18 +291,7 @@ export function useAnalysisChat({
             {
               onSuccess: (result) => {
                 dispatchFlow({ type: 'criteria-submission-finished' });
-                setMessages((prev) => [
-                  ...prev,
-                  {
-                    id:
-                      result.resultId === null
-                        ? createMessageId('result')
-                        : `result-${result.resultId}`,
-                    role: 'bot',
-                    kind: 'verification',
-                    result,
-                  },
-                ]);
+                appendResultMessage(result);
               },
               onError: (error) => {
                 dispatchFlow({ type: 'criteria-submission-finished' });
@@ -411,64 +319,14 @@ export function useAnalysisChat({
   }
 
   useEffect(() => {
-    if (
-      conversationId !== null &&
-      readStartPayloadConversationIdRef.current === conversationId
-    ) {
-      return;
-    }
-
-    dispatchFlow({ type: 'start-payload-loading' });
-
-    const timer = window.setTimeout(() => {
-      if (conversationId === null) {
-        setStartPayload({ prompt: DEFAULT_PROMPT, fileName: null });
-        dispatchFlow({
-          type: 'start-payload-resolved',
-          canAutoStartInitialQuestion: false,
-        });
-        return;
-      }
-
-      readStartPayloadConversationIdRef.current = conversationId;
-
-      const storedPayload = readAnalysisStartPayload(conversationId);
-      const canAutoStart =
-        storedPayload !== null &&
-        !hasAnalysisStartPayloadConsumed(conversationId);
-
-      setStartPayload({
-        prompt: storedPayload?.prompt || DEFAULT_PROMPT,
-        fileName: storedPayload?.fileName ?? null,
-      });
-      dispatchFlow({
-        type: 'start-payload-resolved',
-        canAutoStartInitialQuestion: canAutoStart,
-      });
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, [conversationId]);
-
-  useEffect(() => {
     if (!hasResolvedStartPayload) return;
 
     const timer = window.setTimeout(() => {
-      setMessages((prev) =>
-        prev.map((message) =>
-          message.id === 'init-user' && message.role === 'user'
-            ? {
-                ...message,
-                content: initialPrompt,
-                fileName,
-              }
-            : message,
-        ),
-      );
+      updateInitialMessage(initialPrompt, fileName);
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [fileName, hasResolvedStartPayload, initialPrompt]);
+  }, [fileName, hasResolvedStartPayload, initialPrompt, updateInitialMessage]);
 
   useEffect(() => {
     if (
@@ -529,8 +387,6 @@ export function useAnalysisChat({
     criteriaSubmissionLocked ||
     updateCriteriaMutation.isPending ||
     resultAnalysisMutation.isPending;
-  const [initialMessage, ...restMessages] = messages;
-
   return {
     analyzingMessage,
     criteriaSubmitting,

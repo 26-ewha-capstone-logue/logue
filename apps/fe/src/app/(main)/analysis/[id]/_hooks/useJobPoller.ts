@@ -60,3 +60,13 @@ export function useJobPoller<TParams>(
     [errorMessage, fetchStatus, intervalMs, timeoutMs],
   );
 }
+
+export function createPolledFetcher<TParams, TResult>(
+  waitForSuccess: (params: TParams) => Promise<void>,
+  fetchResult: (params: TParams) => Promise<TResult>,
+) {
+  return async (params: TParams) => {
+    await waitForSuccess(params);
+    return fetchResult(params);
+  };
+}
