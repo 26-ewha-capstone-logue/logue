@@ -7,7 +7,7 @@ import {
   type QuestionResultParams,
 } from '@/apis/analysis';
 import { normalizeResult } from '../_adapters/normalizeResult';
-import { useJobPoller } from './useJobPoller';
+import { createPolledFetcher, useJobPoller } from './useJobPoller';
 
 export type ResultAnalysisVariables = {
   targetConversationId: number;
@@ -35,6 +35,11 @@ export function useResultPhase({
       timeoutMs: resultAnalysisTimeoutMs,
     },
   );
+  const getResultAfterPolling = createPolledFetcher(
+    waitForResultSuccess,
+    async (params: QuestionResultParams) =>
+      normalizeResult(await getResult(params)),
+  );
 
   return useMutation({
     mutationFn: async ({
@@ -50,8 +55,7 @@ export function useResultPhase({
         analysisCriteriaId,
       };
 
-      await waitForResultSuccess(resultParams);
-      return normalizeResult(await getResult(resultParams));
+      return getResultAfterPolling(resultParams);
     },
   });
 }
