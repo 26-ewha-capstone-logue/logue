@@ -1,14 +1,13 @@
 import logging
-import os
 from fastapi import HTTPException
+
+from config.settings import is_mock_mode
 from schemas.api.result_summary import (
     AnalysisSummaryRequest, AnalysisSummaryResponse,
     Description, Segment,
 )
 
 logger = logging.getLogger("logue_ai")
-
-_MOCK_ENV = "ANAL_LLM_MOCK"
 
 
 def _validate_response(request: AnalysisSummaryRequest, response: AnalysisSummaryResponse) -> None:
@@ -62,12 +61,12 @@ async def summarize_analysis_result(request: AnalysisSummaryRequest) -> Analysis
         HTTPException(502): 응답 segments-plain_text 불일치 시 (LLM_OUTPUT_INVALID)
     """
 
-    if os.getenv(_MOCK_ENV, "").lower() == "true":
+    if is_mock_mode():
         response = _build_mock_response(request)
     else:
         raise NotImplementedError(
             "결과 요약 LLM 연동은 아직 구현되지 않았습니다 (#236). "
-            f"개발/통합 테스트는 {_MOCK_ENV}=true 로 mock 응답을 사용할 수 있습니다."
+            "개발/통합 테스트는 ANAL_LLM_MOCK=true 로 mock 응답을 사용할 수 있습니다."
         )
 
     _validate_response(request, response)

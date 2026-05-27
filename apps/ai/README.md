@@ -31,6 +31,7 @@ apps/ai/
     enums.py · common.py  # 공통 enum / Literal
   services/               # API별 처리 흐름
   llm/                    # OpenAI 호출 공통 모듈 (LLMClient + retry)
+  config/                 # 환경변수 접근 + API별 모델/temperature/token 설정
   core/                   # 에러·예외 핸들러·검증 헬퍼
   tests/
 ```
@@ -50,19 +51,21 @@ apps/ai/
 ### 사용 예 (서비스 레이어)
 
 ```python
+from config.model_config import model_config_for
 from llm import LLMClient
 from schemas.api.result_summary import AnalysisSummaryResponse
 
+cfg = model_config_for("result_summary")  # gpt-4.1-nano · 0.1 · 300
 client = LLMClient()  # OPENAI_API_KEY 자동 로드
 response = client.complete_structured(
     system_prompt=load_system_prompt("result_summary_v1"),
     user_payload={"analysis_criteria": ..., "chart_data": ...},
     response_model=AnalysisSummaryResponse,
-    model="gpt-4.1-nano",
-    temperature=0.1,
-    max_output_tokens=300,
+    **cfg.as_llm_kwargs(),
 )
 ```
+
+API 별 모델·temperature·token 한도는 `config/model_config.py` 에 단일 출처로 관리됨 — 변경 시 호출부 수정 불필요.
 
 ### 동작 규칙
 
