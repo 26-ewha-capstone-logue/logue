@@ -41,7 +41,7 @@ export function useDeleteDataSources({
         (dataSourceId) => !isMockDataSourceId(dataSourceId),
       );
 
-      if (mockDataSourceIds.length > 0 && !userId) {
+      if (mockDataSourceIds.length > 0 && userId == null) {
         onError(USER_INFO_REQUIRED_MESSAGE);
         return;
       }
@@ -51,7 +51,7 @@ export function useDeleteDataSources({
           await mutation.mutateAsync(serverDataSourceIds);
         }
 
-        if (mockDataSourceIds.length > 0 && userId) {
+        if (mockDataSourceIds.length > 0 && userId != null) {
           onDeletedMockDataSources(mockDataSourceIds);
         }
 

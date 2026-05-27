@@ -14,12 +14,13 @@ export function useDeletedMockDataSources(userId: number | null | undefined) {
   );
 
   const storageDeletedIds = useMemo(
-    () => (userId ? readDeletedMockDataSourceIds(userId) : EMPTY_DELETED_IDS),
+    () =>
+      userId != null ? readDeletedMockDataSourceIds(userId) : EMPTY_DELETED_IDS,
     [userId],
   );
   const sessionDeletedIds = useMemo(
     () =>
-      userId
+      userId != null
         ? (sessionDeletedIdsByUser.get(userId) ?? EMPTY_DELETED_IDS)
         : EMPTY_DELETED_IDS,
     [sessionDeletedIdsByUser, userId],
@@ -35,7 +36,7 @@ export function useDeletedMockDataSources(userId: number | null | undefined) {
 
   const markDeletedMockDataSources = useCallback(
     (dataSourceIds: number[]) => {
-      if (!userId) return [];
+      if (userId == null) return [];
 
       const deletedIds = markMockDataSourcesDeleted(userId, dataSourceIds);
       if (deletedIds.length === 0) return deletedIds;
