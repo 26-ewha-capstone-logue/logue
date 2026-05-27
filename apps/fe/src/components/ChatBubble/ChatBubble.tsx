@@ -6,7 +6,6 @@ export type ChatBubbleProps = {
   role: ChatBubbleRole;
   children: ReactNode;
   loading?: boolean;
-  file?: { name: string; status?: string };
 } & Omit<HTMLAttributes<HTMLDivElement>, 'role' | 'children'>;
 
 function LoadingDots() {
@@ -36,7 +35,6 @@ export default function ChatBubble({
   role,
   children,
   loading = false,
-  file,
   className = '',
   ...rest
 }: ChatBubbleProps) {
@@ -48,15 +46,6 @@ export default function ChatBubble({
       {...rest}
     >
       <div className={isUser ? USER_BUBBLE_CLASS : BOT_BUBBLE_CLASS}>
-        {file && (
-          <div className="mb-8 inline-flex items-center gap-8 rounded-12 border border-gray-300 px-12 py-8">
-            <span className="inline-block h-20 w-20 rounded-4 bg-orange-400" />
-            <span className="text-body4 text-gray-800">{file.name}</span>
-            {file.status && (
-              <span className="text-body4 text-gray-500">{file.status}</span>
-            )}
-          </div>
-        )}
         {loading ? (
           <div className="flex items-center gap-8">
             <LoadingDots />
