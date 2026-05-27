@@ -28,5 +28,5 @@ class AnalysisSummaryLLMInput(BaseModel):
             request_id=req.request_id,
             analysis_criteria=req.analysis_criteria,
             chart_data=req.chart_data,
-            locale=req.locale,
+            locale=req.locale if req.locale is not None else "ko-KR",
         )
