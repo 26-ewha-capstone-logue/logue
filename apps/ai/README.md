@@ -19,6 +19,42 @@ Python 3.11 + FastAPI + uv 기반 프로젝트 스캐폴드입니다.
 - Override with env var: UPSTREAM_HEALTH_URL
 - Timeout seconds env var: UPSTREAM_TIMEOUT_SEC (default: 3)
 
+## LLM client (apps/ai/llm/)
+
+질문분석·결과 요약 두 엔드포인트가 공유하는 OpenAI Structured Outputs 호출 boundary 입니다. 서비스 레이어는 OpenAI SDK 를 직접 다루지 않고 `LLMClient.complete_structured()` 만 호출합니다.
+
+### 환경변수
+
+| 변수 | 기본값 | 설명 |
+|---|---|---|
+| `OPENAI_API_KEY` | 없음 (필수) | OpenAI API 키. 운영은 SSM Parameter Store 에서 주입 |
+| `OPENAI_TIMEOUT_SEC` | `30` | OpenAI 호출 타임아웃 (초) |
+| `ANAL_LLM_MOCK` | `false` | `true` 면 질문분석·결과 요약 모두 LLM 호출 없이 결정론적 mock 응답 반환 (테스트·통합 검증용) |
+
+### 사용 예 (서비스 레이어)
+
+```python
+from llm import LLMClient
+from schemas.analysis_summary import AnalysisSummaryResponse
+
+client = LLMClient()  # OPENAI_API_KEY 자동 로드
+response = client.complete_structured(
+    system_prompt=load_system_prompt("result_summary_v1"),
+    user_payload={"analysis_criteria": ..., "chart_data": ...},
+    response_model=AnalysisSummaryResponse,
+    model="gpt-4.1-nano",
+    temperature=0.1,
+    max_output_tokens=300,
+)
+```
+
+### 동작 규칙
+
+- **Structured Outputs**: `response_format` 에 Pydantic 모델 클래스를 전달, OpenAI 가 schema 강제. parsed 결과를 `BaseModel` 인스턴스로 반환.
+- **재시도**: `llm/retry.py` 의 `with_retry` 가 1회만 재시도 (미팅노트 5️⃣ 실패 처리). 대상: `APIConnectionError`, `APITimeoutError`, `RateLimitError`, `APIError`, `ValidationError`, `json.JSONDecodeError`.
+- **예외 통과**: 모든 raise 는 그대로 서비스 레이어로 통과. 서비스 레이어가 `LLMCallFailedError` 로 래핑해 502 `LLM_CALL_FAILED` 응답으로 매핑됨.
+- **빈 응답**: OpenAI 가 `parsed=None` (refusal·컨텐츠 필터) 을 반환하면 `LLMResponseEmptyError` 로 raise.
+
 ## Local setup
 
 1. Install dependencies:

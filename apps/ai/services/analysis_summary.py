@@ -1,4 +1,5 @@
 import logging
+import os
 from fastapi import HTTPException
 from schemas.analysis_summary import (
     AnalysisSummaryRequest, AnalysisSummaryResponse,
@@ -6,6 +7,8 @@ from schemas.analysis_summary import (
 )
 
 logger = logging.getLogger("logue_ai")
+
+_MOCK_ENV = "ANAL_LLM_MOCK"
 
 
 def _validate_response(request: AnalysisSummaryRequest, response: AnalysisSummaryResponse) -> None:
@@ -59,10 +62,21 @@ async def summarize_analysis_result(request: AnalysisSummaryRequest) -> Analysis
         HTTPException(502): 응답 segments-plain_text 불일치 시 (LLM_OUTPUT_INVALID)
     """
 
-    # TODO: AI 담당자분이 이 파일에 실제 LLM 호출 로직 채워넣으면 됩니다
-    # 인계 가이드: apps/ai/README.md - "결과 요약 API (AI 개발자 인계)" 섹션
+    if os.getenv(_MOCK_ENV, "").lower() == "true":
+        response = _build_mock_response(request)
+    else:
+        raise NotImplementedError(
+            "결과 요약 LLM 연동은 아직 구현되지 않았습니다 (#236). "
+            f"개발/통합 테스트는 {_MOCK_ENV}=true 로 mock 응답을 사용할 수 있습니다."
+        )
 
-    response = AnalysisSummaryResponse(
+    _validate_response(request, response)
+    return response
+
+
+def _build_mock_response(request: AnalysisSummaryRequest) -> AnalysisSummaryResponse:
+    """LLM 없이 segments↔plain_text 계약을 만족하는 결정론적 mock."""
+    return AnalysisSummaryResponse(
         request_id=request.request_id,
         description=Description(
             segments=[
@@ -73,7 +87,3 @@ async def summarize_analysis_result(request: AnalysisSummaryRequest) -> Analysis
             plain_text="더미 요약: 실제 LLM 응답으로 교체 예정.",
         ),
     )
-
-    _validate_response(request, response)
-
-    return response
