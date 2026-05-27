@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from core.rules import source_warnings
 from core.validators import validate_file_analysis_response
 from schemas.common import SemanticRoleType
-from schemas.file_analysis import (
+from schemas.api.file_analysis import (
     ColumnRole,
     DataStatusSummary,
     FileAnalysisRequest,

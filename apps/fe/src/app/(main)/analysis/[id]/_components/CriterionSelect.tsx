@@ -1,7 +1,11 @@
 'use client';
 
 import ArrowDownIcon from '@/assets/icons/arrow-down.svg';
-import { useListboxDropdown } from '@/hooks/useListboxDropdown';
+import {
+  ListboxDropdownShell,
+  LISTBOX_DROPDOWN_PANEL_BASE_CLASS,
+  LISTBOX_DROPDOWN_TRIGGER_BASE_CLASS,
+} from '@/components';
 
 type CommonProps = {
   options: string[];
@@ -19,7 +23,7 @@ type MultiProps = CommonProps & {
   values: string[];
   maxSelect?: number;
   onChange: (next: string[]) => void;
-  /** 옵션 리스트 상단에 표시되는 헤더 (예: "최대 2개 선택") */
+  /** ?듭뀡 由ъ뒪???곷떒???쒖떆?섎뒗 ?ㅻ뜑 (?? "理쒕? 2媛??좏깮") */
   headerLabel?: string;
 };
 
@@ -29,56 +33,36 @@ export default function CriterionSelect(props: CriterionSelectProps) {
   const optionFocusSelector = props.multi
     ? '[role="option"]:not([aria-disabled="true"])'
     : '[role="option"]:not([disabled]):not([aria-disabled="true"])';
-  const {
-    buttonRef,
-    closeAndFocusButton,
-    handleButtonKeyDown,
-    handleListboxKeyDown,
-    listboxId,
-    open,
-    rootRef,
-    setOpen,
-  } = useListboxDropdown({ optionSelector: optionFocusSelector });
 
   const buttonLabel = props.multi
     ? props.values.length === 0
-      ? '선택'
+      ? '?좏깮'
       : props.values.length === 1
         ? props.values[0]
-        : `${props.values[0]} 외 ${props.values.length - 1}`
+        : `${props.values[0]} ??${props.values.length - 1}`
     : props.value;
 
   return (
-    <div
-      ref={rootRef}
-      className={`relative inline-block ${props.className ?? ''}`.trim()}
-    >
-      <button
-        ref={buttonRef}
-        type="button"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-controls={open ? listboxId : undefined}
-        onClick={() => setOpen((v) => !v)}
-        onKeyDown={handleButtonKeyDown}
-        className="inline-flex min-w-[12rem] items-center justify-between gap-8 rounded-12 border border-gray-300 bg-white px-12 py-8 text-body2 text-gray-900 transition-colors hover:bg-gray-100"
-      >
-        <span>{buttonLabel}</span>
-        <ArrowDownIcon
-          aria-hidden
-          className={`icon-12 text-gray-700 transition-transform ${
-            open ? 'rotate-180' : ''
-          }`}
-        />
-      </button>
-
-      {open && (
+    <ListboxDropdownShell
+      className={props.className}
+      optionSelector={optionFocusSelector}
+      triggerClassName={`${LISTBOX_DROPDOWN_TRIGGER_BASE_CLASS} text-body2 text-gray-900`}
+      trigger={({ open }) => (
+        <>
+          <span>{buttonLabel}</span>
+          <ArrowDownIcon
+            aria-hidden
+            className={`icon-12 text-gray-700 transition-transform ${
+              open ? 'rotate-180' : ''
+            }`}
+          />
+        </>
+      )}
+      panel={({ closeAndFocusButton, panelProps }) => (
         <div
-          id={listboxId}
-          role="listbox"
+          {...panelProps}
           aria-multiselectable={props.multi ? true : undefined}
-          onKeyDown={handleListboxKeyDown}
-          className="absolute left-0 z-10 mt-4 w-max min-w-full overflow-hidden rounded-12 border border-gray-300 bg-white shadow-[0_0.4rem_1.2rem_rgba(0,0,0,0.08)]"
+          className={`${LISTBOX_DROPDOWN_PANEL_BASE_CLASS} w-max min-w-full`}
         >
           {props.multi && props.headerLabel && (
             <div className="border-b border-gray-200 px-12 py-8 text-body4 text-gray-600">
@@ -160,6 +144,6 @@ export default function CriterionSelect(props: CriterionSelectProps) {
           })}
         </div>
       )}
-    </div>
+    />
   );
 }

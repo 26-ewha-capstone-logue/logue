@@ -8,6 +8,9 @@ import { getApiErrorMessage } from '@/apis/errors';
 import { writeAnalysisStartPayload } from '@/lib/analysisStartPayload';
 import { useAuthSession } from '@/providers/AuthProvider';
 
+const AUTH_INITIALIZING_MESSAGE =
+  '인증 상태를 확인하고 있어요. 잠시 후 다시 시도해 주세요.';
+
 export type StartAnalysisInput =
   | {
       type: 'file';
@@ -34,10 +37,14 @@ export function useStartAnalysis({
 }: UseStartAnalysisOptions) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { hasAccessToken } = useAuthSession();
+  const { hasAccessToken, status } = useAuthSession();
 
   const mutation = useMutation({
     mutationFn: async (input: StartAnalysisInput) => {
+      if (status === 'initializing') {
+        throw new Error(AUTH_INITIALIZING_MESSAGE);
+      }
+
       if (!hasAccessToken) {
         throw new Error(loginRequiredMessage);
       }

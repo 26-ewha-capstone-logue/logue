@@ -1,8 +1,8 @@
 'use client';
 
 import { type ReactNode } from 'react';
-import { useListboxDropdown } from '@/hooks/useListboxDropdown';
 import DropdownDetails from '../DropdownDetails/DropdownDetails';
+import ListboxDropdownShell from '../ListboxDropdownShell/ListboxDropdownShell';
 
 export type DropdownOption = {
   label: string;
@@ -23,58 +23,44 @@ export default function Dropdown({
   options,
   value,
   onChange,
-  placeholder = '선택',
+  placeholder = '?좏깮',
   icon,
   className = '',
   helperText,
 }: DropdownProps) {
-  const {
-    buttonRef,
-    closeAndFocusButton,
-    handleButtonKeyDown,
-    listboxId,
-    open,
-    rootRef,
-    setOpen,
-  } = useListboxDropdown();
-
   const selected = options.find((o) => o.value === value);
 
   return (
-    <div ref={rootRef} className={`relative inline-block ${className}`.trim()}>
-      <button
-        ref={buttonRef}
-        type="button"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-controls={open ? listboxId : undefined}
-        onClick={() => setOpen((prev) => !prev)}
-        onKeyDown={handleButtonKeyDown}
-        className="inline-flex h-[3.4rem] items-center justify-center gap-12 rounded-8 border border-gray-800 bg-white pl-16 pr-12 text-body2 text-gray-800 transition-colors hover:border-gray-900"
-      >
-        {icon && <span className="shrink-0 [&>svg]:icon-16">{icon}</span>}
-        <span>{selected?.label ?? placeholder}</span>
-        <svg
-          width="12"
-          height="8"
-          viewBox="0 0 12 8"
-          fill="none"
-          aria-hidden
-          className={`shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
-        >
-          <path
-            d="M1 1.5l5 5 5-5"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </button>
-
-      {open && (
+    <ListboxDropdownShell
+      className={className}
+      triggerClassName="inline-flex h-[3.4rem] items-center justify-center gap-12 rounded-8 border border-gray-800 bg-white pl-16 pr-12 text-body2 text-gray-800 transition-colors hover:border-gray-900"
+      trigger={({ open }) => (
+        <>
+          {icon && <span className="shrink-0 [&>svg]:icon-16">{icon}</span>}
+          <span>{selected?.label ?? placeholder}</span>
+          <svg
+            width="12"
+            height="8"
+            viewBox="0 0 12 8"
+            fill="none"
+            aria-hidden
+            className={`shrink-0 transition-transform ${
+              open ? 'rotate-180' : ''
+            }`}
+          >
+            <path
+              d="M1 1.5l5 5 5-5"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </>
+      )}
+      panel={({ closeAndFocusButton, panelProps }) => (
         <DropdownDetails
-          id={listboxId}
+          {...panelProps}
           type="radio"
           options={options}
           selectedValues={value ? [value] : []}
@@ -83,10 +69,9 @@ export default function Dropdown({
             onChange?.(nextValue);
             closeAndFocusButton();
           }}
-          onEscape={closeAndFocusButton}
           className="absolute left-0 top-full z-10 mt-4"
         />
       )}
-    </div>
+    />
   );
 }

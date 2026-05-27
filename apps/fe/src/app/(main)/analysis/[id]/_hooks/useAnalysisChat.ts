@@ -1,26 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { useSearchParams } from 'next/navigation';
-import {
-  analysisQueryKeys,
-  createQuestion,
-  getCriteria,
-  getCriteriaStatus,
-  getResult,
-  getResultStatus,
-  getSummary,
-  getSummaryStatus,
-  updateCriteria,
-  type AnalysisJobStatus,
-  type GetQuestionCriteriaResponse,
-  type GetQuestionResultResponse,
-  type GetSummaryResponse,
-  type QuestionCriteriaParams,
-  type QuestionResultParams,
-  type UpdateQuestionCriteriaRequest,
-} from '@/apis/analysis';
+import { useCallback, useEffect, useReducer } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   dataSourceKeys,
   getDataSource,
@@ -28,47 +9,32 @@ import {
 } from '@/apis/datasource';
 import { getApiErrorMessage } from '@/apis/errors';
 import { useToast } from '@/hooks/useToast';
-import {
-  hasAnalysisStartPayloadConsumed,
-  markAnalysisStartPayloadConsumed,
-  readAnalysisStartPayload,
-  type AnalysisStartPayload,
-} from '@/lib/analysisStartPayload';
+import { markAnalysisStartPayloadConsumed } from '@/lib/analysisStartPayload';
 import type { PromptInputValue } from '../../_components/PromptInput';
-import type { ColumnCandidate } from '../_components/AnalysisResult';
+import { createUpdateCriteriaRequest } from '../_adapters/normalizeCriteria';
 import type { DataTableColumn } from '../_components/DataTablePreview';
+import type { CriteriaEditValues } from '../_models/analysisViewModels';
+import { uniqueStrings } from '../_utils/stringList';
+import {
+  useAnalysisChatMessages,
+  type CriteriaInitialMode,
+} from './useAnalysisChatMessages';
+import {
+  analysisChatFlowReducer,
+  initialAnalysisChatFlowState,
+} from './useAnalysisChatFlow';
+import { useAnalysisRouteParams } from './useAnalysisRouteParams';
+import { useAnalysisStartPayload } from './useAnalysisStartPayload';
+import { useCriteriaPhase } from './useCriteriaPhase';
+import { useResultPhase } from './useResultPhase';
+import { useSummaryPhase } from './useSummaryPhase';
 
-export type CriteriaInitialMode = 'normal' | 'edit';
+export type {
+  ChatMessage,
+  CriteriaInitialMode,
+} from './useAnalysisChatMessages';
 
-export type ChatMessage =
-  | {
-      id: string;
-      role: 'user';
-      content: string;
-      fileName?: string | null;
-    }
-  | {
-      id: string;
-      role: 'bot';
-      kind: 'criteria';
-      criteria: GetQuestionCriteriaResponse;
-      initialMode?: CriteriaInitialMode;
-    }
-  | {
-      id: string;
-      role: 'bot';
-      kind: 'verification';
-      result: GetQuestionResultResponse;
-    }
-  | {
-      id: string;
-      role: 'bot';
-      kind: 'notice';
-      content: string;
-      tone?: 'default' | 'error';
-    };
-
-const DEFAULT_PROMPT = 'CSV 파일을 분석해주세요';
+const DEFAULT_PROMPT = 'CSV 파일을 분석해 주세요';
 const STATUS_POLL_INTERVAL_MS = 1500;
 const QUESTION_ANALYSIS_TIMEOUT_MS = 120000;
 const RESULT_ANALYSIS_TIMEOUT_MS = 120000;
@@ -84,99 +50,6 @@ const UPDATE_CRITERIA_ERROR_MESSAGE =
   '분석 기준을 확정하지 못했어요. 잠시 후 다시 시도해 주세요.';
 const GET_RESULT_ERROR_MESSAGE =
   '최종 분석 결과를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
-
-const SUMMARY_WARNING_MESSAGE_MAP: Record<string, string> = {
-  date_field_conflict:
-    '날짜 기준을 하나로 정할 수 없어요. 어떤 날짜를 기준으로 볼지 선택해 주세요.',
-};
-
-type QuestionAnalysisVariables = {
-  targetConversationId: number;
-  targetAnalysisFlowId: number;
-  question: string;
-};
-
-type UpdateCriteriaVariables = {
-  targetConversationId: number;
-  targetAnalysisFlowId: number;
-  messageId: number;
-  request: UpdateQuestionCriteriaRequest;
-};
-
-type ResultAnalysisVariables = {
-  targetConversationId: number;
-  targetAnalysisFlowId: number;
-  messageId: number;
-  analysisCriteriaId: number;
-};
-
-function parsePositiveNumber(value: string | null | undefined) {
-  if (!value) return null;
-
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-}
-
-function compactStrings(values: Array<string | null | undefined>) {
-  return values
-    .map((value) => value?.trim())
-    .filter((value): value is string => Boolean(value));
-}
-
-export function uniqueStrings(values: Array<string | null | undefined>) {
-  return Array.from(new Set(compactStrings(values)));
-}
-
-function shouldPollJobStatus(status?: AnalysisJobStatus) {
-  return (
-    !status ||
-    status === 'QUEUED' ||
-    status === 'RUNNING' ||
-    status === 'RETRYING'
-  );
-}
-
-function isFailedJobStatus(status?: AnalysisJobStatus) {
-  return status === 'FAILED' || status === 'CANCELED' || status === 'CANCELLED';
-}
-
-function wait(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function waitForCriteriaSuccess(params: QuestionCriteriaParams) {
-  const startedAt = Date.now();
-
-  while (Date.now() - startedAt < QUESTION_ANALYSIS_TIMEOUT_MS) {
-    const { status } = await getCriteriaStatus(params);
-
-    if (status === 'SUCCESS') return;
-    if (isFailedJobStatus(status)) {
-      throw new Error(GET_CRITERIA_ERROR_MESSAGE);
-    }
-
-    await wait(STATUS_POLL_INTERVAL_MS);
-  }
-
-  throw new Error(GET_CRITERIA_ERROR_MESSAGE);
-}
-
-async function waitForResultSuccess(params: QuestionResultParams) {
-  const startedAt = Date.now();
-
-  while (Date.now() - startedAt < RESULT_ANALYSIS_TIMEOUT_MS) {
-    const { status } = await getResultStatus(params);
-
-    if (status === 'SUCCESS') return;
-    if (isFailedJobStatus(status)) {
-      throw new Error(GET_RESULT_ERROR_MESSAGE);
-    }
-
-    await wait(STATUS_POLL_INTERVAL_MS);
-  }
-
-  throw new Error(GET_RESULT_ERROR_MESSAGE);
-}
 
 function createPreviewTable(preview?: FilePreview | null) {
   if (!preview || preview.headers.length === 0) return null;
@@ -195,89 +68,43 @@ function createPreviewTable(preview?: FilePreview | null) {
   return { columns, rows };
 }
 
-export function createSummaryCandidates(summary: GetSummaryResponse) {
-  const groups = [
-    { name: '데이터 기준', values: summary.dataCriteria },
-    { name: '지표', values: summary.measure },
-    { name: '차원', values: summary.dimension },
-    { name: '상태 조건', values: summary.statusCondition },
-    { name: '플래그', values: summary.flag },
-    { name: '식별 기준', values: summary.idCriteria },
-  ];
+type UseAnalysisChatParams = {
+  hasAccessToken: boolean;
+  routeConversationId: string;
+};
 
-  return groups.flatMap<ColumnCandidate>((group) =>
-    group.values.map((value) => ({
-      name: group.name,
-      example: value,
-    })),
-  );
-}
-
-function mapSummaryWarning(value: string) {
-  const normalized = value.trim();
-  return SUMMARY_WARNING_MESSAGE_MAP[normalized] ?? normalized;
-}
-
-export function createSummaryWarnings(summary?: GetSummaryResponse) {
-  const warning = summary?.sourceDataWarning?.trim();
-  if (!warning) return [];
-
-  return warning.split('\n').map(mapSummaryWarning).filter(Boolean);
-}
-
-function getSummaryColumnOptions(summary?: GetSummaryResponse) {
-  if (!summary) return [];
-
-  return uniqueStrings([
-    ...summary.dataCriteria,
-    ...summary.measure,
-    ...summary.dimension,
-    ...summary.statusCondition,
-    ...summary.flag,
-    ...summary.idCriteria,
-  ]);
-}
-
-function createMessageId(prefix: string) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
-export function useAnalysisChat(routeConversationId: string) {
-  const searchParams = useSearchParams();
-  const conversationId = parsePositiveNumber(routeConversationId);
-  const analysisFlowId = parsePositiveNumber(
-    searchParams.get('analysisFlowId'),
-  );
-  const dataSourceId = parsePositiveNumber(searchParams.get('dataSourceId'));
-  const routeReady = conversationId !== null && analysisFlowId !== null;
-
-  const [startPayload, setStartPayload] = useState<AnalysisStartPayload>(
-    () => ({
-      prompt: DEFAULT_PROMPT,
-      fileName: null,
-    }),
-  );
-  const [messages, setMessages] = useState<ChatMessage[]>(() => [
-    {
-      id: 'init-user',
-      role: 'user',
-      content: DEFAULT_PROMPT,
-      fileName: null,
-    },
-  ]);
+export function useAnalysisChat({
+  hasAccessToken,
+  routeConversationId,
+}: UseAnalysisChatParams) {
+  const { analysisFlowId, conversationId, dataSourceId, routeReady } =
+    useAnalysisRouteParams(routeConversationId);
   const { toast, showToast } = useToast();
-  const [hasStartedInitialQuestion, setHasStartedInitialQuestion] =
-    useState(false);
-  const [hasResolvedStartPayload, setHasResolvedStartPayload] = useState(false);
-  const [canAutoStartInitialQuestion, setCanAutoStartInitialQuestion] =
-    useState(false);
-  const openNextCriteriaInEditRef = useRef(false);
-  const readStartPayloadConversationIdRef = useRef<number | null>(null);
-  const questionSubmissionLockedRef = useRef(false);
-  const criteriaSubmissionLockedRef = useRef(false);
-
-  const initialPrompt = startPayload.prompt || DEFAULT_PROMPT;
-  const fileName = startPayload.fileName ?? null;
+  const [flow, dispatchFlow] = useReducer(
+    analysisChatFlowReducer,
+    initialAnalysisChatFlowState,
+  );
+  const { fileName, initialPrompt } = useAnalysisStartPayload({
+    conversationId,
+    defaultPrompt: DEFAULT_PROMPT,
+    dispatchFlow,
+  });
+  const {
+    appendCriteriaMessage,
+    appendNotice,
+    appendResultMessage,
+    appendUserQuestion,
+    initialMessage,
+    restMessages,
+    updateInitialMessage,
+  } = useAnalysisChatMessages(DEFAULT_PROMPT);
+  const {
+    canAutoStartInitialQuestion,
+    criteriaSubmissionLocked,
+    hasResolvedStartPayload,
+    hasStartedInitialQuestion,
+    questionSubmissionLocked,
+  } = flow;
 
   const dataSourceQuery = useQuery({
     queryKey: dataSourceKeys.detail(dataSourceId ?? 0),
@@ -285,129 +112,46 @@ export function useAnalysisChat(routeConversationId: string) {
       if (dataSourceId === null) throw new Error(INVALID_ROUTE_MESSAGE);
       return getDataSource(dataSourceId);
     },
-    enabled: dataSourceId !== null,
+    enabled: hasAccessToken && dataSourceId !== null,
   });
 
-  const summaryStatusQuery = useQuery({
-    queryKey: analysisQueryKeys.summaryStatus(
-      conversationId ?? 0,
-      analysisFlowId ?? 0,
-    ),
-    queryFn: () => {
-      if (conversationId === null || analysisFlowId === null) {
-        throw new Error(INVALID_ROUTE_MESSAGE);
-      }
-
-      return getSummaryStatus({ conversationId, analysisFlowId });
-    },
-    enabled: routeReady,
-    refetchInterval: (query) => {
-      const status = query.state.data?.status;
-
-      if (query.state.error || !status) return false;
-
-      return shouldPollJobStatus(status) ? STATUS_POLL_INTERVAL_MS : false;
-    },
+  const { summary, summaryErrorMessage, summaryPending } = useSummaryPhase({
+    analysisFlowId,
+    conversationId,
+    failedSummaryMessage:
+      'CSV 데이터 요약에 실패했어요. 파일을 확인하고 다시 시도해 주세요.',
+    getSummaryErrorMessage: GET_SUMMARY_ERROR_MESSAGE,
+    invalidRouteMessage: INVALID_ROUTE_MESSAGE,
+    routeReady: hasAccessToken && routeReady,
+    statusPollIntervalMs: STATUS_POLL_INTERVAL_MS,
   });
-  const summaryStatus = summaryStatusQuery.data?.status;
-
-  const summaryQuery = useQuery({
-    queryKey: analysisQueryKeys.summary(
-      conversationId ?? 0,
-      analysisFlowId ?? 0,
-    ),
-    queryFn: () => {
-      if (conversationId === null || analysisFlowId === null) {
-        throw new Error(INVALID_ROUTE_MESSAGE);
-      }
-
-      return getSummary({ conversationId, analysisFlowId });
+  const dataSourcePreview = hasAccessToken
+    ? dataSourceQuery.data?.preview
+    : undefined;
+  const { questionAnalysisMutation, updateCriteriaMutation } = useCriteriaPhase(
+    {
+      getCriteriaErrorMessage: GET_CRITERIA_ERROR_MESSAGE,
+      questionAnalysisTimeoutMs: QUESTION_ANALYSIS_TIMEOUT_MS,
+      statusPollIntervalMs: STATUS_POLL_INTERVAL_MS,
     },
-    enabled: routeReady && summaryStatus === 'SUCCESS',
-  });
-
+  );
   const {
     mutate: mutateQuestionAnalysis,
     isPending: isQuestionAnalysisPending,
-  } = useMutation({
-    mutationFn: async ({
-      targetConversationId,
-      targetAnalysisFlowId,
-      question,
-    }: QuestionAnalysisVariables) => {
-      const createdQuestion = await createQuestion(
-        {
-          conversationId: targetConversationId,
-          analysisFlowId: targetAnalysisFlowId,
-        },
-        { question },
-      );
-      const criteriaParams = {
-        conversationId: targetConversationId,
-        analysisFlowId: targetAnalysisFlowId,
-        messageId: createdQuestion.messageId,
-      };
-
-      await waitForCriteriaSuccess(criteriaParams);
-      return getCriteria(criteriaParams);
-    },
+  } = questionAnalysisMutation;
+  const resultAnalysisMutation = useResultPhase({
+    getResultErrorMessage: GET_RESULT_ERROR_MESSAGE,
+    resultAnalysisTimeoutMs: RESULT_ANALYSIS_TIMEOUT_MS,
+    statusPollIntervalMs: STATUS_POLL_INTERVAL_MS,
   });
-
-  const updateCriteriaMutation = useMutation({
-    mutationFn: ({
-      targetConversationId,
-      targetAnalysisFlowId,
-      messageId,
-      request,
-    }: UpdateCriteriaVariables) =>
-      updateCriteria(
-        {
-          conversationId: targetConversationId,
-          analysisFlowId: targetAnalysisFlowId,
-          messageId,
-        },
-        request,
-      ),
-  });
-
-  const resultAnalysisMutation = useMutation({
-    mutationFn: async ({
-      targetConversationId,
-      targetAnalysisFlowId,
-      messageId,
-      analysisCriteriaId,
-    }: ResultAnalysisVariables) => {
-      const resultParams = {
-        conversationId: targetConversationId,
-        analysisFlowId: targetAnalysisFlowId,
-        messageId,
-        analysisCriteriaId,
-      };
-
-      await waitForResultSuccess(resultParams);
-      return getResult(resultParams);
-    },
-  });
-
-  const appendNotice = useCallback(
-    (content: string, tone: 'default' | 'error' = 'default') => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: createMessageId('notice'),
-          role: 'bot',
-          kind: 'notice',
-          content,
-          tone,
-        },
-      ]);
-    },
-    [setMessages],
-  );
 
   const startQuestion = useCallback(
-    (question: string, appendUserMessage = true) => {
-      if (questionSubmissionLockedRef.current) return;
+    (
+      question: string,
+      appendUserMessage = true,
+      initialMode: CriteriaInitialMode = 'normal',
+    ) => {
+      if (questionSubmissionLocked) return;
 
       if (conversationId === null || analysisFlowId === null) {
         showToast(INVALID_ROUTE_MESSAGE);
@@ -418,17 +162,10 @@ export function useAnalysisChat(routeConversationId: string) {
       const normalizedQuestion = question.trim();
       if (!normalizedQuestion) return;
 
-      questionSubmissionLockedRef.current = true;
+      dispatchFlow({ type: 'question-submission-started' });
 
       if (appendUserMessage) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: createMessageId('user'),
-            role: 'user',
-            content: normalizedQuestion,
-          },
-        ]);
+        appendUserQuestion(normalizedQuestion);
       }
 
       mutateQuestionAnalysis(
@@ -436,27 +173,15 @@ export function useAnalysisChat(routeConversationId: string) {
           targetConversationId: conversationId,
           targetAnalysisFlowId: analysisFlowId,
           question: normalizedQuestion,
+          initialMode,
         },
         {
-          onSuccess: (criteria) => {
-            questionSubmissionLockedRef.current = false;
-            const initialMode: CriteriaInitialMode =
-              openNextCriteriaInEditRef.current ? 'edit' : 'normal';
-            openNextCriteriaInEditRef.current = false;
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: `criteria-${criteria.messageId}`,
-                role: 'bot',
-                kind: 'criteria',
-                criteria,
-                initialMode,
-              },
-            ]);
+          onSuccess: (criteria, variables) => {
+            dispatchFlow({ type: 'question-submission-finished' });
+            appendCriteriaMessage(criteria, variables.initialMode);
           },
           onError: (error) => {
-            questionSubmissionLockedRef.current = false;
-            openNextCriteriaInEditRef.current = false;
+            dispatchFlow({ type: 'question-submission-finished' });
             const message = getApiErrorMessage(
               error,
               CREATE_QUESTION_ERROR_MESSAGE,
@@ -469,10 +194,13 @@ export function useAnalysisChat(routeConversationId: string) {
     },
     [
       analysisFlowId,
+      appendCriteriaMessage,
       appendNotice,
+      appendUserQuestion,
       conversationId,
+      dispatchFlow,
       mutateQuestionAnalysis,
-      setMessages,
+      questionSubmissionLocked,
       showToast,
     ],
   );
@@ -480,6 +208,7 @@ export function useAnalysisChat(routeConversationId: string) {
   const startInitialQuestion = useCallback(
     (initialMode: CriteriaInitialMode = 'normal') => {
       if (
+        !hasAccessToken ||
         hasStartedInitialQuestion ||
         !hasResolvedStartPayload ||
         !canAutoStartInitialQuestion ||
@@ -489,26 +218,24 @@ export function useAnalysisChat(routeConversationId: string) {
       }
 
       markAnalysisStartPayloadConsumed(conversationId);
-      setCanAutoStartInitialQuestion(false);
-      setHasStartedInitialQuestion(true);
-      openNextCriteriaInEditRef.current = initialMode === 'edit';
-      startQuestion(initialPrompt, false);
+      dispatchFlow({ type: 'initial-question-started' });
+      startQuestion(initialPrompt, false, initialMode);
     },
     [
       canAutoStartInitialQuestion,
       conversationId,
+      hasAccessToken,
       hasResolvedStartPayload,
       hasStartedInitialQuestion,
       initialPrompt,
-      setCanAutoStartInitialQuestion,
-      setHasStartedInitialQuestion,
+      dispatchFlow,
       startQuestion,
     ],
   );
 
   const handleSubmit = useCallback(
     (value: PromptInputValue) => {
-      if (!summaryQuery.data) {
+      if (!summary) {
         showToast(SUMMARY_NOT_READY_MESSAGE);
         return;
       }
@@ -516,44 +243,35 @@ export function useAnalysisChat(routeConversationId: string) {
       if (conversationId !== null) {
         markAnalysisStartPayloadConsumed(conversationId);
       }
-      setCanAutoStartInitialQuestion(false);
-      setHasStartedInitialQuestion(true);
-      openNextCriteriaInEditRef.current = false;
+      dispatchFlow({ type: 'initial-question-started' });
       startQuestion(value.prompt);
     },
-    [
-      conversationId,
-      setCanAutoStartInitialQuestion,
-      setHasStartedInitialQuestion,
-      showToast,
-      startQuestion,
-      summaryQuery.data,
-    ],
+    [conversationId, dispatchFlow, showToast, startQuestion, summary],
   );
 
   function handleConfirmCriteria(
     messageId: number,
-    request: UpdateQuestionCriteriaRequest,
+    values: CriteriaEditValues,
   ) {
-    if (criteriaSubmissionLockedRef.current) return;
+    if (criteriaSubmissionLocked) return;
 
     if (conversationId === null || analysisFlowId === null) {
       showToast(INVALID_ROUTE_MESSAGE);
       return;
     }
 
-    criteriaSubmissionLockedRef.current = true;
+    dispatchFlow({ type: 'criteria-submission-started' });
 
     updateCriteriaMutation.mutate(
       {
         targetConversationId: conversationId,
         targetAnalysisFlowId: analysisFlowId,
         messageId,
-        request,
+        request: createUpdateCriteriaRequest(values),
       },
       {
         onSuccess: ({ analysisCriteriaId }) => {
-          appendNotice('분석 기준을 확정했어요.');
+          appendNotice('분석 기준이 확정되었어요.');
           resultAnalysisMutation.mutate(
             {
               targetConversationId: conversationId,
@@ -563,19 +281,11 @@ export function useAnalysisChat(routeConversationId: string) {
             },
             {
               onSuccess: (result) => {
-                criteriaSubmissionLockedRef.current = false;
-                setMessages((prev) => [
-                  ...prev,
-                  {
-                    id: `result-${result.resultId}`,
-                    role: 'bot',
-                    kind: 'verification',
-                    result,
-                  },
-                ]);
+                dispatchFlow({ type: 'criteria-submission-finished' });
+                appendResultMessage(result);
               },
               onError: (error) => {
-                criteriaSubmissionLockedRef.current = false;
+                dispatchFlow({ type: 'criteria-submission-finished' });
                 const message = getApiErrorMessage(
                   error,
                   GET_RESULT_ERROR_MESSAGE,
@@ -587,7 +297,7 @@ export function useAnalysisChat(routeConversationId: string) {
           );
         },
         onError: (error) => {
-          criteriaSubmissionLockedRef.current = false;
+          dispatchFlow({ type: 'criteria-submission-finished' });
           const message = getApiErrorMessage(
             error,
             UPDATE_CRITERIA_ERROR_MESSAGE,
@@ -600,71 +310,26 @@ export function useAnalysisChat(routeConversationId: string) {
   }
 
   useEffect(() => {
-    if (
-      conversationId !== null &&
-      readStartPayloadConversationIdRef.current === conversationId
-    ) {
-      return;
-    }
-
-    setHasResolvedStartPayload(false);
-    setCanAutoStartInitialQuestion(false);
-
-    const timer = window.setTimeout(() => {
-      if (conversationId === null) {
-        setStartPayload({ prompt: DEFAULT_PROMPT, fileName: null });
-        setHasResolvedStartPayload(true);
-        return;
-      }
-
-      readStartPayloadConversationIdRef.current = conversationId;
-
-      const storedPayload = readAnalysisStartPayload(conversationId);
-      const canAutoStart =
-        storedPayload !== null &&
-        !hasAnalysisStartPayloadConsumed(conversationId);
-
-      setStartPayload({
-        prompt: storedPayload?.prompt || DEFAULT_PROMPT,
-        fileName: storedPayload?.fileName ?? null,
-      });
-      setCanAutoStartInitialQuestion(canAutoStart);
-      setHasResolvedStartPayload(true);
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, [conversationId]);
-
-  useEffect(() => {
     if (!hasResolvedStartPayload) return;
 
     const timer = window.setTimeout(() => {
-      setMessages((prev) =>
-        prev.map((message) =>
-          message.id === 'init-user' && message.role === 'user'
-            ? {
-                ...message,
-                content: initialPrompt,
-                fileName,
-              }
-            : message,
-        ),
-      );
+      updateInitialMessage(initialPrompt, fileName);
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [fileName, hasResolvedStartPayload, initialPrompt]);
+  }, [fileName, hasResolvedStartPayload, initialPrompt, updateInitialMessage]);
 
   useEffect(() => {
     if (
-      !summaryQuery.data ||
+      !hasAccessToken ||
+      !summary ||
       hasStartedInitialQuestion ||
       !hasResolvedStartPayload ||
       !canAutoStartInitialQuestion
     ) {
       return;
     }
-    if (createSummaryWarnings(summaryQuery.data).length > 0) return;
+    if (summary.warnings.length > 0) return;
 
     const timer = window.setTimeout(() => {
       startInitialQuestion();
@@ -673,29 +338,18 @@ export function useAnalysisChat(routeConversationId: string) {
     return () => window.clearTimeout(timer);
   }, [
     canAutoStartInitialQuestion,
+    hasAccessToken,
     hasResolvedStartPayload,
     hasStartedInitialQuestion,
     startInitialQuestion,
-    summaryQuery.data,
+    summary,
   ]);
 
-  const summary = summaryQuery.data;
-  const summaryColumnOptions = getSummaryColumnOptions(summary);
-  const summaryPending =
-    routeReady &&
-    !summaryStatusQuery.isError &&
-    !summaryQuery.isError &&
-    !summary &&
-    !isFailedJobStatus(summaryStatus);
-  const summaryErrorMessage = !routeReady
-    ? INVALID_ROUTE_MESSAGE
-    : summaryStatusQuery.isError
-      ? getApiErrorMessage(summaryStatusQuery.error, GET_SUMMARY_ERROR_MESSAGE)
-      : summaryQuery.isError
-        ? getApiErrorMessage(summaryQuery.error, GET_SUMMARY_ERROR_MESSAGE)
-        : isFailedJobStatus(summaryStatus)
-          ? 'CSV 데이터 요약에 실패했어요. 파일을 확인하고 다시 시도해 주세요.'
-          : null;
+  const summaryColumnOptions = summary?.columnOptions ?? [];
+  const summarySortOptions = uniqueStrings([
+    ...(summary?.measureOptions ?? []),
+    ...summaryColumnOptions,
+  ]);
   const shouldShowAnalyzing =
     summaryPending ||
     isQuestionAnalysisPending ||
@@ -713,7 +367,7 @@ export function useAnalysisChat(routeConversationId: string) {
     isQuestionAnalysisPending ||
     updateCriteriaMutation.isPending ||
     resultAnalysisMutation.isPending;
-  const summaryWarnings = createSummaryWarnings(summary);
+  const summaryWarnings = summary?.warnings ?? [];
   const summaryActionDisabled =
     hasStartedInitialQuestion ||
     !hasResolvedStartPayload ||
@@ -721,9 +375,9 @@ export function useAnalysisChat(routeConversationId: string) {
     isQuestionAnalysisPending ||
     updateCriteriaMutation.isPending;
   const criteriaSubmitting =
-    updateCriteriaMutation.isPending || resultAnalysisMutation.isPending;
-  const [initialMessage, ...restMessages] = messages;
-
+    criteriaSubmissionLocked ||
+    updateCriteriaMutation.isPending ||
+    resultAnalysisMutation.isPending;
   return {
     analyzingMessage,
     criteriaSubmitting,
@@ -731,8 +385,8 @@ export function useAnalysisChat(routeConversationId: string) {
     handleSubmit,
     initialMessage,
     inputDisabled,
-    isDataSourceLoading: dataSourceQuery.isLoading,
-    previewTable: createPreviewTable(dataSourceQuery.data?.preview),
+    isDataSourceLoading: hasAccessToken && dataSourceQuery.isLoading,
+    previewTable: createPreviewTable(dataSourcePreview),
     restMessages,
     shouldShowAnalyzing,
     startInitialQuestion,
@@ -740,7 +394,10 @@ export function useAnalysisChat(routeConversationId: string) {
     summaryActionDisabled,
     summaryColumnOptions,
     summaryErrorMessage,
+    summarySortOptions,
     summaryWarnings,
     toast,
   };
 }
+
+export type UseAnalysisChatResult = ReturnType<typeof useAnalysisChat>;

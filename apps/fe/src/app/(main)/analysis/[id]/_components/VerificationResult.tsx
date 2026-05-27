@@ -13,20 +13,15 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { GetQuestionResultResponse } from '@/apis/analysis';
-import AlertIcon from '@/assets/icons/alert.svg';
-
-export type ChartDataPoint = { name: string; value: number };
+import type {
+  BarChartViewModel,
+  QuestionResultViewModel,
+} from '../_models/analysisViewModels';
+import AnalysisCard from './AnalysisCard';
+import AnalysisWarningList from './AnalysisWarningList';
 
 export type VerificationResultProps = {
-  result?: GetQuestionResultResponse;
-  title?: string;
-  description?: string;
-  channelList?: string[];
-  deviceList?: string[];
-  channelData?: ChartDataPoint[];
-  deviceData?: ChartDataPoint[];
-  warnings?: string[];
+  result: QuestionResultViewModel;
 };
 
 const BAR_COLORS = [
@@ -38,30 +33,6 @@ const BAR_COLORS = [
   'var(--color-orange-700)',
   'var(--color-orange-800)',
 ];
-
-const DEFAULT_CHANNEL_DATA: ChartDataPoint[] = [
-  { name: '이름1', value: 120 },
-  { name: '이름1', value: 200 },
-  { name: '이름3', value: 150 },
-  { name: '이름1', value: 80 },
-  { name: '이름5', value: 60 },
-  { name: '이름1', value: 110 },
-  { name: '이름', value: 130 },
-];
-
-const DEFAULT_DEVICE_DATA: ChartDataPoint[] = [
-  { name: '이름1', value: 120 },
-  { name: '이름1', value: 200 },
-  { name: '이름3', value: 150 },
-  { name: '이름1', value: 80 },
-  { name: '이름5', value: 60 },
-  { name: '이름1', value: 110 },
-  { name: '이름', value: 130 },
-];
-
-type ChartRow = {
-  name: string;
-} & Record<string, number | string>;
 
 type BalloonLabelProps = {
   x?: number;
@@ -102,162 +73,36 @@ function BalloonLabel({ x = 0, y = 0, width = 0, value }: BalloonLabelProps) {
   );
 }
 
-function createFallbackResult(
-  title: string,
-  description: string,
-  channelList: string[],
-  deviceList: string[],
-  channelData: ChartDataPoint[],
-  deviceData: ChartDataPoint[],
-): GetQuestionResultResponse {
-  return {
-    resultId: 0,
-    summaryMessage: title,
-    description,
-    criteria: {
-      groupBy: [...channelList, ...deviceList],
-      metricName: null,
-    },
-    chartData: {
-      tabs: ['채널', '디바이스'],
-      defaultTab: '디바이스',
-      tabResults: [
-        {
-          tabName: '채널',
-          chart: {
-            labels: channelData.map((item) => item.name),
-            series: [
-              {
-                name: '값',
-                values: channelData.map((item) => item.value),
-              },
-            ],
-          },
-        },
-        {
-          tabName: '디바이스',
-          chart: {
-            labels: deviceData.map((item) => item.name),
-            series: [
-              {
-                name: '값',
-                values: deviceData.map((item) => item.value),
-              },
-            ],
-          },
-        },
-      ],
-    },
-  };
-}
-
-function uniqueStrings(values: Array<string | null | undefined>) {
-  return Array.from(
-    new Set(values.map((value) => value?.trim()).filter(Boolean) as string[]),
-  );
-}
-
-function getResultTabs(result: GetQuestionResultResponse) {
-  const chartData = result.chartData;
-  const tabNames = chartData?.tabResults?.map((tab) => tab.tabName) ?? [];
-
-  return uniqueStrings([...(chartData?.tabs ?? []), ...tabNames]);
-}
-
-function getDefaultTab(result: GetQuestionResultResponse) {
-  const tabs = getResultTabs(result);
-  const defaultTab = result.chartData?.defaultTab?.trim();
-
-  if (defaultTab && tabs.includes(defaultTab)) return defaultTab;
-  return tabs[0] ?? '';
-}
-
-function getActiveTabResult(result: GetQuestionResultResponse, tab: string) {
-  const tabResults = result.chartData?.tabResults ?? [];
-
+function getActiveTabResult(chart: BarChartViewModel, tab: string) {
   return (
-    tabResults.find((item) => item.tabName === tab) ?? tabResults[0] ?? null
+    chart.tabResults.find((item) => item.name === tab) ?? chart.tabResults[0]
   );
-}
-
-function createChartRows(result: GetQuestionResultResponse, tab: string) {
-  const activeTabResult = getActiveTabResult(result, tab);
-  const chart = activeTabResult?.chart;
-  const labels = chart?.labels ?? [];
-  const series = chart?.series ?? [];
-  const seriesKeys = series.map((item, index) => ({
-    key: `series-${index}`,
-    name: item.name?.trim() || `값 ${index + 1}`,
-  }));
-
-  const rows = labels.map<ChartRow>((label, labelIndex) => {
-    const row: ChartRow = { name: label || `항목 ${labelIndex + 1}` };
-
-    seriesKeys.forEach((seriesKey, seriesIndex) => {
-      row[seriesKey.key] = series[seriesIndex]?.values?.[labelIndex] ?? 0;
-    });
-
-    return row;
-  });
-
-  return {
-    rows,
-    seriesKeys,
-    unit: chart?.unit?.trim() ?? '',
-  };
-}
-
-function formatCriteriaList(result: GetQuestionResultResponse) {
-  const criteria = result.criteria;
-  if (!criteria) return [];
-
-  return [
-    ['지표', criteria.metricName],
-    ['비교 기준', criteria.groupBy?.join(', ')],
-    ['날짜 기준', criteria.baseDateColumn],
-    ['분석 기간', criteria.standardPeriod],
-    ['비교 기간', criteria.comparePeriod],
-  ].filter((item): item is [string, string] => Boolean(item[1]?.trim()));
 }
 
 export default function VerificationResult({
   result,
-  title = '검증이 완료되었어요.',
-  description = '가입 전환율이 지난주 대비 낮은 순으로 채널/디바이스를 나열했어요.',
-  channelList = ['iOS', 'Android', 'CRM', '콜드메일', '사이트 직접 탐색'],
-  deviceList = ['iOS', 'Android', 'CRM', '콜드메일', '사이트 직접 탐색'],
-  channelData = DEFAULT_CHANNEL_DATA,
-  deviceData = DEFAULT_DEVICE_DATA,
-  warnings = [],
 }: VerificationResultProps) {
-  const resolvedResult =
-    result ??
-    createFallbackResult(
-      title,
-      description,
-      channelList,
-      deviceList,
-      channelData,
-      deviceData,
-    );
-  const tabs = getResultTabs(resolvedResult);
-  const [tab, setTab] = useState(() => getDefaultTab(resolvedResult));
-  const { rows, seriesKeys, unit } = createChartRows(resolvedResult, tab);
-  const criteriaItems = formatCriteriaList(resolvedResult);
-  const heading = resolvedResult.summaryMessage || title;
-  const body = resolvedResult.description || description;
+  const [tab, setTab] = useState(() =>
+    result.chart.type === 'bar' ? result.chart.defaultTab : '',
+  );
+  const chart = result.chart;
+  const activeTabResult =
+    chart.type === 'bar' ? getActiveTabResult(chart, tab) : null;
+  const rows = activeTabResult?.data ?? [];
+  const seriesKeys = activeTabResult?.yKeys ?? [];
+  const unit = activeTabResult?.unit ?? '';
   const hasMultipleSeries = seriesKeys.length > 1;
 
   return (
-    <div className="flex w-full flex-col gap-20 rounded-20 bg-white p-24 shadow-[0_0.2rem_1.2rem_rgba(0,0,0,0.06)]">
+    <AnalysisCard className="gap-20">
       <div className="flex flex-col gap-4">
-        <p className="text-body3 font-semibold text-gray-900">{heading}</p>
-        <p className="text-body2 text-gray-900">{body}</p>
+        <p className="text-body3 font-semibold text-gray-900">{result.title}</p>
+        <p className="text-body2 text-gray-900">{result.insight}</p>
       </div>
 
-      {criteriaItems.length > 0 && (
+      {result.criteriaItems.length > 0 && (
         <div className="flex flex-col gap-4 text-body2 text-gray-900">
-          {criteriaItems.map(([label, value]) => (
+          {result.criteriaItems.map(({ label, value }) => (
             <p key={label}>
               <span className="font-semibold">{label}:</span> {value}
             </p>
@@ -266,9 +111,9 @@ export default function VerificationResult({
       )}
 
       <div className="rounded-12 border-2 border-gray-300 bg-white p-16">
-        {tabs.length > 1 && (
+        {chart.type === 'bar' && chart.tabs.length > 1 && (
           <div className="mb-16 flex gap-24">
-            {tabs.map((key) => {
+            {chart.tabs.map((key) => {
               const active = tab === key;
 
               return (
@@ -298,9 +143,13 @@ export default function VerificationResult({
           </p>
         )}
 
-        {rows.length === 0 || seriesKeys.length === 0 ? (
+        {chart.type === 'empty' ||
+        rows.length === 0 ||
+        seriesKeys.length === 0 ? (
           <div className="flex h-[28rem] items-center justify-center text-body2 text-gray-600">
-            표시할 차트 데이터가 없습니다.
+            {chart.type === 'empty'
+              ? chart.message
+              : '표시할 차트 데이터가 없습니다.'}
           </div>
         ) : (
           <div className="h-[28rem] w-full">
@@ -311,7 +160,7 @@ export default function VerificationResult({
               >
                 <CartesianGrid stroke="#ECECEC" vertical={false} />
                 <XAxis
-                  dataKey="name"
+                  dataKey={chart.xKey}
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 12, fill: '#999999' }}
@@ -357,19 +206,7 @@ export default function VerificationResult({
         )}
       </div>
 
-      {warnings.length > 0 && (
-        <div className="flex flex-col gap-8">
-          <div className="inline-flex items-center gap-4 text-body2 font-semibold text-orange-500">
-            <AlertIcon aria-hidden className="icon-16 text-orange-500" />
-            <span>데이터 경고</span>
-          </div>
-          <ul className="ml-20 flex list-disc flex-col gap-8 text-body2 text-gray-900">
-            {warnings.map((w, i) => (
-              <li key={i}>{w}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
+      <AnalysisWarningList warnings={result.warnings} />
+    </AnalysisCard>
   );
 }

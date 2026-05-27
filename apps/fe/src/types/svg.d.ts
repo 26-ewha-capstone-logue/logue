@@ -9,3 +9,9 @@ declare module '*.svg' {
   const ReactComponent: FunctionComponent<SVGProps<SVGSVGElement>>;
   export default ReactComponent;
 }
+
+declare module '*.gif' {
+  import type { StaticImageData } from 'next/image';
+  const src: StaticImageData;
+  export default src;
+}

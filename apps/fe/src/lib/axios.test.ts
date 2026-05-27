@@ -71,8 +71,8 @@ afterEach(() => {
 });
 
 describe('axios auth interceptor', () => {
-  it('clears tokens when the current user no longer exists', async () => {
-    installWindowStorage();
+  it('keeps tokens when the current user profile lookup returns 404', async () => {
+    const { localStorage } = installWindowStorage();
     setAuthTokens({
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
@@ -93,8 +93,13 @@ describe('axios auth interceptor', () => {
       response: { status: 404 },
     });
 
-    expect(getAccessToken()).toBeNull();
-    expect(getRefreshToken()).toBeNull();
+    expect(localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)).toBe('access-token');
+    expect(localStorage.getItem(LEGACY_ACCESS_TOKEN_STORAGE_KEY)).toBe(
+      'access-token',
+    );
+    expect(localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)).toBe(
+      'refresh-token',
+    );
   });
 
   it('keeps tokens for non-auth 404 responses', async () => {
@@ -126,5 +131,28 @@ describe('axios auth interceptor', () => {
     expect(localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)).toBe(
       'refresh-token',
     );
+  });
+
+  it('clears tokens when an authenticated request returns 401 without refresh token', async () => {
+    installWindowStorage();
+    setAuthTokens({ accessToken: 'access-token' });
+
+    const adapter: AxiosAdapter = async (config) => {
+      return Promise.reject({
+        config,
+        isAxiosError: true,
+        response: createRejectedResponse(config, 401),
+        toJSON: () => ({}),
+      });
+    };
+
+    instance.defaults.adapter = adapter;
+
+    await expect(instance.get('/api/datasources')).rejects.toMatchObject({
+      response: { status: 401 },
+    });
+
+    expect(getAccessToken()).toBeNull();
+    expect(getRefreshToken()).toBeNull();
   });
 });

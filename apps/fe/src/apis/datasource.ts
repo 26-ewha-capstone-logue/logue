@@ -80,8 +80,6 @@ export async function uploadDataSource(file: File) {
 }
 
 export async function deleteDataSources(dataSourceIds: number[]) {
-  if (dataSourceIds.length === 0) return;
-
   const { data } = await instance.delete<ApiResponse<unknown>>(
     getDeleteDataSourcesPath(dataSourceIds),
   );

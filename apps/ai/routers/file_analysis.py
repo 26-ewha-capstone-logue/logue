@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from schemas.file_analysis import FileAnalysisRequest, FileAnalysisResponse
+from schemas.api.file_analysis import FileAnalysisRequest, FileAnalysisResponse
 from services.file_analysis import analyze_file
 
 router = APIRouter(prefix="/v1/llm", tags=["01 file analysis"])
