@@ -10,6 +10,7 @@ export function useMyInfo(enabled: boolean) {
     queryKey: userKeys.me(),
     queryFn: getMyInfo,
     enabled,
+    retry: false,
     staleTime: USER_INFO_STALE_TIME,
   });
 }

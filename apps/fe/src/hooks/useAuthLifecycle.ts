@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect } from 'react';
 import type { QueryClient } from '@tanstack/react-query';
+import { reissueAuthTokens } from '@/apis/auth';
 import {
   ACCESS_TOKEN_STORAGE_KEY,
   AUTH_TOKENS_CHANGED_EVENT,
@@ -9,7 +10,6 @@ import {
   REFRESH_TOKEN_STORAGE_KEY,
   consumeAuthEntryRedirectBypass,
   consumePrivatePathRedirectBypass,
-  getAccessToken,
   readAuthTokensFromSearchParams,
   setAuthTokens,
 } from '@/lib/auth';
@@ -27,6 +27,7 @@ import {
   shouldRedirectPrivatePath,
   type AuthStatus,
 } from '@/lib/authSession';
+import { restoreAuthSession } from '@/lib/authSessionRestore';
 
 type SetAuthStatus = (status: AuthStatus) => void;
 
@@ -47,37 +48,6 @@ function removeTokenParamsFromCurrentUrl(url: URL) {
 
 function replaceLocation(pathname: string) {
   window.location.replace(pathname);
-}
-
-function useAuthTokenSync({
-  pathname,
-  queryClient,
-  setStatus,
-}: {
-  pathname: string;
-  queryClient: QueryClient;
-  setStatus: SetAuthStatus;
-}) {
-  return useCallback(() => {
-    const nextStatus: AuthStatus = getAccessToken()
-      ? 'authenticated'
-      : 'anonymous';
-
-    setStatus(nextStatus);
-
-    if (nextStatus === 'anonymous') {
-      queryClient.clear();
-
-      if (
-        shouldRedirectPrivatePath(nextStatus, pathname) &&
-        !consumePrivatePathRedirectBypass()
-      ) {
-        replaceLocation(getLoginRedirectPath(new URL(window.location.href)));
-      }
-    }
-
-    return nextStatus;
-  }, [pathname, queryClient, setStatus]);
 }
 
 function useOAuthCallbackHandler({
@@ -145,11 +115,6 @@ export function useAuthLifecycle({
   queryClient: QueryClient;
   setStatus: SetAuthStatus;
 }) {
-  const syncAccessToken = useAuthTokenSync({
-    pathname,
-    queryClient,
-    setStatus,
-  });
   const handleOAuthCallback = useOAuthCallbackHandler({
     pathname,
     queryClient,
@@ -162,19 +127,59 @@ export function useAuthLifecycle({
   useEffect(() => {
     if (handleOAuthCallback()) return;
 
-    const nextStatus = syncAccessToken();
-    const shouldBypassAuthEntryRedirect =
-      shouldRedirectAuthenticatedUser(pathname) &&
-      consumeAuthEntryRedirectBypass();
+    let isActive = true;
+    let isRestoring = false;
 
-    if (
-      nextStatus === 'authenticated' &&
-      shouldRedirectAuthenticatedUser(pathname) &&
-      !shouldBypassAuthEntryRedirect
-    ) {
-      replaceLocation(AUTH_REDIRECT_PATH);
-      return;
-    }
+    const applyStatus = (
+      nextStatus: AuthStatus,
+      shouldCheckAuthEntryRedirect: boolean,
+    ) => {
+      setStatus(nextStatus);
+
+      if (nextStatus === 'anonymous') {
+        queryClient.clear();
+
+        if (
+          shouldRedirectPrivatePath(nextStatus, pathname) &&
+          !consumePrivatePathRedirectBypass()
+        ) {
+          replaceLocation(getLoginRedirectPath(new URL(window.location.href)));
+        }
+
+        return;
+      }
+
+      const shouldBypassAuthEntryRedirect =
+        shouldCheckAuthEntryRedirect &&
+        shouldRedirectAuthenticatedUser(pathname) &&
+        consumeAuthEntryRedirectBypass();
+
+      if (
+        shouldCheckAuthEntryRedirect &&
+        shouldRedirectAuthenticatedUser(pathname) &&
+        !shouldBypassAuthEntryRedirect
+      ) {
+        replaceLocation(AUTH_REDIRECT_PATH);
+      }
+    };
+
+    const restoreAndApply = async (shouldCheckAuthEntryRedirect: boolean) => {
+      if (isRestoring) return;
+
+      isRestoring = true;
+
+      try {
+        const nextStatus = await restoreAuthSession(reissueAuthTokens);
+
+        if (!isActive) return;
+
+        applyStatus(nextStatus, shouldCheckAuthEntryRedirect);
+      } finally {
+        isRestoring = false;
+      }
+    };
+
+    void restoreAndApply(true);
 
     const handleStorage = (event: StorageEvent) => {
       if (
@@ -182,18 +187,26 @@ export function useAuthLifecycle({
         event.key === REFRESH_TOKEN_STORAGE_KEY ||
         event.key === LEGACY_ACCESS_TOKEN_STORAGE_KEY
       ) {
-        syncAccessToken();
+        void restoreAndApply(false);
       }
     };
 
-    window.addEventListener(AUTH_TOKENS_CHANGED_EVENT, syncAccessToken);
+    const handleAuthTokensChanged = () => {
+      void restoreAndApply(false);
+    };
+
+    window.addEventListener(AUTH_TOKENS_CHANGED_EVENT, handleAuthTokensChanged);
     window.addEventListener('message', handleMessage);
     window.addEventListener('storage', handleStorage);
 
     return () => {
-      window.removeEventListener(AUTH_TOKENS_CHANGED_EVENT, syncAccessToken);
+      isActive = false;
+      window.removeEventListener(
+        AUTH_TOKENS_CHANGED_EVENT,
+        handleAuthTokensChanged,
+      );
       window.removeEventListener('message', handleMessage);
       window.removeEventListener('storage', handleStorage);
     };
-  }, [handleMessage, handleOAuthCallback, pathname, syncAccessToken]);
+  }, [handleMessage, handleOAuthCallback, pathname, queryClient, setStatus]);
 }
