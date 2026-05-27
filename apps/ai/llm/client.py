@@ -12,21 +12,18 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 from typing import Any, TypeVar
 
 from openai import OpenAI
 from pydantic import BaseModel
 
+from config.settings import openai_api_key, openai_timeout_sec
 from llm.retry import RETRYABLE_EXCEPTIONS, with_retry
 
 
 logger = logging.getLogger("logue_ai")
 
 T = TypeVar("T", bound=BaseModel)
-
-
-DEFAULT_TIMEOUT_SEC = float(os.getenv("OPENAI_TIMEOUT_SEC", "30"))
 
 
 class LLMResponseEmptyError(Exception):
@@ -40,15 +37,16 @@ class LLMClient:
         self,
         *,
         api_key: str | None = None,
-        timeout_sec: float = DEFAULT_TIMEOUT_SEC,
+        timeout_sec: float | None = None,
     ) -> None:
-        resolved_key = api_key or os.getenv("OPENAI_API_KEY")
+        resolved_key = api_key or openai_api_key()
         if not resolved_key:
             raise RuntimeError(
                 "OPENAI_API_KEY 환경변수가 설정되지 않았습니다. "
                 "SSM/.env 에서 키를 주입하거나 mock 모드(ANAL_LLM_MOCK=true) 로 호출하세요."
             )
-        self._client = OpenAI(api_key=resolved_key, timeout=timeout_sec)
+        resolved_timeout = timeout_sec if timeout_sec is not None else openai_timeout_sec()
+        self._client = OpenAI(api_key=resolved_key, timeout=resolved_timeout)
 
     @with_retry(RETRYABLE_EXCEPTIONS, max_attempts=2)
     def complete_structured(
