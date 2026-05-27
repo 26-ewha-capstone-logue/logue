@@ -64,10 +64,8 @@ async def summarize_analysis_result(request: AnalysisSummaryRequest) -> Analysis
     if is_mock_mode():
         response = _build_mock_response(request)
     else:
-        raise NotImplementedError(
-            "결과 요약 LLM 연동은 아직 구현되지 않았습니다 (#236). "
-            "개발/통합 테스트는 ANAL_LLM_MOCK=true 로 mock 응답을 사용할 수 있습니다."
-        )
+        from services.result_summary.v1_baseline import run
+        response = run(request)
 
     _validate_response(request, response)
     return response
