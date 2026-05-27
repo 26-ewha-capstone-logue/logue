@@ -1,11 +1,11 @@
-"""분석 기준 도출 서비스 레이어 골격.
+"""분석 기준 도출 서비스 레이어.
 
 `resolve()` 가 외부 진입점. 내부 흐름:
-1. LLM 호출 → `QuestionAnalysisResponse` 도출 (AI 개발자가 채울 자리)
+1. LLM 호출 → `QuestionAnalysisResponse` 도출
 2. `validate_llm_output(response, req)` 로 셀프 검증
 3. 검증 통과 시 response 반환
 
-AI 개발자는 `_call_llm()` 의 본문만 구현하면 된다.
+LLM 구현체는 `services.question_analysis.v1_baseline` 에 위치한다.
 환경변수 `ANAL_LLM_MOCK=true` 일 때는 결정론적 mock 응답을 반환해
 Spring 연동/통합 테스트가 LLM 없이도 가능하다.
 """
@@ -53,16 +53,16 @@ def resolve(req: QuestionAnalysisRequest) -> QuestionAnalysisResponse:
 
 
 def _call_llm(req: QuestionAnalysisRequest) -> QuestionAnalysisResponse:
-    """LLM 호출 자리. AI 개발자가 본문을 구현한다.
+    """LLM 구현체를 호출한다.
 
     `ANAL_LLM_MOCK=true` 가 설정된 경우 결정론적 mock 응답을 반환한다.
+    실제 LLM 호출은 `services.question_analysis.v1_baseline.run()` 에 위임한다.
     """
     if is_mock_mode():
         return _build_mock_response(req)
-    raise NotImplementedError(
-        "LLM call to be implemented. "
-        "개발/통합 테스트는 ANAL_LLM_MOCK=true 로 mock 응답을 사용할 수 있다."
-    )
+
+    from services.question_analysis.v1_baseline import run
+    return run(req)
 
 
 def _build_mock_response(req: QuestionAnalysisRequest) -> QuestionAnalysisResponse:
