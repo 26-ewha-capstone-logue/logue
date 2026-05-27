@@ -21,8 +21,14 @@ def openai_api_key() -> str | None:
 def openai_timeout_sec(default: float = 30.0) -> float:
     """`OPENAI_TIMEOUT_SEC` env 값 (없으면 default)."""
     raw = os.getenv("OPENAI_TIMEOUT_SEC")
-    return float(raw) if raw else default
-
+    if not raw:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        raise ValueError(
+            f"OPENAI_TIMEOUT_SEC 값이 유효한 숫자가 아닙니다: {raw!r}"
+        )
 
 def is_mock_mode() -> bool:
     """`ANAL_LLM_MOCK=true` — 모든 LLM 엔드포인트 공통 mock 토글.
