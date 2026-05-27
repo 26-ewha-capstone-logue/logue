@@ -34,8 +34,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
-  const { status } = useAuthSession();
-  const isAuthenticated = status === 'authenticated';
+  const { isAuthenticated } = useAuthSession();
   const {
     data: myInfo,
     isError: isUserInfoError,

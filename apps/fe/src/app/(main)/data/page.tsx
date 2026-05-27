@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { type DataSourceSummary, type DataSourceSort } from '@/apis/datasource';
 import {
@@ -14,12 +14,14 @@ import { useMyInfo } from '@/hooks/useMyInfo';
 import { useToast } from '@/hooks/useToast';
 import { validateCsvFile } from '@/lib/fileValidation';
 import { useAuthSession } from '@/providers/AuthProvider';
+import DataSourceToolbar from './_components/DataSourceToolbar';
 import DataSourceRow from './_components/DataSourceRow';
-import SortDropdown from './_components/SortDropdown';
 import { useDeletedMockDataSources } from './_hooks/useDeletedMockDataSources';
 import { useDataSourceList } from './_hooks/useDataSourceList';
+import { useDataSourceSelection } from './_hooks/useDataSourceSelection';
 import { useDeleteDataSources } from './_hooks/useDeleteDataSources';
 import { useUploadDataSource } from './_hooks/useUploadDataSource';
+import { getTableMessage } from './_utils/tableMessage';
 
 const DELETE_ILLUST_SRC = '/illusts/delete.svg';
 const LOGIN_REQUIRED_MESSAGE = '로그인이 필요해요. 다시 로그인해 주세요.';
@@ -46,15 +48,13 @@ const DATA_FILE_MESSAGES = {
 
 export default function DataPage() {
   const router = useRouter();
-  const { hasAccessToken, status } = useAuthSession();
-  const isAuthenticated = status === 'authenticated';
+  const { hasAccessToken, isAuthenticated, status } = useAuthSession();
   const { data: myInfo } = useMyInfo(isAuthenticated);
   const { deletedMockDataSourceIds, markDeletedMockDataSources } =
     useDeletedMockDataSources(myInfo?.id);
   const { toast, showToast } = useToast();
   const [sortKey, setSortKey] = useState<DataSourceSort>('LATEST');
   const [page, setPage] = useState(0);
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const startAnalysis = useStartAnalysis({
@@ -70,12 +70,22 @@ export default function DataPage() {
     page,
     sort: sortKey,
   });
+  const dataSources = dataSourcesQuery.dataSources;
+  const {
+    allSelected,
+    clearSelection,
+    hasSelection,
+    partiallySelected,
+    selectedVisibleIds,
+    toggleAll,
+    toggleOne,
+  } = useDataSourceSelection(dataSources);
   const uploadDataSourceMutation = useUploadDataSource({
     fallbackErrorMessage: UPLOAD_ERROR_MESSAGE,
     hasAccessToken,
     loginRequiredMessage: LOGIN_REQUIRED_MESSAGE,
     onSuccess: () => {
-      setSelectedIds(new Set());
+      clearSelection();
       setUploadOpen(false);
       showToast('파일을 업로드했습니다.', 'success');
     },
@@ -89,69 +99,30 @@ export default function DataPage() {
       showToast(message, 'error');
     },
     onSuccess: () => {
-      setSelectedIds(new Set());
+      clearSelection();
       setDeleteOpen(false);
       showToast('파일을 삭제했습니다.', 'success');
     },
     userId: myInfo?.id,
   });
 
-  const dataSources = dataSourcesQuery.dataSources;
-  const visibleDataSourceIds = useMemo(
-    () => new Set(dataSources.map((dataSource) => dataSource.dataSourceId)),
-    [dataSources],
-  );
-  const selectedVisibleIds = useMemo(
-    () =>
-      new Set(
-        Array.from(selectedIds).filter((dataSourceId) =>
-          visibleDataSourceIds.has(dataSourceId),
-        ),
-      ),
-    [selectedIds, visibleDataSourceIds],
-  );
   const chatPendingDataSourceId = startAnalysis.pendingDataSourceId;
-  const allSelected =
-    dataSources.length > 0 &&
-    dataSources.every((dataSource) =>
-      selectedVisibleIds.has(dataSource.dataSourceId),
-    );
-  const partiallySelected = !allSelected && selectedVisibleIds.size > 0;
-  const hasSelection = selectedVisibleIds.size > 0;
-  const tableMessage =
-    !hasAccessToken && status !== 'initializing'
-      ? LOGIN_REQUIRED_MESSAGE
-      : status === 'initializing' || dataSourcesQuery.isLoading
-        ? '데이터 소스 목록을 불러오는 중이에요.'
-        : dataSourcesQuery.isError
-          ? dataSourcesQuery.errorMessage
-          : dataSources.length === 0
-            ? '업로드된 데이터 소스가 없습니다.'
-            : null;
-
-  const toggleAll = () => {
-    if (allSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(
-        new Set(dataSources.map((dataSource) => dataSource.dataSourceId)),
-      );
-    }
-  };
-
-  const toggleOne = (id: number) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  const tableMessage = getTableMessage({
+    dataSourceCount: dataSources.length,
+    emptyMessage: '업로드된 데이터 소스가 없습니다.',
+    errorMessage: dataSourcesQuery.errorMessage,
+    hasAccessToken,
+    isError: dataSourcesQuery.isError,
+    isLoading: dataSourcesQuery.isLoading,
+    loadingMessage: '데이터 소스 목록을 불러오는 중이에요.',
+    loginRequiredMessage: LOGIN_REQUIRED_MESSAGE,
+    status,
+  });
 
   const handleSortChange = (next: DataSourceSort) => {
     setSortKey(next);
     setPage(0);
-    setSelectedIds(new Set());
+    clearSelection();
   };
 
   const handleUploadClick = () => {
@@ -164,7 +135,7 @@ export default function DataPage() {
   };
 
   const handleDeleteClick = () => {
-    if (selectedIds.size === 0) return;
+    if (!hasSelection) return;
     setDeleteOpen(true);
   };
 
@@ -195,33 +166,16 @@ export default function DataPage() {
         데이터 소스
       </h1>
 
-      <div className="mb-16 flex items-center justify-between">
-        <SortDropdown
-          options={SORT_OPTIONS}
-          value={sortKey}
-          onChange={handleSortChange}
-        />
-        <div className="flex items-center gap-16">
-          {hasSelection && (
-            <button
-              type="button"
-              onClick={handleDeleteClick}
-              disabled={deleteDataSourcesMutation.isPending}
-              className="text-body4 text-gray-700 underline underline-offset-2 hover:text-gray-900 disabled:cursor-not-allowed disabled:text-gray-400"
-            >
-              삭제하기
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={handleUploadClick}
-            disabled={uploadDataSourceMutation.isPending}
-            className="rounded-full bg-orange-500 px-16 py-8 text-body4 font-medium text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-400"
-          >
-            CSV 파일 업로드
-          </button>
-        </div>
-      </div>
+      <DataSourceToolbar
+        deletePending={deleteDataSourcesMutation.isPending}
+        hasSelection={hasSelection}
+        sortKey={sortKey}
+        sortOptions={SORT_OPTIONS}
+        uploadPending={uploadDataSourceMutation.isPending}
+        onDeleteClick={handleDeleteClick}
+        onSortChange={handleSortChange}
+        onUploadClick={handleUploadClick}
+      />
 
       <div className="overflow-hidden rounded-12 border border-gray-300 bg-white">
         <table className="w-full border-collapse text-body4">

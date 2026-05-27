@@ -5,6 +5,8 @@ import type {
 } from 'axios';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { reissueAuthTokens } from '../apis/auth';
+import { createJwt } from '../test-utils/jwt';
+import { installWindowStorage } from '../test-utils/storage';
 import {
   ACCESS_TOKEN_STORAGE_KEY,
   LEGACY_ACCESS_TOKEN_STORAGE_KEY,
@@ -18,41 +20,6 @@ import instance from './axios';
 vi.mock('../apis/auth', () => ({
   reissueAuthTokens: vi.fn(),
 }));
-
-function createStorage() {
-  const store = new Map<string, string>();
-
-  return {
-    get length() {
-      return store.size;
-    },
-    clear: () => store.clear(),
-    getItem: (key: string) => store.get(key) ?? null,
-    key: (index: number) => Array.from(store.keys())[index] ?? null,
-    removeItem: (key: string) => {
-      store.delete(key);
-    },
-    setItem: (key: string, value: string) => {
-      store.set(key, value);
-    },
-  } satisfies Storage;
-}
-
-function installWindowStorage() {
-  const localStorage = createStorage();
-  const sessionStorage = createStorage();
-
-  Object.defineProperty(globalThis, 'window', {
-    configurable: true,
-    value: {
-      localStorage,
-      sessionStorage,
-      dispatchEvent: vi.fn(),
-    },
-  });
-
-  return { localStorage };
-}
 
 function createRejectedResponse(
   config: InternalAxiosRequestConfig,
@@ -78,20 +45,6 @@ function createSuccessResponse(
     status: 200,
     statusText: 'OK',
   };
-}
-
-function encodeBase64Url(value: unknown) {
-  return Buffer.from(JSON.stringify(value))
-    .toString('base64')
-    .replaceAll('+', '-')
-    .replaceAll('/', '_')
-    .replaceAll('=', '');
-}
-
-function createJwt(expiresAtMs: number) {
-  return `${encodeBase64Url({ alg: 'none' })}.${encodeBase64Url({
-    exp: Math.floor(expiresAtMs / 1000),
-  })}.signature`;
 }
 
 const originalAdapter = instance.defaults.adapter;

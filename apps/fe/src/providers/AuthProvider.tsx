@@ -15,6 +15,7 @@ import { useAuthLifecycle } from '@/hooks/useAuthLifecycle';
 type AuthContextValue = {
   status: AuthStatus;
   hasAccessToken: boolean;
+  isAuthenticated: boolean;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -30,13 +31,15 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     setStatus,
   });
 
-  const hasAccessToken = status === 'authenticated';
+  const isAuthenticated = status === 'authenticated';
+  const hasAccessToken = isAuthenticated;
   const value = useMemo(
     () => ({
       status,
       hasAccessToken,
+      isAuthenticated,
     }),
-    [hasAccessToken, status],
+    [hasAccessToken, isAuthenticated, status],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

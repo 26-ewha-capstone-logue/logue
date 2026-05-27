@@ -2,6 +2,7 @@
 
 import DownIcon from '@/assets/icons/down.svg';
 import {
+  ListboxOptionList,
   ListboxDropdownShell,
   LISTBOX_DROPDOWN_PANEL_BASE_CLASS,
   LISTBOX_DROPDOWN_TRIGGER_BASE_CLASS,
@@ -44,35 +45,13 @@ export default function SortDropdown<T extends string>({
           {...panelProps}
           className={`${LISTBOX_DROPDOWN_PANEL_BASE_CLASS} min-w-[14rem] py-8`}
         >
-          {options.map((opt) => {
-            const selected = opt.value === value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                role="option"
-                aria-selected={selected}
-                onClick={() => {
-                  onChange(opt.value);
-                  closeAndFocusButton();
-                }}
-                className={`flex w-full items-center gap-12 px-16 py-12 text-left text-body4 transition-colors hover:bg-gray-100 ${
-                  selected ? 'text-orange-500' : 'text-gray-500'
-                }`}
-              >
-                <span
-                  className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 ${
-                    selected ? 'border-orange-500' : 'border-gray-400'
-                  }`}
-                >
-                  {selected && (
-                    <span className="h-8 w-8 rounded-full bg-orange-500" />
-                  )}
-                </span>
-                <span>{opt.label}</span>
-              </button>
-            );
-          })}
+          <ListboxOptionList
+            closeAndFocusButton={closeAndFocusButton}
+            options={options}
+            value={value}
+            variant="radio"
+            onChange={onChange}
+          />
         </div>
       )}
     />

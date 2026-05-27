@@ -23,8 +23,7 @@ const ANALYSIS_FILE_MESSAGES = {
 };
 
 export default function AnalysisPage() {
-  const { status } = useAuthSession();
-  const isAuthenticated = status === 'authenticated';
+  const { isAuthenticated } = useAuthSession();
   const { toast, showToast } = useToast();
   const {
     data: myInfo,

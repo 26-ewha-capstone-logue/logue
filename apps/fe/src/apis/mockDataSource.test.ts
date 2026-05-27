@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { installWindowStorage } from '../test-utils/storage';
 import {
   MOCK_MARKETING_CVR_DATA_SOURCE_ID,
   filterVisibleMockDataSources,
@@ -6,38 +7,6 @@ import {
   markMockDataSourcesDeleted,
   readDeletedMockDataSourceIds,
 } from './mockDataSource';
-
-function createStorage() {
-  const store = new Map<string, string>();
-
-  return {
-    get length() {
-      return store.size;
-    },
-    clear: () => store.clear(),
-    getItem: (key: string) => store.get(key) ?? null,
-    key: (index: number) => Array.from(store.keys())[index] ?? null,
-    removeItem: (key: string) => {
-      store.delete(key);
-    },
-    setItem: (key: string, value: string) => {
-      store.set(key, value);
-    },
-  } satisfies Storage;
-}
-
-function installWindowStorage() {
-  const localStorage = createStorage();
-
-  Object.defineProperty(globalThis, 'window', {
-    configurable: true,
-    value: {
-      localStorage,
-    },
-  });
-
-  return { localStorage };
-}
 
 afterEach(() => {
   Reflect.deleteProperty(globalThis, 'window');
