@@ -30,7 +30,8 @@ apps/ai/
     llm_input/            # LLM 전달용 정규화 DTO (*.from_request() 로 변환)
     enums.py · common.py  # 공통 enum / Literal
   services/               # API별 처리 흐름
-  llm/                    # OpenAI 호출 공통 모듈 (LLMClient + retry)
+  llm/                    # OpenAI 호출 공통 모듈 (LLMClient + retry + prompt_loader)
+  prompts/                # system prompt 저장 (<name>_<version>.system.md)
   config/                 # 환경변수 접근 + API별 모델/temperature/token 설정
   core/                   # 에러·예외 핸들러·검증 헬퍼
   tests/
@@ -52,20 +53,21 @@ apps/ai/
 
 ```python
 from config.model_config import model_config_for
-from llm import LLMClient
+from llm import LLMClient, load_system_prompt
 from schemas.api.result_summary import AnalysisSummaryResponse
 
 cfg = model_config_for("result_summary")  # gpt-4.1-nano · 0.1 · 300
 client = LLMClient()  # OPENAI_API_KEY 자동 로드
 response = client.complete_structured(
-    system_prompt=load_system_prompt("result_summary_v1"),
+    system_prompt=load_system_prompt("result_summary"),  # → prompts/result_summary_v1.system.md
     user_payload={"analysis_criteria": ..., "chart_data": ...},
     response_model=AnalysisSummaryResponse,
     **cfg.as_llm_kwargs(),
 )
 ```
 
-API 별 모델·temperature·token 한도는 `config/model_config.py` 에 단일 출처로 관리됨 — 변경 시 호출부 수정 불필요.
+- API 별 모델·temperature·token 한도는 `config/model_config.py` 단일 출처
+- system prompt 는 `prompts/<name>_<version>.system.md` 파일로 분리 — 버전업 시 `_v2.system.md` 추가 후 `load_system_prompt(name, version="v2")` 호출. `prompt_version_id()` 로 로깅용 식별자 획득
 
 ### 동작 규칙
 
