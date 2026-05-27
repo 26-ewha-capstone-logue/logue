@@ -117,7 +117,7 @@ POST /v1/llm/analysis-criteria/resolve
 
 ### LLM 구현체
 
-```
+```test
 services/analysis_criteria_service.py   ← 오케스트레이션 (resolve → validate)
 services/question_analysis/
   v1_baseline.py                        ← 실제 LLM 호출 (구현 완료)
