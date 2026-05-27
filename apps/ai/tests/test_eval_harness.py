@@ -158,6 +158,38 @@ def test_score_case_list_compared_as_set() -> None:
     assert matches.get("analysis_criteria.group_by") is True
 
 
+def test_score_file_analysis_normalizes_column_roles_list_to_dict() -> None:
+    """file_analysis 응답의 column_roles 가 list 인데 expected 가 dict 형식일 때 비교 가능."""
+    score = score_case(
+        case_id="FA-X", suite="file_analysis",
+        expected={"column_roles": {"event_date": "DATE_CRITERIA", "channel": "DIMENSION"}},
+        actual={
+            "column_roles": [
+                {"column_name": "event_date", "semantic_role": "DATE_CRITERIA",
+                 "confidence": 0.8, "display_name": "event_date"},
+                {"column_name": "channel", "semantic_role": "DIMENSION",
+                 "confidence": 0.8, "display_name": "channel"},
+            ]
+        },
+        error=None, latency_ms=100,
+    )
+    assert score.passed is True
+
+
+def test_score_file_analysis_normalizes_warnings_list_to_dict() -> None:
+    """warnings list 도 code key 기반 dict 로 정규화."""
+    score = score_case(
+        case_id="FA-X", suite="file_analysis",
+        expected={"warnings": {"DATE_FIELD_CONFLICT": True}},
+        actual={
+            "column_roles": [],
+            "warnings": [{"code": "DATE_FIELD_CONFLICT", "related_columns": ["a", "b"]}],
+        },
+        error=None, latency_ms=100,
+    )
+    assert score.passed is True
+
+
 def test_summarize_suite_computes_rates() -> None:
     scores = [
         CaseScore(case_id="C1", suite="q", passed=True, hard_fail=False,

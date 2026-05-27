@@ -1,0 +1,35 @@
+{
+  "id": "FA-04",
+  "layer": "모호성·경고",
+  "category": "ambiguity",
+  "description": "date 컬럼 3개 - DATE_FIELD_CONFLICT warning",
+  "input": {
+    "request_id": "fa_04",
+    "data_source": {
+      "file_name": "mixed_dates.csv",
+      "row_count": 1000,
+      "column_count": 5,
+      "columns": [
+        {"column_name": "created_at", "data_type": "datetime", "null_ratio": 0.0, "unique_ratio": 0.9, "sample_values": ["2026-04-06T08:20:00Z"]},
+        {"column_name": "signup_date", "data_type": "date", "null_ratio": 0.0, "unique_ratio": 0.05, "sample_values": ["2026-04-06"]},
+        {"column_name": "event_logged_at", "data_type": "datetime", "null_ratio": 0.0, "unique_ratio": 1.0, "sample_values": ["2026-04-07T00:01:00Z"]},
+        {"column_name": "channel", "data_type": "string", "null_ratio": 0.0, "unique_ratio": 0.01, "sample_values": ["paid_search"]},
+        {"column_name": "signup_complete", "data_type": "integer", "null_ratio": 0.0, "unique_ratio": 0.4, "sample_values": [20]}
+      ]
+    },
+    "catalog": {
+      "semantic_roles": ["DATE_CRITERIA", "MEASURE", "DIMENSION", "STATUS_CONDITION", "FLAG", "ID_CRITERIA"],
+      "source_warning_keys": [{"code": "DATE_FIELD_CONFLICT", "name": "Date field conflict", "comment": "Choose one date field."}]
+    }
+  },
+  "expected": {
+    "column_roles": {
+      "created_at": "DATE_CRITERIA",
+      "signup_date": "DATE_CRITERIA",
+      "event_logged_at": "DATE_CRITERIA",
+      "channel": "DIMENSION",
+      "signup_complete": "MEASURE"
+    },
+    "warnings": {"DATE_FIELD_CONFLICT": true}
+  }
+}

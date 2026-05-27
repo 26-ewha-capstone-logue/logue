@@ -1,0 +1,33 @@
+{
+  "id": "FA-07",
+  "layer": "정상 케이스 (경계)",
+  "category": "normal",
+  "description": "null_ratio 경계값 0.30 / 0.31 - 둘 다 role 동일",
+  "input": {
+    "request_id": "fa_07",
+    "data_source": {
+      "file_name": "null_boundary.csv",
+      "row_count": 1000,
+      "column_count": 4,
+      "columns": [
+        {"column_name": "event_date", "data_type": "date", "null_ratio": 0.0, "unique_ratio": 0.5, "sample_values": ["2026-05-12"]},
+        {"column_name": "col_at_threshold", "data_type": "string", "null_ratio": 0.30, "unique_ratio": 0.02, "sample_values": ["a"]},
+        {"column_name": "col_above_threshold", "data_type": "string", "null_ratio": 0.31, "unique_ratio": 0.02, "sample_values": ["b"]},
+        {"column_name": "value", "data_type": "integer", "null_ratio": 0.0, "unique_ratio": 0.6, "sample_values": [10]}
+      ]
+    },
+    "catalog": {
+      "semantic_roles": ["DATE_CRITERIA", "MEASURE", "DIMENSION", "STATUS_CONDITION", "FLAG", "ID_CRITERIA"],
+      "source_warning_keys": [{"code": "DATE_FIELD_CONFLICT", "name": "Date field conflict", "comment": "Choose one date field."}]
+    }
+  },
+  "expected": {
+    "column_roles": {
+      "event_date": "DATE_CRITERIA",
+      "col_at_threshold": "DIMENSION",
+      "col_above_threshold": "DIMENSION",
+      "value": "MEASURE"
+    },
+    "warnings": {}
+  }
+}

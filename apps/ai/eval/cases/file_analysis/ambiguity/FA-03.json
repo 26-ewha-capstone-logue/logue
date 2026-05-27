@@ -1,0 +1,33 @@
+{
+  "id": "FA-03",
+  "layer": "모호성·경고",
+  "category": "ambiguity",
+  "description": "date 컬럼 없음 (products.csv) - DATE_CRITERIA 후보 0개 명시",
+  "input": {
+    "request_id": "fa_03",
+    "data_source": {
+      "file_name": "products.csv",
+      "row_count": 300,
+      "column_count": 4,
+      "columns": [
+        {"column_name": "product_id", "data_type": "string", "null_ratio": 0.0, "unique_ratio": 0.99, "sample_values": ["p_001"]},
+        {"column_name": "product_name", "data_type": "string", "null_ratio": 0.0, "unique_ratio": 0.95, "sample_values": ["Logue Pro"]},
+        {"column_name": "price", "data_type": "double", "null_ratio": 0.0, "unique_ratio": 0.4, "sample_values": [29.99]},
+        {"column_name": "category", "data_type": "string", "null_ratio": 0.0, "unique_ratio": 0.05, "sample_values": ["saas"]}
+      ]
+    },
+    "catalog": {
+      "semantic_roles": ["DATE_CRITERIA", "MEASURE", "DIMENSION", "STATUS_CONDITION", "FLAG", "ID_CRITERIA"],
+      "source_warning_keys": [{"code": "DATE_FIELD_CONFLICT", "name": "Date field conflict", "comment": "Choose one date field."}]
+    }
+  },
+  "expected": {
+    "column_roles": {
+      "product_id": "ID_CRITERIA",
+      "product_name": "DIMENSION",
+      "price": "MEASURE",
+      "category": "DIMENSION"
+    },
+    "warnings": {}
+  }
+}

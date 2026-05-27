@@ -1,0 +1,31 @@
+{
+  "id": "FA-14",
+  "layer": "모호성·경고",
+  "category": "ambiguity",
+  "description": "모든 컬럼이 string - MEASURE 후보 0개 (02 단계 metric 불가 사전 신호)",
+  "input": {
+    "request_id": "fa_14",
+    "data_source": {
+      "file_name": "all_string.csv",
+      "row_count": 400,
+      "column_count": 3,
+      "columns": [
+        {"column_name": "col_a", "data_type": "string", "null_ratio": 0.0, "unique_ratio": 0.05, "sample_values": ["a"]},
+        {"column_name": "col_b", "data_type": "string", "null_ratio": 0.0, "unique_ratio": 0.03, "sample_values": ["b"]},
+        {"column_name": "col_c", "data_type": "string", "null_ratio": 0.0, "unique_ratio": 0.02, "sample_values": ["c"]}
+      ]
+    },
+    "catalog": {
+      "semantic_roles": ["DATE_CRITERIA", "MEASURE", "DIMENSION", "STATUS_CONDITION", "FLAG", "ID_CRITERIA"],
+      "source_warning_keys": [{"code": "DATE_FIELD_CONFLICT", "name": "Date field conflict", "comment": "Choose one date field."}]
+    }
+  },
+  "expected": {
+    "column_roles": {
+      "col_a": "DIMENSION",
+      "col_b": "DIMENSION",
+      "col_c": "DIMENSION"
+    },
+    "warnings": {}
+  }
+}
