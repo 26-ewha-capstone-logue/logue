@@ -95,6 +95,8 @@ export type {
   ListboxOption,
   ListboxOptionListProps,
 } from './ListboxDropdownShell/ListboxOptionList';
+export { default as SimpleListboxDropdown } from './ListboxDropdownShell/SimpleListboxDropdown';
+export type { SimpleListboxDropdownProps } from './ListboxDropdownShell/SimpleListboxDropdown';
 
 export { default as MenuTab } from './MenuTab/MenuTab';
 export type { MenuTabProps } from './MenuTab/MenuTab';

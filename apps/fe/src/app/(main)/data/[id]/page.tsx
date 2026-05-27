@@ -5,21 +5,14 @@ import { useRouter } from 'next/navigation';
 import { getApiErrorMessage, isApiConflictError } from '@/apis/errors';
 import { isMockDataSourceId } from '@/apis/mockDataSource';
 import { ToastPortal } from '@/components';
-import { useMyInfo } from '@/hooks/useMyInfo';
+import { AUTH_MESSAGES, DATA_SOURCE_MESSAGES } from '@/constants/messages';
 import { useToast } from '@/hooks/useToast';
-import { useAuthSession } from '@/providers/AuthProvider';
 import DataDetailStatus from './_components/DataDetailStatus';
 import DataDetailView from './_components/DataDetailView';
 import { useDataDetail } from './_hooks/useDataDetail';
-import { useDeletedMockDataSources } from '../_hooks/useDeletedMockDataSources';
+import { useDataSourceUserContext } from '../_hooks/useDataSourceUserContext';
 
 type PageParams = { id: string };
-
-const DELETE_ERROR_MESSAGE = '파일 삭제에 실패했습니다.';
-const DELETE_CONFLICT_ERROR_MESSAGE =
-  '연결된 분석 채팅이 있어 현재 삭제할 수 없어요. 채팅 삭제 기능이 준비되면 함께 삭제할 수 있습니다.';
-const USER_INFO_REQUIRED_MESSAGE =
-  '사용자 정보를 확인한 뒤 다시 시도해 주세요.';
 
 export default function DataDetailPage({
   params,
@@ -28,10 +21,14 @@ export default function DataDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
-  const { hasAccessToken, isAuthenticated, status } = useAuthSession();
-  const { data: myInfo } = useMyInfo(isAuthenticated);
-  const { deletedMockDataSourceIds, markDeletedMockDataSources } =
-    useDeletedMockDataSources(myInfo?.id);
+  const {
+    deletedMockDataSourceIds,
+    hasAccessToken,
+    isAuthenticated,
+    markDeletedMockDataSources,
+    myInfo,
+    status,
+  } = useDataSourceUserContext();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const { toast, showToast } = useToast();
 
@@ -49,7 +46,7 @@ export default function DataDetailPage({
   const handleDeleteConfirm = async () => {
     try {
       if (isMockDataSourceId(dataSourceId)) {
-        if (!myInfo?.id) throw new Error(USER_INFO_REQUIRED_MESSAGE);
+        if (!myInfo?.id) throw new Error(AUTH_MESSAGES.userInfoRequired);
 
         markDeletedMockDataSources([dataSourceId]);
       } else {
@@ -62,8 +59,8 @@ export default function DataDetailPage({
       setDeleteOpen(false);
       showToast(
         isApiConflictError(error)
-          ? DELETE_CONFLICT_ERROR_MESSAGE
-          : getApiErrorMessage(error, DELETE_ERROR_MESSAGE),
+          ? DATA_SOURCE_MESSAGES.deleteConflict
+          : getApiErrorMessage(error, DATA_SOURCE_MESSAGES.detailDeleteError),
       );
     }
   };
