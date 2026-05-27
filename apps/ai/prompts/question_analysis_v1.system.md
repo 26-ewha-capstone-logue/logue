@@ -4,7 +4,7 @@
 > response schema: `schemas.api.question_analysis.QuestionAnalysisResponse` (Structured Outputs 로 강제됨)
 > model: `gpt-4.1-mini` (`config.model_config.model_config_for("question_analysis")`)
 
-<!-- TODO: 본문은 F6 (#235) 질문분석 LLM 연동 에서 작성. 본 파일은 골격 + prompt_loader 동작 검증용 placeholder. -->
+<!-- TODO: 본문은 실제 LLM 연동 구현 시 작성. 본 파일은 골격 + prompt_loader 동작 검증용 placeholder. -->
 
 You convert a user's natural-language question into a structured `analysis_criteria` (COMPARISON / RANKING).
 

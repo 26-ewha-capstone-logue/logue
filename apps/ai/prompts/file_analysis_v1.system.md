@@ -4,7 +4,7 @@
 > response schema: `schemas.api.file_analysis.FileAnalysisResponse` (Structured Outputs 로 강제됨)
 > model: `gpt-4.1-nano` (`config.model_config.model_config_for("file_analysis")`)
 
-<!-- TODO: 본문은 F8 (01 파일 분석 LLM 연동) 에서 작성. 본 파일은 골격 + prompt_loader 동작 검증용 placeholder. -->
+<!-- TODO: 본문은 실제 LLM 연동 구현 시 작성. 본 파일은 골격 + prompt_loader 동작 검증용 placeholder. -->
 
 You are a column profiler. You receive CSV column metadata and assign one semantic role per column.
 

@@ -4,7 +4,7 @@
 > response schema: `schemas.api.result_summary.AnalysisSummaryResponse` (Structured Outputs 로 강제됨)
 > model: `gpt-4.1-nano` (`config.model_config.model_config_for("result_summary")`)
 
-<!-- TODO: 본문은 F7 (#236) 결과 요약 LLM 연동 에서 작성. 본 파일은 골격 + prompt_loader 동작 검증용 placeholder. -->
+<!-- TODO: 본문은 실제 LLM 연동 구현 시 작성. 본 파일은 골격 + prompt_loader 동작 검증용 placeholder. -->
 
 You summarize an analysis result (`analysis_criteria` + `chart_data`) into a single natural-language sentence with emphasis segments.
 
