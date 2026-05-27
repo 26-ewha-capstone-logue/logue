@@ -7,8 +7,10 @@ import {
   consumePrivatePathRedirectBypass,
   getAccessToken,
   getRefreshToken,
+  readJwtExpiresAt,
   readAuthTokensFromSearchParams,
   setAuthTokens,
+  shouldRefreshAccessToken,
   skipNextPrivatePathRedirect,
 } from './auth';
 
@@ -46,6 +48,20 @@ function installWindowStorage() {
   });
 
   return { dispatchEvent, localStorage, sessionStorage };
+}
+
+function encodeBase64Url(value: unknown) {
+  return Buffer.from(JSON.stringify(value))
+    .toString('base64')
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replaceAll('=', '');
+}
+
+function createJwt(payload: Record<string, unknown>) {
+  return `${encodeBase64Url({ alg: 'none' })}.${encodeBase64Url(
+    payload,
+  )}.signature`;
 }
 
 afterEach(() => {
@@ -102,6 +118,31 @@ describe('auth token storage', () => {
     expect(localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)).toBeNull();
     expect(localStorage.getItem(LEGACY_ACCESS_TOKEN_STORAGE_KEY)).toBeNull();
     expect(localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)).toBeNull();
+  });
+});
+
+describe('JWT token expiry helpers', () => {
+  it('reads the exp claim as milliseconds', () => {
+    const token = createJwt({ exp: 1_800_000_000 });
+
+    expect(readJwtExpiresAt(token)).toBe(1_800_000_000_000);
+  });
+
+  it('treats expired or nearly expired tokens as refresh candidates', () => {
+    const now = 1_800_000_000_000;
+    const expiredToken = createJwt({ exp: 1_799_999_999 });
+    const nearlyExpiredToken = createJwt({ exp: 1_800_000_030 });
+    const validToken = createJwt({ exp: 1_800_000_120 });
+
+    expect(shouldRefreshAccessToken(expiredToken, now)).toBe(true);
+    expect(shouldRefreshAccessToken(nearlyExpiredToken, now)).toBe(true);
+    expect(shouldRefreshAccessToken(validToken, now)).toBe(false);
+  });
+
+  it('treats malformed tokens as refresh candidates', () => {
+    expect(readJwtExpiresAt('not-a-jwt')).toBeNull();
+    expect(readJwtExpiresAt(createJwt({ sub: 'user-1' }))).toBeNull();
+    expect(shouldRefreshAccessToken('not-a-jwt')).toBe(true);
   });
 });
 
