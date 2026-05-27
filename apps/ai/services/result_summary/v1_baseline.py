@@ -22,8 +22,21 @@ from schemas.api.result_summary import AnalysisSummaryRequest, AnalysisSummaryRe
 from schemas.llm_input.result_summary_input import AnalysisSummaryLLMInput
 
 
-_client = LLMClient()
+_client: LLMClient | None = None
 _cfg = model_config_for("result_summary")
+
+
+def _get_client() -> LLMClient:
+    """LLMClient 를 처음 호출 시에만 초기화한다 (lazy singleton).
+
+    모듈 임포트 시점에 OPENAI_API_KEY 가 없어도 RuntimeError 가 발생하지 않으며,
+    실제 LLM 호출이 필요한 순간에만 초기화된다.
+    테스트에서 monkeypatch.setattr(v1_baseline, "_client", mock) 로 주입 가능.
+    """
+    global _client
+    if _client is None:
+        _client = LLMClient()
+    return _client
 
 
 def run(req: AnalysisSummaryRequest) -> AnalysisSummaryResponse:
@@ -34,7 +47,7 @@ def run(req: AnalysisSummaryRequest) -> AnalysisSummaryResponse:
     """
     llm_input = AnalysisSummaryLLMInput.from_request(req)
 
-    return _client.complete_structured(
+    return _get_client().complete_structured(
         system_prompt=load_system_prompt("result_summary"),
         user_payload=llm_input.model_dump(exclude={"request_id"}),
         response_model=AnalysisSummaryResponse,
