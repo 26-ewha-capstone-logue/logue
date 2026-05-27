@@ -30,6 +30,10 @@ apps/ai/
     llm_input/            # LLM 전달용 정규화 DTO (*.from_request() 로 변환)
     enums.py · common.py  # 공통 enum / Literal
   services/               # API별 처리 흐름
+  │  question_analysis/   # 질문분석 LLM 구현체 (버전별)
+  │    v1_baseline.py     # v1: Structured Outputs 직접 호출
+  │  result_summary/      # 결과 요약 LLM 구현체 (버전별)
+  │    v1_baseline.py     # v1: Structured Outputs 직접 호출
   llm/                    # OpenAI 호출 공통 모듈 (LLMClient + retry + prompt_loader)
   prompts/                # system prompt 저장 (<name>_<version>.system.md)
   config/                 # 환경변수 접근 + API별 모델/temperature/token 설정
@@ -69,6 +73,12 @@ response = client.complete_structured(
 - API 별 모델·temperature·token 한도는 `config/model_config.py` 단일 출처
 - system prompt 는 `prompts/<name>_<version>.system.md` 파일로 분리 — 버전업 시 `_v2.system.md` 추가 후 `load_system_prompt(name, version="v2")` 호출. `prompt_version_id()` 로 로깅용 식별자 획득
 
+| prompt 파일 | 상태 |
+|---|---|
+| `question_analysis_v1.system.md` | ✅ 구현 완료 |
+| `result_summary_v1.system.md` | ✅ 구현 완료 |
+| `file_analysis_v1.system.md` | ✅ 구현 완료 |
+
 ### 동작 규칙
 
 - **Structured Outputs**: `response_format` 에 Pydantic 모델 클래스를 전달, OpenAI 가 schema 강제. parsed 결과를 `BaseModel` 인스턴스로 반환.
@@ -94,7 +104,7 @@ response = client.complete_structured(
 
 ## 분석 기준 도출 API (AI 개발자 인계)
 
-질문/카탈로그/데이터 소스를 받아 구조화된 분석 기준을 반환하는 LLM 엔드포인트입니다. BE가 라우터·스키마·셀프 검증·에러 응답까지 만들어 둔 상태이므로 **AI 개발자는 LLM 호출 본문만 채우면 됩니다.**
+질문/카탈로그/데이터 소스를 받아 구조화된 분석 기준을 반환하는 LLM 엔드포인트입니다. BE가 라우터·스키마·셀프 검증·에러 응답까지 만들어 둔 상태이며, **LLM 호출 본문은 `services/question_analysis/v1_baseline.py` 에 구현되어 있습니다.**
 
 ### 엔드포인트
 
@@ -107,19 +117,28 @@ POST /v1/llm/analysis-criteria/resolve
 - 라우터: `routers/analysis_criteria.py`
 - OpenAPI 스펙: `/docs` 에서 200/422/502 응답 모두 노출됨
 
-### 채워야 할 함수 — `_call_llm`
+### LLM 구현체
 
-`services/analysis_criteria_service.py`
-
-```python
-def _call_llm(req: QuestionAnalysisRequest) -> QuestionAnalysisResponse:
-    ...  # ← 여기만 구현
+```text
+services/analysis_criteria_service.py   ← 오케스트레이션 (resolve → validate)
+services/question_analysis/
+  v1_baseline.py                        ← 실제 LLM 호출 (구현 완료)
 ```
 
-- 입력: `QuestionAnalysisRequest` (Pydantic 입력 검증 통과 후 전달됨)
-- 반환: `QuestionAnalysisResponse` (Pydantic 모델로 정상 변환 가능해야 함)
-- 호출 흐름: `resolve(req)` 가 `_call_llm` → `validate_llm_output` 순서로 자동 실행
-- 셀프 검증은 BE 가 이미 호출하고 있으니 본문에서 추가 호출 불필요
+```python
+# v1_baseline.py 흐름
+llm_input = QuestionAnalysisLLMInput.from_request(req)   # 불필요 필드 제거
+client.complete_structured(
+    system_prompt=load_system_prompt("question_analysis"),  # prompts/question_analysis_v1.system.md
+    user_payload=llm_input.model_dump(exclude={"request_id"}),
+    response_model=QuestionAnalysisResponse,
+    **model_config_for("question_analysis").as_llm_kwargs(),  # gpt-4.1-mini · 0.0 · 1200
+)
+```
+
+- 호출 흐름: `resolve(req)` → `_call_llm()` → `v1_baseline.run()` → `validate_llm_output`
+- 셀프 검증은 오케스트레이션 레이어가 자동 호출하므로 구현체에서 추가 호출 불필요
+- 새 버전 시도 시 `services/question_analysis/v2_xxx.py` 추가 후 `_call_llm()` 에서 import 교체
 
 ### Mock 모드 (LLM 없이 통합 테스트)
 
@@ -142,7 +161,7 @@ ANAL_LLM_MOCK=true uv run uvicorn main:app --reload
 
 ## 결과 요약 API (AI 개발자 인계)
 
-확정된 분석 기준(`analysis_criteria`)과 Spring이 집계한 `chart_data`를 받아, 와이어프레임의 "가입 전환율이 지난주 대비 낮은 순으로 채널·디바이스를 나열했어요" 같은 한 줄 자연어 설명(강조 구간 포함)을 반환하는 LLM 엔드포인트입니다. BE가 라우터·스키마·요청 검증·응답 셀프 검증·에러 응답까지 만들어 둔 상태이므로 **AI 개발자는 LLM 호출 본문만 채우면 됩니다.**
+확정된 분석 기준(`analysis_criteria`)과 Spring이 집계한 `chart_data`를 받아, 와이어프레임의 "가입 전환율이 지난주 대비 낮은 순으로 채널·디바이스를 나열했어요" 같은 한 줄 자연어 설명(강조 구간 포함)을 반환하는 LLM 엔드포인트입니다. BE가 라우터·스키마·요청 검증·응답 셀프 검증·에러 응답까지 만들어 둔 상태이며, **LLM 호출 본문은 `services/result_summary/v1_baseline.py` 에 구현되어 있습니다.**
 
 ### 엔드포인트
 
@@ -155,20 +174,28 @@ POST /v1/llm/analysis-results/describe
 - 라우터: `routers/analysis_summary.py`
 - OpenAPI 스펙: `/docs` 에서 200/422/502/500 응답 모두 노출됨
 
-### 채워야 할 함수 — `summarize_analysis_result`
+### LLM 구현체
 
-`services/analysis_summary.py`
-
-```python
-async def summarize_analysis_result(request: AnalysisSummaryRequest) -> AnalysisSummaryResponse:
-    ...  # ← 여기 본문을 실제 LLM 호출로 교체
+```text
+services/analysis_summary.py          ← 오케스트레이션 (summarize → validate)
+services/result_summary/
+  v1_baseline.py                       ← 실제 LLM 호출 (구현 완료)
 ```
 
-- 입력: `AnalysisSummaryRequest` (Pydantic 입력 검증 통과 후 전달됨)
-  - COMPARISON ↔ RANKING 별 `compare_period` / `limit_num` 필수 여부, `compare_period`가 빈 문자열·공백이 아닌지, `chart_data.rows` 길이가 `columns` 길이와 일치하는지까지 이미 검증됨
-- 반환: `AnalysisSummaryResponse` (`description.segments[]` + `description.plain_text`)
-- 현재는 더미 응답을 반환하고 있습니다 (`services/analysis_summary.py` 함수 본문 참고). 동일한 자리에 LLM 호출을 끼우면 됩니다.
-- 응답 셀프 검증(`_validate_response`)은 함수 마지막 단계에서 BE가 이미 호출하고 있으니 본문에서 추가 호출 불필요
+```python
+# v1_baseline.py 흐름
+llm_input = AnalysisSummaryLLMInput.from_request(req)   # 불필요 필드 제거
+client.complete_structured(
+    system_prompt=load_system_prompt("result_summary"),  # prompts/result_summary_v1.system.md
+    user_payload=llm_input.model_dump(exclude={"request_id"}),
+    response_model=AnalysisSummaryResponse,
+    **model_config_for("result_summary").as_llm_kwargs(),  # gpt-4.1-nano · 0.1 · 300
+)
+```
+
+- 호출 흐름: `summarize_analysis_result(req)` → `v1_baseline.run()` → `_validate_response`
+- 응답 셀프 검증(`_validate_response`)은 오케스트레이션 레이어가 자동 호출하므로 구현체에서 추가 호출 불필요
+- 새 버전 시도 시 `services/result_summary/v2_xxx.py` 추가 후 `summarize_analysis_result()` 에서 import 교체
 
 ### 강조 구간 작성 규칙
 
