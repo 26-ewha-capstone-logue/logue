@@ -11,7 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import main
-from schemas.analysis_criteria import (
+from schemas.api.question_analysis import (
     QuestionAnalysisRequest,
     QuestionAnalysisResponse,
 )

@@ -18,7 +18,7 @@ from core.errors import (
     LLMOutputInvalidError,
     LLMReferenceViolationError,
 )
-from schemas.analysis_criteria import (
+from schemas.api.question_analysis import (
     AnalysisCriteria,
     QuestionAnalysisRequest,
     QuestionAnalysisResponse,

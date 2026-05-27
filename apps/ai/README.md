@@ -19,6 +19,22 @@ Python 3.11 + FastAPI + uv 기반 프로젝트 스캐폴드입니다.
 - Override with env var: UPSTREAM_HEALTH_URL
 - Timeout seconds env var: UPSTREAM_TIMEOUT_SEC (default: 3)
 
+## 폴더 구조
+
+```
+apps/ai/
+  main.py                 # FastAPI 진입점
+  routers/                # API endpoint 정의
+  schemas/
+    api/                  # BE↔FastAPI 계약용 Request/Response DTO
+    llm_input/            # LLM 전달용 정규화 DTO (*.from_request() 로 변환)
+    enums.py · common.py  # 공통 enum / Literal
+  services/               # API별 처리 흐름
+  llm/                    # OpenAI 호출 공통 모듈 (LLMClient + retry)
+  core/                   # 에러·예외 핸들러·검증 헬퍼
+  tests/
+```
+
 ## LLM client (apps/ai/llm/)
 
 질문분석·결과 요약 두 엔드포인트가 공유하는 OpenAI Structured Outputs 호출 boundary 입니다. 서비스 레이어는 OpenAI SDK 를 직접 다루지 않고 `LLMClient.complete_structured()` 만 호출합니다.
@@ -35,7 +51,7 @@ Python 3.11 + FastAPI + uv 기반 프로젝트 스캐폴드입니다.
 
 ```python
 from llm import LLMClient
-from schemas.analysis_summary import AnalysisSummaryResponse
+from schemas.api.result_summary import AnalysisSummaryResponse
 
 client = LLMClient()  # OPENAI_API_KEY 자동 로드
 response = client.complete_structured(
@@ -81,7 +97,8 @@ response = client.complete_structured(
 POST /v1/llm/analysis-criteria/resolve
 ```
 
-- 요청/응답 스키마: `schemas/analysis_criteria.py` (`QuestionAnalysisRequest` / `QuestionAnalysisResponse`)
+- 요청/응답 스키마: `schemas/api/question_analysis.py` (`QuestionAnalysisRequest` / `QuestionAnalysisResponse`)
+- LLM 입력 정규화: `schemas/llm_input/question_analysis_input.py` (`QuestionAnalysisLLMInput.from_request()`)
 - 라우터: `routers/analysis_criteria.py`
 - OpenAPI 스펙: `/docs` 에서 200/422/502 응답 모두 노출됨
 
@@ -128,7 +145,8 @@ ANAL_LLM_MOCK=true uv run uvicorn main:app --reload
 POST /v1/llm/analysis-results/describe
 ```
 
-- 요청/응답 스키마: `schemas/analysis_summary.py` (`AnalysisSummaryRequest` / `AnalysisSummaryResponse`)
+- 요청/응답 스키마: `schemas/api/result_summary.py` (`AnalysisSummaryRequest` / `AnalysisSummaryResponse`)
+- LLM 입력 정규화: `schemas/llm_input/result_summary_input.py` (`AnalysisSummaryLLMInput.from_request()`)
 - 라우터: `routers/analysis_summary.py`
 - OpenAPI 스펙: `/docs` 에서 200/422/502/500 응답 모두 노출됨
 

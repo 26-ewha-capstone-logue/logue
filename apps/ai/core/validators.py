@@ -1,4 +1,4 @@
-from schemas.file_analysis import FileAnalysisRequest, FileAnalysisResponse
+from schemas.api.file_analysis import FileAnalysisRequest, FileAnalysisResponse
 
 
 def validate_file_analysis_response(
