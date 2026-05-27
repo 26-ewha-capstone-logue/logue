@@ -5,6 +5,7 @@ import {
   getAccessToken,
   getRefreshToken,
   setAuthTokens,
+  shouldRefreshAccessToken,
   type AuthTokens,
 } from './auth';
 import { getApiBaseUrl } from './apiBaseUrl';
@@ -43,6 +44,22 @@ function getReissuedAuthTokens(refreshToken: string) {
   return reissueTokensRequest;
 }
 
+function getUsableRotatedAccessToken(previousRefreshToken: string) {
+  const latestAccessToken = getAccessToken();
+  const latestRefreshToken = getRefreshToken();
+
+  if (
+    latestAccessToken &&
+    latestRefreshToken &&
+    latestRefreshToken !== previousRefreshToken &&
+    !shouldRefreshAccessToken(latestAccessToken)
+  ) {
+    return latestAccessToken;
+  }
+
+  return null;
+}
+
 instance.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -71,6 +88,13 @@ instance.interceptors.response.use(
       originalRequest.headers.Authorization = `Bearer ${nextTokens.accessToken}`;
       return instance(originalRequest);
     } catch (refreshError) {
+      const rotatedAccessToken = getUsableRotatedAccessToken(refreshToken);
+
+      if (rotatedAccessToken) {
+        originalRequest.headers.Authorization = `Bearer ${rotatedAccessToken}`;
+        return instance(originalRequest);
+      }
+
       clearAuthTokens();
       return Promise.reject(refreshError);
     }

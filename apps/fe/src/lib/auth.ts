@@ -13,6 +13,7 @@ const PRIVATE_PATH_REDIRECT_BYPASS_STORAGE_KEY =
   'logue:private-path-redirect-bypass';
 
 const MAX_AUTH_TOKEN_LENGTH = 8192;
+const AUTH_TOKEN_REFRESH_BUFFER_MS = 60 * 1000;
 
 function getOptionalLocalStorage() {
   if (typeof window === 'undefined') return null;
@@ -80,6 +81,49 @@ function normalizeToken(token: string | null | undefined) {
   if (!normalized || normalized.length > MAX_AUTH_TOKEN_LENGTH) return null;
 
   return normalized;
+}
+
+function decodeBase64Url(value: string) {
+  const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
+  const paddedBase64 = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+
+  return globalThis.atob(paddedBase64);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+export function readJwtExpiresAt(token: string | null | undefined) {
+  const normalizedToken = normalizeToken(token);
+  const payload = normalizedToken?.split('.')[1];
+
+  if (!payload) return null;
+
+  try {
+    const parsedPayload: unknown = JSON.parse(decodeBase64Url(payload));
+
+    if (!isRecord(parsedPayload) || typeof parsedPayload.exp !== 'number') {
+      return null;
+    }
+
+    const expiresAt = parsedPayload.exp * 1000;
+
+    return Number.isFinite(expiresAt) ? expiresAt : null;
+  } catch {
+    return null;
+  }
+}
+
+export function shouldRefreshAccessToken(
+  token: string | null | undefined,
+  now = Date.now(),
+) {
+  const expiresAt = readJwtExpiresAt(token);
+
+  if (!expiresAt) return true;
+
+  return expiresAt - now <= AUTH_TOKEN_REFRESH_BUFFER_MS;
 }
 
 export function getAccessToken() {
