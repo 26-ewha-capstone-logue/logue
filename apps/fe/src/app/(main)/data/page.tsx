@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { type DataSourceSummary, type DataSourceSort } from '@/apis/datasource';
 import {
@@ -10,11 +10,13 @@ import {
   ToastPortal,
 } from '@/components';
 import { useStartAnalysis } from '@/hooks/useStartAnalysis';
+import { useMyInfo } from '@/hooks/useMyInfo';
 import { useToast } from '@/hooks/useToast';
 import { validateCsvFile } from '@/lib/fileValidation';
 import { useAuthSession } from '@/providers/AuthProvider';
 import DataSourceRow from './_components/DataSourceRow';
 import SortDropdown from './_components/SortDropdown';
+import { useDeletedMockDataSources } from './_hooks/useDeletedMockDataSources';
 import { useDataSourceList } from './_hooks/useDataSourceList';
 import { useDeleteDataSources } from './_hooks/useDeleteDataSources';
 import { useUploadDataSource } from './_hooks/useUploadDataSource';
@@ -26,6 +28,8 @@ const UPLOAD_ERROR_MESSAGE =
   '파일 업로드에 실패했어요. 잠시 후 다시 시도해 주세요.';
 const DELETE_ERROR_MESSAGE =
   '파일 삭제에 실패했어요. 잠시 후 다시 시도해 주세요.';
+const DELETE_CONFLICT_ERROR_MESSAGE =
+  '연결된 분석 채팅이 있어 현재 삭제할 수 없어요. 채팅 삭제 기능이 준비되면 함께 삭제할 수 있습니다.';
 const START_CHAT_ERROR_MESSAGE =
   '분석 채팅을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.';
 
@@ -44,6 +48,9 @@ export default function DataPage() {
   const router = useRouter();
   const { hasAccessToken, status } = useAuthSession();
   const isAuthenticated = status === 'authenticated';
+  const { data: myInfo } = useMyInfo(isAuthenticated);
+  const { deletedMockDataSourceIds, markDeletedMockDataSources } =
+    useDeletedMockDataSources(myInfo?.id);
   const { toast, showToast } = useToast();
   const [sortKey, setSortKey] = useState<DataSourceSort>('LATEST');
   const [page, setPage] = useState(0);
@@ -57,6 +64,7 @@ export default function DataPage() {
   });
 
   const dataSourcesQuery = useDataSourceList({
+    deletedMockDataSourceIds,
     enabled: isAuthenticated,
     fallbackErrorMessage: LIST_ERROR_MESSAGE,
     page,
@@ -73,7 +81,9 @@ export default function DataPage() {
     },
   });
   const deleteDataSourcesMutation = useDeleteDataSources({
+    conflictErrorMessage: DELETE_CONFLICT_ERROR_MESSAGE,
     fallbackErrorMessage: DELETE_ERROR_MESSAGE,
+    onDeletedMockDataSources: markDeletedMockDataSources,
     onError: (message) => {
       setDeleteOpen(false);
       showToast(message, 'error');
@@ -83,15 +93,31 @@ export default function DataPage() {
       setDeleteOpen(false);
       showToast('파일을 삭제했습니다.', 'success');
     },
+    userId: myInfo?.id,
   });
 
   const dataSources = dataSourcesQuery.dataSources;
+  const visibleDataSourceIds = useMemo(
+    () => new Set(dataSources.map((dataSource) => dataSource.dataSourceId)),
+    [dataSources],
+  );
+  const selectedVisibleIds = useMemo(
+    () =>
+      new Set(
+        Array.from(selectedIds).filter((dataSourceId) =>
+          visibleDataSourceIds.has(dataSourceId),
+        ),
+      ),
+    [selectedIds, visibleDataSourceIds],
+  );
   const chatPendingDataSourceId = startAnalysis.pendingDataSourceId;
   const allSelected =
     dataSources.length > 0 &&
-    dataSources.every((dataSource) => selectedIds.has(dataSource.dataSourceId));
-  const partiallySelected = !allSelected && selectedIds.size > 0;
-  const hasSelection = selectedIds.size > 0;
+    dataSources.every((dataSource) =>
+      selectedVisibleIds.has(dataSource.dataSourceId),
+    );
+  const partiallySelected = !allSelected && selectedVisibleIds.size > 0;
+  const hasSelection = selectedVisibleIds.size > 0;
   const tableMessage =
     !hasAccessToken && status !== 'initializing'
       ? LOGIN_REQUIRED_MESSAGE
@@ -143,7 +169,7 @@ export default function DataPage() {
   };
 
   const handleDeleteConfirm = async () => {
-    await deleteDataSourcesMutation.remove(Array.from(selectedIds));
+    await deleteDataSourcesMutation.remove(Array.from(selectedVisibleIds));
   };
 
   const handleChat = (dataSource: DataSourceSummary) => {
@@ -236,7 +262,7 @@ export default function DataPage() {
               dataSources.map((dataSource) => (
                 <DataSourceRow
                   key={dataSource.dataSourceId}
-                  checked={selectedIds.has(dataSource.dataSourceId)}
+                  checked={selectedVisibleIds.has(dataSource.dataSourceId)}
                   chatDisabled={startAnalysis.isPending}
                   chatPending={
                     chatPendingDataSourceId === dataSource.dataSourceId
