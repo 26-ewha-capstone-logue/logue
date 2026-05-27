@@ -119,7 +119,7 @@ POST /v1/llm/analysis-criteria/resolve
 
 ### LLM 구현체
 
-```test
+```text
 services/analysis_criteria_service.py   ← 오케스트레이션 (resolve → validate)
 services/question_analysis/
   v1_baseline.py                        ← 실제 LLM 호출 (구현 완료)
@@ -176,7 +176,7 @@ POST /v1/llm/analysis-results/describe
 
 ### LLM 구현체
 
-```
+```text
 services/analysis_summary.py          ← 오케스트레이션 (summarize → validate)
 services/result_summary/
   v1_baseline.py                       ← 실제 LLM 호출 (구현 완료)
