@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import json
-import logging
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -18,13 +18,18 @@ from typing import Any
 
 _KST = timezone(timedelta(hours=9))
 
-_events_logger = logging.getLogger("logue_ai.events")
-
 
 def emit_event(event: dict[str, Any]) -> None:
-    """JSONL 이벤트 한 줄을 stdout 으로 emit. CloudWatch 가 자동 수집."""
-    _events_logger.info(
-        json.dumps(event, ensure_ascii=False, separators=(",", ":"))
+    """JSONL 이벤트 한 줄을 stdout 으로 emit (flush). CloudWatch 가 자동 수집.
+
+    Python `logging` 대신 `print()` 를 쓰는 이유:
+    - logging 설정(root handler · propagate) 의존성 없이 항상 stdout 으로 흐른다
+    - 컨테이너 stdout buffering 회피 위해 즉시 flush
+    """
+    print(
+        json.dumps(event, ensure_ascii=False, separators=(",", ":")),
+        flush=True,
+        file=sys.stdout,
     )
 
 
@@ -143,7 +148,10 @@ class LLMEventBuilder:
         return self
 
     def emit(self) -> None:
-        """누적된 메타데이터를 단일 이벤트로 stdout 에 emit."""
+        """누적된 메타데이터를 단일 이벤트로 stdout 에 emit. 두 번째 호출은 no-op (중복 방지)."""
+        if getattr(self, "_emitted", False):
+            return
+        self._emitted = True
         # error 필드 누락 시 null/null 로 기본 채움 (소비자 schema 안정)
         self._data.setdefault("error", {"error_code": None, "error_message": None})
         emit_event(self._data)

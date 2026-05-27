@@ -22,6 +22,7 @@ def redact_data_source(data_source: dict[str, Any]) -> dict[str, Any]:
 
 
 def _redact_column(column: dict[str, Any]) -> dict[str, Any]:
+    """sample_values 가 list 가 아닌 경우(None · str 등) count=0 으로 안전 치환."""
     redacted = {**column}
     if "sample_values" in redacted:
         values = redacted["sample_values"]

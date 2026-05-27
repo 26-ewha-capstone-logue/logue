@@ -32,8 +32,9 @@ def calculate_cost_usd(
     if rates is None:
         return 0.0
 
-    cached = max(0, cached_input_tokens)
-    non_cached_input = max(0, input_tokens - cached)
+    # cached 는 input 의 부분집합이라 input 초과 시 input 으로 clamp (이상 값 방어)
+    cached = min(max(0, cached_input_tokens), max(0, input_tokens))
+    non_cached_input = max(0, input_tokens) - cached
     output = max(0, output_tokens)
 
     cost = (

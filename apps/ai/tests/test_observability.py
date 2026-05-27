@@ -1,9 +1,8 @@
-"""observability/ 단위 테스트 — cost · hashing · redaction · LLMEventBuilder."""
+"""observability/ 단위 테스트 - cost · hashing · redaction · LLMEventBuilder."""
 
 from __future__ import annotations
 
 import json
-import logging
 
 import pytest
 
@@ -15,6 +14,11 @@ from observability import (
     redact_data_source,
     sha256_of,
 )
+
+
+def _captured_events(captured_out: str) -> list[dict]:
+    """capsys.readouterr().out 에서 JSONL 라인을 dict 리스트로 파싱."""
+    return [json.loads(line) for line in captured_out.strip().split("\n") if line]
 
 
 # ---------- cost ----------
@@ -67,6 +71,18 @@ def test_cost_clamps_negative_inputs() -> None:
     ) == 0.0
 
 
+def test_cost_clamps_cached_exceeding_input() -> None:
+    """cached_input_tokens > input_tokens 인 비정상 응답에서도 input 한도 넘지 않음."""
+    cost = calculate_cost_usd(
+        model="gpt-4.1-nano",
+        input_tokens=1000,
+        cached_input_tokens=1500,
+        output_tokens=0,
+    )
+    expected = 1000 * 0.025 / 1_000_000  # cached 가 1000 으로 clamp
+    assert cost == round(expected, 6)
+
+
 # ---------- hashing ----------
 
 
@@ -101,9 +117,8 @@ def test_redact_data_source_masks_sample_values_with_count() -> None:
     redacted = redact_data_source(ds)
     assert redacted["columns"][0]["sample_values"] == "<redacted: 3 items>"
     assert redacted["columns"][1]["sample_values"] == "<redacted: 0 items>"
-    assert redacted["columns"][0]["column_name"] == "channel"  # 다른 필드 보존
-    # 원본 불변
-    assert ds["columns"][0]["sample_values"] == ["a", "b", "c"]
+    assert redacted["columns"][0]["column_name"] == "channel"
+    assert ds["columns"][0]["sample_values"] == ["a", "b", "c"]  # 원본 불변
 
 
 def test_redact_data_source_no_columns_returns_same_shape() -> None:
@@ -126,32 +141,29 @@ def test_redact_chart_data_empty_rows() -> None:
 # ---------- emit_event / LLMEventBuilder ----------
 
 
-def test_emit_event_writes_json_to_events_logger(
-    caplog: pytest.LogCaptureFixture,
+def test_emit_event_writes_json_to_stdout(
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    caplog.set_level(logging.INFO, logger="logue_ai.events")
     emit_event({"event_type": "llm_call", "request_id": "req_1"})
 
-    assert len(caplog.records) == 1
-    parsed = json.loads(caplog.records[0].message)
-    assert parsed == {"event_type": "llm_call", "request_id": "req_1"}
+    events = _captured_events(capsys.readouterr().out)
+    assert events == [{"event_type": "llm_call", "request_id": "req_1"}]
 
 
 def test_emit_event_korean_chars_not_escaped(
-    caplog: pytest.LogCaptureFixture,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    caplog.set_level(logging.INFO, logger="logue_ai.events")
     emit_event({"reason": "한글 보존"})
 
-    parsed = json.loads(caplog.records[0].message)
+    out = capsys.readouterr().out
+    assert "한글" in out
+    parsed = json.loads(out.strip())
     assert parsed["reason"] == "한글 보존"
 
 
 def test_event_builder_emits_single_event_with_all_fields(
-    caplog: pytest.LogCaptureFixture,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    caplog.set_level(logging.INFO, logger="logue_ai.events")
-
     (
         LLMEventBuilder(api_name="question_analysis", request_id="req_X")
         .with_prompt_version("question_analysis_v1")
@@ -172,8 +184,9 @@ def test_event_builder_emits_single_event_with_all_fields(
         .emit()
     )
 
-    assert len(caplog.records) == 1
-    event = json.loads(caplog.records[0].message)
+    events = _captured_events(capsys.readouterr().out)
+    assert len(events) == 1
+    event = events[0]
 
     assert event["event_type"] == "llm_call"
     assert event["api_name"] == "question_analysis"
@@ -192,33 +205,56 @@ def test_event_builder_emits_single_event_with_all_fields(
 
 
 def test_event_builder_error_defaults_to_null_when_not_set(
-    caplog: pytest.LogCaptureFixture,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    caplog.set_level(logging.INFO, logger="logue_ai.events")
-
     LLMEventBuilder(api_name="result_summary", request_id="req_Y").emit()
 
-    event = json.loads(caplog.records[0].message)
+    event = _captured_events(capsys.readouterr().out)[0]
     assert event["error"] == {"error_code": None, "error_message": None}
 
 
 def test_event_builder_explicit_error_overrides_default(
-    caplog: pytest.LogCaptureFixture,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    caplog.set_level(logging.INFO, logger="logue_ai.events")
-
     (
         LLMEventBuilder(api_name="question_analysis", request_id="req_Z")
         .with_error(error_code="LLM_CALL_FAILED", error_message="timeout")
         .emit()
     )
 
-    event = json.loads(caplog.records[0].message)
+    event = _captured_events(capsys.readouterr().out)[0]
     assert event["error"]["error_code"] == "LLM_CALL_FAILED"
     assert event["error"]["error_message"] == "timeout"
+
+
+def test_event_builder_emit_is_idempotent(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """두 번째 emit() 호출은 no-op (중복 CloudWatch 기록 방지)."""
+    builder = LLMEventBuilder(api_name="x", request_id="req_1")
+    builder.emit()
+    builder.emit()
+
+    events = _captured_events(capsys.readouterr().out)
+    assert len(events) == 1
 
 
 def test_event_builder_method_chaining_returns_self() -> None:
     builder = LLMEventBuilder(api_name="x", request_id="y")
     assert builder.with_prompt_version("v1") is builder
+    assert builder.with_schema_version("s1") is builder
+    assert builder.with_llm_call(
+        model="m", temperature=0.0, max_output_tokens=100,
+    ) is builder
+    assert builder.with_usage(
+        input_tokens=1, output_tokens=1, total_tokens=2,
+    ) is builder
     assert builder.with_cost(0.001) is builder
+    assert builder.with_performance(latency_ms=10) is builder
+    assert builder.with_validation(
+        schema_validation_status="passed",
+        business_validation_status="passed",
+    ) is builder
+    assert builder.with_warnings([]) is builder
+    assert builder.with_error(error_code=None, error_message=None) is builder
+    assert builder.with_hashes(input_hash="sha256:x") is builder
