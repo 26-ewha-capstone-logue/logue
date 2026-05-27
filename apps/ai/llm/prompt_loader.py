@@ -41,6 +41,9 @@ def prompt_version_id(name: str, version: str = "v1") -> str:
     return f"{name}_{version}"
 
 
-def clear_cache() -> None:
-    """LRU 캐시 초기화 — 테스트에서 prompts/ 디렉토리 monkeypatch 시 사용."""
+def clear_cache() -> None:  # noqa: D401
+    """[테스트 전용] LRU 캐시 초기화 — 운영 코드에서 직접 호출 금지.
+
+    prompts/ monkeypatch 시 캐시 무효화 용도.
+    """
     load_system_prompt.cache_clear()
