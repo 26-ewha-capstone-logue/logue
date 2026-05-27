@@ -3,10 +3,10 @@
 import ArrowDownIcon from '@/assets/icons/arrow-down.svg';
 import {
   ListboxCheckboxOptionList,
-  ListboxOptionList,
   ListboxDropdownShell,
   LISTBOX_DROPDOWN_PANEL_BASE_CLASS,
   LISTBOX_DROPDOWN_TRIGGER_BASE_CLASS,
+  SimpleListboxDropdown,
 } from '@/components';
 
 type CommonProps = {
@@ -32,22 +32,36 @@ type MultiProps = CommonProps & {
 export type CriterionSelectProps = SingleProps | MultiProps;
 
 export default function CriterionSelect(props: CriterionSelectProps) {
-  const optionFocusSelector = props.multi
-    ? '[role="option"]:not([aria-disabled="true"])'
-    : '[role="option"]:not([disabled]):not([aria-disabled="true"])';
+  if (!props.multi) {
+    return (
+      <SimpleListboxDropdown
+        className={props.className}
+        icon={ArrowDownIcon}
+        iconClassName="icon-12 text-gray-700"
+        label={props.value}
+        options={props.options.map((opt) => ({
+          value: opt,
+          label: opt,
+        }))}
+        panelClassName="w-max min-w-full"
+        triggerClassName="text-body2 text-gray-900"
+        value={props.value}
+        onChange={props.onChange}
+      />
+    );
+  }
 
-  const buttonLabel = props.multi
-    ? props.values.length === 0
+  const buttonLabel =
+    props.values.length === 0
       ? '?좏깮'
       : props.values.length === 1
         ? props.values[0]
-        : `${props.values[0]} ??${props.values.length - 1}`
-    : props.value;
+        : `${props.values[0]} ??${props.values.length - 1}`;
 
   return (
     <ListboxDropdownShell
       className={props.className}
-      optionSelector={optionFocusSelector}
+      optionSelector="[role='option']:not([aria-disabled='true'])"
       triggerClassName={`${LISTBOX_DROPDOWN_TRIGGER_BASE_CLASS} text-body2 text-gray-900`}
       trigger={({ open }) => (
         <>
@@ -60,36 +74,24 @@ export default function CriterionSelect(props: CriterionSelectProps) {
           />
         </>
       )}
-      panel={({ closeAndFocusButton, panelProps }) => (
+      panel={({ panelProps }) => (
         <div
           {...panelProps}
-          aria-multiselectable={props.multi ? true : undefined}
+          aria-multiselectable
           className={`${LISTBOX_DROPDOWN_PANEL_BASE_CLASS} w-max min-w-full`}
         >
-          {props.multi && props.headerLabel && (
+          {props.headerLabel && (
             <div className="border-b border-gray-200 px-12 py-8 text-body4 text-gray-600">
               {props.headerLabel}
             </div>
           )}
 
-          {props.multi ? (
-            <ListboxCheckboxOptionList
-              maxSelect={props.maxSelect}
-              options={props.options}
-              values={props.values}
-              onChange={props.onChange}
-            />
-          ) : (
-            <ListboxOptionList
-              closeAndFocusButton={closeAndFocusButton}
-              options={props.options.map((opt) => ({
-                value: opt,
-                label: opt,
-              }))}
-              value={props.value}
-              onChange={props.onChange}
-            />
-          )}
+          <ListboxCheckboxOptionList
+            maxSelect={props.maxSelect}
+            options={props.options}
+            values={props.values}
+            onChange={props.onChange}
+          />
         </div>
       )}
     />

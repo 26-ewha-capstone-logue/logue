@@ -6,9 +6,7 @@ import { deleteDataSources } from '@/apis/dataSourceRepository';
 import { dataSourceKeys } from '@/apis/datasource';
 import { getApiErrorMessage, isApiConflictError } from '@/apis/errors';
 import { isMockDataSourceId } from '@/apis/mockDataSource';
-
-const USER_INFO_REQUIRED_MESSAGE =
-  '사용자 정보를 확인한 뒤 다시 시도해 주세요.';
+import { AUTH_MESSAGES } from '@/constants/messages';
 
 type UseDeleteDataSourcesOptions = {
   conflictErrorMessage: string;
@@ -42,7 +40,7 @@ export function useDeleteDataSources({
       );
 
       if (mockDataSourceIds.length > 0 && userId == null) {
-        onError(USER_INFO_REQUIRED_MESSAGE);
+        onError(AUTH_MESSAGES.userInfoRequired);
         return;
       }
 

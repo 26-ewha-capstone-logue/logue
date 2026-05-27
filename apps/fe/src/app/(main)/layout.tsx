@@ -19,8 +19,7 @@ import {
   OAUTH_LOGIN_POPUP_BLOCKED_MESSAGE,
   startOAuthLogin,
 } from '@/lib/authRedirect';
-import { useMyInfo } from '@/hooks/useMyInfo';
-import { useAuthSession } from '@/providers/AuthProvider';
+import { useAuthenticatedUser } from '@/hooks/useAuthenticatedUser';
 import DataSourceSearchInput from './_components/DataSourceSearchInput';
 import UserProfileSlot from './_components/UserProfileSlot';
 
@@ -34,12 +33,8 @@ export default function MainLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
-  const { isAuthenticated } = useAuthSession();
-  const {
-    data: myInfo,
-    isError: isUserInfoError,
-    isLoading: isUserInfoLoading,
-  } = useMyInfo(isAuthenticated);
+  const { isAuthenticated, isUserInfoError, isUserInfoLoading, myInfo } =
+    useAuthenticatedUser();
 
   const showDataSearch = pathname.startsWith('/data');
   const handleLogout = () => {

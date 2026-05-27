@@ -1,18 +1,17 @@
 'use client';
 
 import { ToastPortal } from '@/components';
-import { useMyInfo } from '@/hooks/useMyInfo';
+import { AUTH_MESSAGES } from '@/constants/messages';
+import { useAuthenticatedUser } from '@/hooks/useAuthenticatedUser';
 import { useStartAnalysis } from '@/hooks/useStartAnalysis';
 import { useToast } from '@/hooks/useToast';
 import { validateCsvFile } from '@/lib/fileValidation';
-import { useAuthSession } from '@/providers/AuthProvider';
 import GreetingSection from './_components/GreetingSection';
 import PromptInput, { type PromptInputValue } from './_components/PromptInput';
 import SampleDataSection from './_components/SampleDataSection';
 
 const FALLBACK_USER_NAME = '사용자';
 const MISSING_FILE_MESSAGE = '분석할 CSV 파일을 먼저 추가해 주세요.';
-const LOGIN_REQUIRED_MESSAGE = '로그인이 필요해요. 다시 로그인해 주세요.';
 const START_ANALYSIS_ERROR_MESSAGE =
   '분석을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.';
 
@@ -23,15 +22,11 @@ const ANALYSIS_FILE_MESSAGES = {
 };
 
 export default function AnalysisPage() {
-  const { isAuthenticated } = useAuthSession();
+  const { isAuthenticated, isUserInfoError, isUserInfoLoading, myInfo } =
+    useAuthenticatedUser();
   const { toast, showToast } = useToast();
-  const {
-    data: myInfo,
-    isError: isUserInfoError,
-    isLoading: isUserInfoLoading,
-  } = useMyInfo(isAuthenticated);
   const startAnalysis = useStartAnalysis({
-    loginRequiredMessage: LOGIN_REQUIRED_MESSAGE,
+    loginRequiredMessage: AUTH_MESSAGES.loginRequired,
     fallbackErrorMessage: START_ANALYSIS_ERROR_MESSAGE,
     onError: showToast,
   });
