@@ -16,7 +16,7 @@ import logging
 import os
 
 from core.errors import AppError, ErrorDetail, LLMCallFailedError
-from schemas.analysis_criteria import (
+from schemas.api.question_analysis import (
     QuestionAnalysisRequest,
     QuestionAnalysisResponse,
 )

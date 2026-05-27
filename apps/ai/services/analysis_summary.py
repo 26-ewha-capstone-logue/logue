@@ -1,7 +1,7 @@
 import logging
 import os
 from fastapi import HTTPException
-from schemas.analysis_summary import (
+from schemas.api.result_summary import (
     AnalysisSummaryRequest, AnalysisSummaryResponse,
     Description, Segment,
 )

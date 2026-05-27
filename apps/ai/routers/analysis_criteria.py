@@ -12,7 +12,7 @@ from typing import Callable
 from fastapi import APIRouter, Depends
 
 from core.errors import ErrorResponse
-from schemas.analysis_criteria import (
+from schemas.api.question_analysis import (
     QuestionAnalysisRequest,
     QuestionAnalysisResponse,
 )

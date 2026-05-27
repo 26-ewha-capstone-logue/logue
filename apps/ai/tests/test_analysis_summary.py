@@ -64,7 +64,7 @@ def test_summarize_segments_plain_text_mismatch_returns_502() -> None:
         - detail.message에 plain_text 불일치 안내 포함 여부
     """
     from unittest.mock import patch, AsyncMock
-    from schemas.analysis_summary import (
+    from schemas.api.result_summary import (
         AnalysisSummaryResponse, Description, Segment,
     )
 
@@ -85,7 +85,7 @@ def test_summarize_segments_plain_text_mismatch_returns_502() -> None:
         new_callable=AsyncMock,
     ) as mock_summarize:
         from services.analysis_summary import _validate_response
-        from schemas.analysis_summary import AnalysisSummaryRequest
+        from schemas.api.result_summary import AnalysisSummaryRequest
 
         async def side_effect(req: AnalysisSummaryRequest):
             _validate_response(req, fake_response)

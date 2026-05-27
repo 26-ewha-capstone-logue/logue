@@ -11,7 +11,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
-from .enums import (
+from schemas.enums import (
     AnalysisType,
     DataType,
     FlowWarningKey,

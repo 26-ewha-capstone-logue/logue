@@ -1,4 +1,4 @@
-from schemas.file_analysis import PrimaryCandidates, SourceWarning
+from schemas.api.file_analysis import PrimaryCandidates, SourceWarning
 
 
 def source_warnings(candidates: PrimaryCandidates) -> list[SourceWarning]:
