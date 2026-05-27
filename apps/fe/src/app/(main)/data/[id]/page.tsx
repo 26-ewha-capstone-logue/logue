@@ -28,8 +28,7 @@ export default function DataDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
-  const { hasAccessToken, status } = useAuthSession();
-  const isAuthenticated = status === 'authenticated';
+  const { hasAccessToken, isAuthenticated, status } = useAuthSession();
   const { data: myInfo } = useMyInfo(isAuthenticated);
   const { deletedMockDataSourceIds, markDeletedMockDataSources } =
     useDeletedMockDataSources(myInfo?.id);

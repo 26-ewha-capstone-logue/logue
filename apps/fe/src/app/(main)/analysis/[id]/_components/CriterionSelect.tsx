@@ -2,6 +2,8 @@
 
 import ArrowDownIcon from '@/assets/icons/arrow-down.svg';
 import {
+  ListboxCheckboxOptionList,
+  ListboxOptionList,
   ListboxDropdownShell,
   LISTBOX_DROPDOWN_PANEL_BASE_CLASS,
   LISTBOX_DROPDOWN_TRIGGER_BASE_CLASS,
@@ -70,78 +72,24 @@ export default function CriterionSelect(props: CriterionSelectProps) {
             </div>
           )}
 
-          {props.options.map((opt) => {
-            if (props.multi) {
-              const checked = props.values.includes(opt);
-              const disabled =
-                !checked &&
-                props.maxSelect !== undefined &&
-                props.values.length >= props.maxSelect;
-              const handleToggle = () => {
-                if (disabled) return;
-
-                const next = checked
-                  ? props.values.filter((v) => v !== opt)
-                  : [...props.values, opt];
-                props.onChange(next);
-              };
-
-              return (
-                <label
-                  key={opt}
-                  role="option"
-                  aria-selected={checked}
-                  aria-disabled={disabled}
-                  tabIndex={disabled ? -1 : 0}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    handleToggle();
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key !== 'Enter' && event.key !== ' ') return;
-
-                    event.preventDefault();
-                    handleToggle();
-                  }}
-                  className={`flex cursor-pointer items-center gap-8 px-12 py-8 text-body2 transition-colors hover:bg-gray-100 ${
-                    disabled
-                      ? 'cursor-not-allowed text-gray-500'
-                      : 'text-gray-900'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    aria-hidden
-                    tabIndex={-1}
-                    checked={checked}
-                    disabled={disabled}
-                    readOnly
-                    className="h-16 w-16 accent-orange-500"
-                  />
-                  <span>{opt}</span>
-                </label>
-              );
-            }
-
-            const selected = props.value === opt;
-            return (
-              <button
-                key={opt}
-                type="button"
-                role="option"
-                aria-selected={selected}
-                onClick={() => {
-                  props.onChange(opt);
-                  closeAndFocusButton();
-                }}
-                className={`block w-full px-12 py-8 text-left text-body2 transition-colors hover:bg-gray-100 ${
-                  selected ? 'text-orange-500' : 'text-gray-900'
-                }`}
-              >
-                {opt}
-              </button>
-            );
-          })}
+          {props.multi ? (
+            <ListboxCheckboxOptionList
+              maxSelect={props.maxSelect}
+              options={props.options}
+              values={props.values}
+              onChange={props.onChange}
+            />
+          ) : (
+            <ListboxOptionList
+              closeAndFocusButton={closeAndFocusButton}
+              options={props.options.map((opt) => ({
+                value: opt,
+                label: opt,
+              }))}
+              value={props.value}
+              onChange={props.onChange}
+            />
+          )}
         </div>
       )}
     />
