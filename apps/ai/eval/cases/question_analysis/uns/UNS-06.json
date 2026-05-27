@@ -1,0 +1,15 @@
+{
+  "id": "UNS-06",
+  "layer": "표현 다양화",
+  "category": "uns",
+  "description": "COMPARISON+RANKING 복합 의도, 단일 analysis_type 매핑 불가",
+  "spec": {
+    "id": "UNS-06",
+    "dataset": "dataset-a",
+    "question": "이번 주 가입 전환율 top 5 중에서 지난주 대비 가장 많이 떨어진 채널"
+  },
+  "expected": {
+    "analysis_criteria": null,
+    "unsupported_question": {"detected_intent": "mixed_intent"}
+  }
+}

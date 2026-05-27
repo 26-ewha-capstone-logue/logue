@@ -1,0 +1,21 @@
+{
+  "id": "RNK-02",
+  "layer": "정상 케이스",
+  "category": "rnk",
+  "spec": {
+    "id": "RNK-02",
+    "dataset": "dataset-a",
+    "question": "이번 주 가입 전환율 높은 순으로 채널·디바이스 top 5"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "RANKING",
+      "metric_name": "signup_conversion_rate",
+      "base_date_column": "event_date",
+      "standard_period": "1W",
+      "group_by": ["channel", "device"],
+      "sort_direction": "desc",
+      "limit_num": 5
+    }
+  }
+}

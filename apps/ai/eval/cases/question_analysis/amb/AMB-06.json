@@ -1,0 +1,22 @@
+{
+  "id": "AMB-06",
+  "layer": "스키마 변화+모호성",
+  "category": "amb",
+  "description": "질문이 '채널'인데 데이터셋엔 source 만 - source 자동 매핑",
+  "spec": {
+    "id": "AMB-06",
+    "dataset": "dataset-b",
+    "question": "이번 주 채널별 가입 전환율 top 5"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "RANKING",
+      "metric_name": "signup_conversion_rate",
+      "base_date_column": "created_at",
+      "standard_period": "1W",
+      "group_by": ["source"],
+      "limit_num": 5
+    },
+    "warnings": {"QUESTION_DATA_MISMATCH": true}
+  }
+}

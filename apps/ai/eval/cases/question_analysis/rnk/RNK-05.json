@@ -1,0 +1,21 @@
+{
+  "id": "RNK-05",
+  "layer": "정상 케이스",
+  "category": "rnk",
+  "spec": {
+    "id": "RNK-05",
+    "dataset": "dataset-a",
+    "question": "이번 달 채널별 액티베이션율 낮은 순으로 5개"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "RANKING",
+      "metric_name": "activation_rate",
+      "base_date_column": "event_date",
+      "standard_period": "1M",
+      "group_by": ["channel"],
+      "sort_direction": "asc",
+      "limit_num": 5
+    }
+  }
+}

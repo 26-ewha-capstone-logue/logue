@@ -1,0 +1,15 @@
+{
+  "analysis_types": ["COMPARISON", "RANKING"],
+  "metric_types": ["RATIO"],
+  "predefined_metrics": [
+    {"metric_name": "signup_conversion_rate", "display_name": "가입 전환율", "metric_type": "RATIO", "formula_numerator": "signup_complete", "formula_denominator": "landing_sessions"},
+    {"metric_name": "activation_rate", "display_name": "액티베이션율", "metric_type": "RATIO", "formula_numerator": "activated_users", "formula_denominator": "signup_complete"},
+    {"metric_name": "trial_start_rate", "display_name": "트라이얼 시작율", "metric_type": "RATIO", "formula_numerator": "trial_start", "formula_denominator": "activated_users"},
+    {"metric_name": "paid_conversion_rate", "display_name": "유료 전환율", "metric_type": "RATIO", "formula_numerator": "paid_users", "formula_denominator": "trial_start"}
+  ],
+  "supported_periods": ["1W", "1M", "3M"],
+  "flow_warning_keys": [
+    {"code": "QUESTION_DATA_MISMATCH", "name": "질문/데이터 불일치", "comment": "질문에서 요구한 컬럼이 데이터에 없습니다."},
+    {"code": "CRITICAL_NULL_DETECTED", "name": "critical null", "comment": "분석 필요 컬럼의 null 비율이 임계값을 초과합니다."}
+  ]
+}

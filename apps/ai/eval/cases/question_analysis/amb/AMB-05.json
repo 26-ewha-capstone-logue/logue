@@ -1,0 +1,20 @@
+{
+  "id": "AMB-05",
+  "layer": "모호성·경고",
+  "category": "amb",
+  "description": "DATE_CRITERIA 충돌 - event_date/created_at 둘 다",
+  "spec": {
+    "id": "AMB-05",
+    "dataset": "dataset-c",
+    "question": "이번 주 채널별 가입 전환율 top 5"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "RANKING",
+      "metric_name": "signup_conversion_rate",
+      "group_by": ["channel"],
+      "limit_num": 5
+    },
+    "warnings": {"QUESTION_DATA_MISMATCH": true}
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "id": "FLT-03",
+  "layer": "필터 + 스키마 변화",
+  "category": "flt",
+  "spec": {
+    "id": "FLT-03",
+    "dataset": "dataset-b",
+    "question": "is_test 제외하고 이번 주 소스별 가입 전환율 하위 5개"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "RANKING",
+      "metric_name": "signup_conversion_rate",
+      "base_date_column": "created_at",
+      "standard_period": "1W",
+      "group_by": ["source"],
+      "sort_direction": "asc",
+      "limit_num": 5
+    }
+  }
+}

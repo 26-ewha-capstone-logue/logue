@@ -1,0 +1,21 @@
+{
+  "id": "RNK-03",
+  "layer": "표현 다양화",
+  "category": "rnk",
+  "spec": {
+    "id": "RNK-03",
+    "dataset": "dataset-a",
+    "question": "이번 주 채널·디바이스별 가입 전환율 낮은 순 5개 보여줘"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "RANKING",
+      "metric_name": "signup_conversion_rate",
+      "base_date_column": "event_date",
+      "standard_period": "1W",
+      "group_by": ["channel", "device"],
+      "sort_direction": "asc",
+      "limit_num": 5
+    }
+  }
+}

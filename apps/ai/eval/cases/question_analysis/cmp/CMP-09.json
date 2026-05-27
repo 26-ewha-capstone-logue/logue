@@ -1,0 +1,21 @@
+{
+  "id": "CMP-09",
+  "layer": "모호성·경고",
+  "category": "cmp",
+  "description": "dataset-c (날짜 컬럼 2개) - DATE_FIELD_CONFLICT warning, base_date_column 비결정",
+  "spec": {
+    "id": "CMP-09",
+    "dataset": "dataset-c",
+    "question": "이번 주 가입 전환율이 지난주 대비 가장 많이 떨어진 채널·디바이스를 알려줘"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "COMPARISON",
+      "metric_name": "signup_conversion_rate",
+      "standard_period": "1W",
+      "compare_period": "1W",
+      "group_by": ["channel", "device"],
+      "sort_direction": "asc"
+    }
+  }
+}

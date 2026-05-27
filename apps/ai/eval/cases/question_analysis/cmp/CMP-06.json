@@ -1,0 +1,21 @@
+{
+  "id": "CMP-06",
+  "layer": "표현 다양화",
+  "category": "cmp",
+  "spec": {
+    "id": "CMP-06",
+    "dataset": "dataset-a",
+    "question": "전주 대비 크게 떨어진 구간 보여줘"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "COMPARISON",
+      "metric_name": "signup_conversion_rate",
+      "base_date_column": "event_date",
+      "standard_period": "1W",
+      "compare_period": "1W",
+      "group_by": ["channel", "device"],
+      "sort_direction": "asc"
+    }
+  }
+}

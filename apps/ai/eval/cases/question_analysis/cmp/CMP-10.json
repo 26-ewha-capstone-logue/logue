@@ -1,0 +1,21 @@
+{
+  "id": "CMP-10",
+  "layer": "필터 추가",
+  "category": "cmp",
+  "spec": {
+    "id": "CMP-10",
+    "dataset": "dataset-a",
+    "question": "internal_test 제외하고 이번 주 가입 전환율이 지난주 대비 가장 많이 떨어진 채널·디바이스"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "COMPARISON",
+      "metric_name": "signup_conversion_rate",
+      "base_date_column": "event_date",
+      "standard_period": "1W",
+      "compare_period": "1W",
+      "group_by": ["channel", "device"],
+      "sort_direction": "asc"
+    }
+  }
+}

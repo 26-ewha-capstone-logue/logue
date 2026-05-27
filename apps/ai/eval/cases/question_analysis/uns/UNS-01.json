@@ -1,0 +1,15 @@
+{
+  "id": "UNS-01",
+  "layer": "모호성·경고",
+  "category": "uns",
+  "description": "catalog 외 metric (avg_session_duration)",
+  "spec": {
+    "id": "UNS-01",
+    "dataset": "dataset-a",
+    "question": "이번 주 채널별 평균 세션 시간 top 5"
+  },
+  "expected": {
+    "analysis_criteria": null,
+    "unsupported_question": {"detected_intent": "unknown_metric"}
+  }
+}

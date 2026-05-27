@@ -1,0 +1,26 @@
+{
+  "id": "AMB-07",
+  "layer": "모호성·경고",
+  "category": "amb",
+  "description": "3-way DIMENSION 모호 - device/device_type/device_kind",
+  "spec": {
+    "id": "AMB-07",
+    "dataset": "dataset-a",
+    "add_columns": [
+      {"name": "device_type", "data_type": "string", "role": "DIMENSION", "sample_values": ["smartphone"]},
+      {"name": "device_kind", "data_type": "string", "role": "DIMENSION", "sample_values": ["touch"]}
+    ],
+    "question": "이번 주 디바이스별 가입 전환율 top 5"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "RANKING",
+      "metric_name": "signup_conversion_rate",
+      "base_date_column": "event_date",
+      "standard_period": "1W",
+      "group_by": ["device"],
+      "limit_num": 5
+    },
+    "warnings": {"QUESTION_DATA_MISMATCH": true}
+  }
+}
