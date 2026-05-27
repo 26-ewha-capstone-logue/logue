@@ -13,18 +13,16 @@ Spring 연동/통합 테스트가 LLM 없이도 가능하다.
 from __future__ import annotations
 
 import logging
-import os
 
+from config.settings import is_mock_mode
 from core.errors import AppError, ErrorDetail, LLMCallFailedError
-from schemas.analysis_criteria import (
+from schemas.api.question_analysis import (
     QuestionAnalysisRequest,
     QuestionAnalysisResponse,
 )
 from schemas.enums import SemanticRoleType
 from services.llm_output_validator import validate_llm_output
 
-
-_MOCK_ENV = "ANAL_LLM_MOCK"
 
 logger = logging.getLogger("logue_ai")
 
@@ -59,11 +57,11 @@ def _call_llm(req: QuestionAnalysisRequest) -> QuestionAnalysisResponse:
 
     `ANAL_LLM_MOCK=true` 가 설정된 경우 결정론적 mock 응답을 반환한다.
     """
-    if os.getenv(_MOCK_ENV, "").lower() == "true":
+    if is_mock_mode():
         return _build_mock_response(req)
     raise NotImplementedError(
         "LLM call to be implemented. "
-        f"개발/통합 테스트는 {_MOCK_ENV}=true 로 mock 응답을 사용할 수 있다."
+        "개발/통합 테스트는 ANAL_LLM_MOCK=true 로 mock 응답을 사용할 수 있다."
     )
 
 

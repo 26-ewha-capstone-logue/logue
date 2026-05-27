@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from schemas.analysis_summary import AnalysisSummaryRequest, AnalysisSummaryResponse
+from schemas.api.result_summary import AnalysisSummaryRequest, AnalysisSummaryResponse
 from services.analysis_summary import summarize_analysis_result
 
 router = APIRouter(prefix="/v1/llm")

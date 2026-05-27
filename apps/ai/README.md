@@ -19,6 +19,63 @@ Python 3.11 + FastAPI + uv 기반 프로젝트 스캐폴드입니다.
 - Override with env var: UPSTREAM_HEALTH_URL
 - Timeout seconds env var: UPSTREAM_TIMEOUT_SEC (default: 3)
 
+## 폴더 구조
+
+```
+apps/ai/
+  main.py                 # FastAPI 진입점
+  routers/                # API endpoint 정의
+  schemas/
+    api/                  # BE↔FastAPI 계약용 Request/Response DTO
+    llm_input/            # LLM 전달용 정규화 DTO (*.from_request() 로 변환)
+    enums.py · common.py  # 공통 enum / Literal
+  services/               # API별 처리 흐름
+  llm/                    # OpenAI 호출 공통 모듈 (LLMClient + retry + prompt_loader)
+  prompts/                # system prompt 저장 (<name>_<version>.system.md)
+  config/                 # 환경변수 접근 + API별 모델/temperature/token 설정
+  core/                   # 에러·예외 핸들러·검증 헬퍼
+  tests/
+```
+
+## LLM client (apps/ai/llm/)
+
+질문분석·결과 요약 두 엔드포인트가 공유하는 OpenAI Structured Outputs 호출 boundary 입니다. 서비스 레이어는 OpenAI SDK 를 직접 다루지 않고 `LLMClient.complete_structured()` 만 호출합니다.
+
+### 환경변수
+
+| 변수 | 기본값 | 설명 |
+|---|---|---|
+| `OPENAI_API_KEY` | 없음 (필수) | OpenAI API 키. 운영은 SSM Parameter Store 에서 주입 |
+| `OPENAI_TIMEOUT_SEC` | `30` | OpenAI 호출 타임아웃 (초) |
+| `ANAL_LLM_MOCK` | `false` | `true` 면 질문분석·결과 요약 모두 LLM 호출 없이 결정론적 mock 응답 반환 (테스트·통합 검증용) |
+
+### 사용 예 (서비스 레이어)
+
+```python
+from config.model_config import model_config_for
+from llm import LLMClient, load_system_prompt
+from schemas.api.result_summary import AnalysisSummaryResponse
+
+cfg = model_config_for("result_summary")  # gpt-4.1-nano · 0.1 · 300
+client = LLMClient()  # OPENAI_API_KEY 자동 로드
+response = client.complete_structured(
+    system_prompt=load_system_prompt("result_summary"),  # → prompts/result_summary_v1.system.md
+    user_payload={"analysis_criteria": ..., "chart_data": ...},
+    response_model=AnalysisSummaryResponse,
+    **cfg.as_llm_kwargs(),
+)
+```
+
+- API 별 모델·temperature·token 한도는 `config/model_config.py` 단일 출처
+- system prompt 는 `prompts/<name>_<version>.system.md` 파일로 분리 — 버전업 시 `_v2.system.md` 추가 후 `load_system_prompt(name, version="v2")` 호출. `prompt_version_id()` 로 로깅용 식별자 획득
+
+### 동작 규칙
+
+- **Structured Outputs**: `response_format` 에 Pydantic 모델 클래스를 전달, OpenAI 가 schema 강제. parsed 결과를 `BaseModel` 인스턴스로 반환.
+- **재시도**: `llm/retry.py` 의 `with_retry` 가 1회만 재시도 (미팅노트 5️⃣ 실패 처리). 대상: `APIConnectionError`, `APITimeoutError`, `RateLimitError`, `APIError`, `ValidationError`, `json.JSONDecodeError`.
+- **예외 통과**: 모든 raise 는 그대로 서비스 레이어로 통과. 서비스 레이어가 `LLMCallFailedError` 로 래핑해 502 `LLM_CALL_FAILED` 응답으로 매핑됨.
+- **빈 응답**: OpenAI 가 `parsed=None` (refusal·컨텐츠 필터) 을 반환하면 `LLMResponseEmptyError` 로 raise.
+
 ## Local setup
 
 1. Install dependencies:
@@ -45,7 +102,8 @@ Python 3.11 + FastAPI + uv 기반 프로젝트 스캐폴드입니다.
 POST /v1/llm/analysis-criteria/resolve
 ```
 
-- 요청/응답 스키마: `schemas/analysis_criteria.py` (`QuestionAnalysisRequest` / `QuestionAnalysisResponse`)
+- 요청/응답 스키마: `schemas/api/question_analysis.py` (`QuestionAnalysisRequest` / `QuestionAnalysisResponse`)
+- LLM 입력 정규화: `schemas/llm_input/question_analysis_input.py` (`QuestionAnalysisLLMInput.from_request()`)
 - 라우터: `routers/analysis_criteria.py`
 - OpenAPI 스펙: `/docs` 에서 200/422/502 응답 모두 노출됨
 
@@ -92,7 +150,8 @@ ANAL_LLM_MOCK=true uv run uvicorn main:app --reload
 POST /v1/llm/analysis-results/describe
 ```
 
-- 요청/응답 스키마: `schemas/analysis_summary.py` (`AnalysisSummaryRequest` / `AnalysisSummaryResponse`)
+- 요청/응답 스키마: `schemas/api/result_summary.py` (`AnalysisSummaryRequest` / `AnalysisSummaryResponse`)
+- LLM 입력 정규화: `schemas/llm_input/result_summary_input.py` (`AnalysisSummaryLLMInput.from_request()`)
 - 라우터: `routers/analysis_summary.py`
 - OpenAPI 스펙: `/docs` 에서 200/422/502/500 응답 모두 노출됨
 

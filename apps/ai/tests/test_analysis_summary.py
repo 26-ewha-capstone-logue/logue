@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 import main
 
@@ -27,9 +28,9 @@ def _valid_request_body() -> dict:
     }
 
 
-def test_summarize_analysis_result() -> None:
+def test_summarize_analysis_result(monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    결과 요약 엔드포인트의 더미 응답 동작을 검증합니다.
+    결과 요약 엔드포인트의 mock 응답 동작을 검증합니다.
 
     검증 항목:
         - 200 응답 반환 여부
@@ -37,6 +38,7 @@ def test_summarize_analysis_result() -> None:
         - description.segments 1개 이상 존재 여부
         - segments[].text 합과 plain_text 일치 여부
     """
+    monkeypatch.setenv("ANAL_LLM_MOCK", "true")
 
     client = TestClient(app)
 
@@ -62,7 +64,7 @@ def test_summarize_segments_plain_text_mismatch_returns_502() -> None:
         - detail.message에 plain_text 불일치 안내 포함 여부
     """
     from unittest.mock import patch, AsyncMock
-    from schemas.analysis_summary import (
+    from schemas.api.result_summary import (
         AnalysisSummaryResponse, Description, Segment,
     )
 
@@ -83,7 +85,7 @@ def test_summarize_segments_plain_text_mismatch_returns_502() -> None:
         new_callable=AsyncMock,
     ) as mock_summarize:
         from services.analysis_summary import _validate_response
-        from schemas.analysis_summary import AnalysisSummaryRequest
+        from schemas.api.result_summary import AnalysisSummaryRequest
 
         async def side_effect(req: AnalysisSummaryRequest):
             _validate_response(req, fake_response)

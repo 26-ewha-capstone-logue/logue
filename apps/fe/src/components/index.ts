@@ -77,7 +77,11 @@ export type {
   ListboxDropdownProps,
   ListboxDropdownRenderProps,
 } from './ListboxDropdown/ListboxDropdown';
-export { default as ListboxDropdownShell } from './ListboxDropdownShell/ListboxDropdownShell';
+export {
+  default as ListboxDropdownShell,
+  LISTBOX_DROPDOWN_PANEL_BASE_CLASS,
+  LISTBOX_DROPDOWN_TRIGGER_BASE_CLASS,
+} from './ListboxDropdownShell/ListboxDropdownShell';
 export type {
   ListboxDropdownShellPanelProps,
   ListboxDropdownShellProps,

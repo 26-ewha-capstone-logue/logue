@@ -4,6 +4,7 @@ import type {
   InternalAxiosRequestConfig,
 } from 'axios';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { reissueAuthTokens } from '../apis/auth';
 import {
   ACCESS_TOKEN_STORAGE_KEY,
   LEGACY_ACCESS_TOKEN_STORAGE_KEY,
@@ -13,6 +14,10 @@ import {
   setAuthTokens,
 } from './auth';
 import instance from './axios';
+
+vi.mock('../apis/auth', () => ({
+  reissueAuthTokens: vi.fn(),
+}));
 
 function createStorage() {
   const store = new Map<string, string>();
@@ -62,7 +67,35 @@ function createRejectedResponse(
   };
 }
 
+function createSuccessResponse(
+  config: InternalAxiosRequestConfig,
+  data: unknown = { ok: true },
+): AxiosResponse {
+  return {
+    config,
+    data,
+    headers: {},
+    status: 200,
+    statusText: 'OK',
+  };
+}
+
+function encodeBase64Url(value: unknown) {
+  return Buffer.from(JSON.stringify(value))
+    .toString('base64')
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replaceAll('=', '');
+}
+
+function createJwt(expiresAtMs: number) {
+  return `${encodeBase64Url({ alg: 'none' })}.${encodeBase64Url({
+    exp: Math.floor(expiresAtMs / 1000),
+  })}.signature`;
+}
+
 const originalAdapter = instance.defaults.adapter;
+const mockReissueAuthTokens = vi.mocked(reissueAuthTokens);
 
 afterEach(() => {
   instance.defaults.adapter = originalAdapter;
@@ -154,5 +187,134 @@ describe('axios auth interceptor', () => {
 
     expect(getAccessToken()).toBeNull();
     expect(getRefreshToken()).toBeNull();
+  });
+
+  it('reissues tokens and retries the original request after a 401', async () => {
+    const { localStorage } = installWindowStorage();
+    const nextAccessToken = createJwt(Date.now() + 120_000);
+    const requests: InternalAxiosRequestConfig[] = [];
+    const authorizations: unknown[] = [];
+    mockReissueAuthTokens.mockResolvedValue({
+      accessToken: nextAccessToken,
+      refreshToken: 'next-refresh-token',
+    });
+    setAuthTokens({
+      accessToken: 'expired-access-token',
+      refreshToken: 'refresh-token',
+    });
+
+    const adapter: AxiosAdapter = async (config) => {
+      requests.push(config);
+      authorizations.push(config.headers.Authorization);
+
+      if (requests.length === 1) {
+        return Promise.reject({
+          config,
+          isAxiosError: true,
+          response: createRejectedResponse(config, 401),
+          toJSON: () => ({}),
+        });
+      }
+
+      return createSuccessResponse(config);
+    };
+
+    instance.defaults.adapter = adapter;
+
+    await expect(instance.get('/api/datasources')).resolves.toMatchObject({
+      status: 200,
+    });
+
+    expect(mockReissueAuthTokens).toHaveBeenCalledWith('refresh-token');
+    expect(requests).toHaveLength(2);
+    expect(authorizations).toEqual([
+      'Bearer expired-access-token',
+      `Bearer ${nextAccessToken}`,
+    ]);
+    expect(localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)).toBe(
+      nextAccessToken,
+    );
+    expect(localStorage.getItem(LEGACY_ACCESS_TOKEN_STORAGE_KEY)).toBe(
+      nextAccessToken,
+    );
+    expect(localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)).toBe(
+      'next-refresh-token',
+    );
+  });
+
+  it('clears tokens when reissue fails without a rotated refresh token', async () => {
+    installWindowStorage();
+    mockReissueAuthTokens.mockRejectedValue(new Error('invalid refresh token'));
+    setAuthTokens({
+      accessToken: 'expired-access-token',
+      refreshToken: 'refresh-token',
+    });
+
+    const adapter: AxiosAdapter = async (config) => {
+      return Promise.reject({
+        config,
+        isAxiosError: true,
+        response: createRejectedResponse(config, 401),
+        toJSON: () => ({}),
+      });
+    };
+
+    instance.defaults.adapter = adapter;
+
+    await expect(instance.get('/api/datasources')).rejects.toThrow(
+      'invalid refresh token',
+    );
+
+    expect(mockReissueAuthTokens).toHaveBeenCalledWith('refresh-token');
+    expect(getAccessToken()).toBeNull();
+    expect(getRefreshToken()).toBeNull();
+  });
+
+  it('retries with rotated tokens when another tab already refreshed the session', async () => {
+    installWindowStorage();
+    const nextAccessToken = createJwt(Date.now() + 120_000);
+    const requests: InternalAxiosRequestConfig[] = [];
+    const authorizations: unknown[] = [];
+    mockReissueAuthTokens.mockImplementation(async () => {
+      setAuthTokens({
+        accessToken: nextAccessToken,
+        refreshToken: 'rotated-refresh-token',
+      });
+      throw new Error('old refresh token was already rotated');
+    });
+    setAuthTokens({
+      accessToken: 'expired-access-token',
+      refreshToken: 'refresh-token',
+    });
+
+    const adapter: AxiosAdapter = async (config) => {
+      requests.push(config);
+      authorizations.push(config.headers.Authorization);
+
+      if (requests.length === 1) {
+        return Promise.reject({
+          config,
+          isAxiosError: true,
+          response: createRejectedResponse(config, 401),
+          toJSON: () => ({}),
+        });
+      }
+
+      return createSuccessResponse(config);
+    };
+
+    instance.defaults.adapter = adapter;
+
+    await expect(instance.get('/api/datasources')).resolves.toMatchObject({
+      status: 200,
+    });
+
+    expect(requests).toHaveLength(2);
+    expect(authorizations).toEqual([
+      'Bearer expired-access-token',
+      `Bearer ${nextAccessToken}`,
+    ]);
+    expect(getAccessToken()).toBe(nextAccessToken);
+    expect(getRefreshToken()).toBe('rotated-refresh-token');
   });
 });
