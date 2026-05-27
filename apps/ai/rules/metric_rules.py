@@ -1,4 +1,4 @@
-"""Catalog 참조 검증: analysis_type / metric_type / metric_name / period."""
+"""Catalog 참조 검증: analysis_type / metric_type / metric_name / period + metric 내부 정합성."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ def validate_catalog_references(
     criteria: AnalysisCriteria,
     request: QuestionAnalysisRequest,
 ) -> list[ErrorDetail]:
-    """analysis_type · metric_type · metric_name · period 가 catalog 안에 있는지."""
+    """analysis_type · metric_type · metric_name · period catalog 멤버십 + metric 내부 정합성."""
     issues: list[ErrorDetail] = []
     catalog = request.catalog
 
@@ -28,12 +28,27 @@ def validate_catalog_references(
             reason=f"'{criteria.metric_type}' 은 catalog.metric_types 에 없습니다.",
         ))
 
-    metric_names = {m.metric_name for m in catalog.predefined_metrics}
-    if criteria.metric_name not in metric_names:
+    metric_by_name = {m.metric_name: m for m in catalog.predefined_metrics}
+    metric = metric_by_name.get(criteria.metric_name)
+    if metric is None:
         issues.append(ErrorDetail(
             field="analysis_criteria.metric_name",
             reason=f"'{criteria.metric_name}' 은 catalog.predefined_metrics 에 없습니다.",
         ))
+    else:
+        if criteria.metric_type != metric.metric_type:
+            issues.append(ErrorDetail(
+                field="analysis_criteria.metric_type",
+                reason=f"'{criteria.metric_name}' 에 매핑된 metric_type 과 일치하지 않습니다.",
+            ))
+        if (
+            criteria.formula_numerator != metric.formula_numerator
+            or criteria.formula_denominator != metric.formula_denominator
+        ):
+            issues.append(ErrorDetail(
+                field="analysis_criteria.formula_numerator/denominator",
+                reason=f"'{criteria.metric_name}' 에 매핑된 formula 와 일치하지 않습니다.",
+            ))
 
     periods = set(catalog.supported_periods)
     if criteria.standard_period not in periods:

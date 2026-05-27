@@ -14,14 +14,20 @@ def validate_criteria_columns(
     criteria: AnalysisCriteria,
     request: QuestionAnalysisRequest,
 ) -> list[ErrorDetail]:
-    """base_date_column / group_by / filters[].field 가 data_source.columns 에 있는지."""
+    """base_date_column / group_by / filters[].field 가 data_source.columns 에 있는지 + role 일치."""
     issues: list[ErrorDetail] = []
-    column_names = {c.column_name for c in request.data_source.columns}
+    column_roles = {c.column_name: c.semantic_role for c in request.data_source.columns}
+    column_names = column_roles.keys()
 
     if criteria.base_date_column not in column_names:
         issues.append(ErrorDetail(
             field="analysis_criteria.base_date_column",
             reason=f"'{criteria.base_date_column}' 은 data_source.columns 에 없습니다.",
+        ))
+    elif column_roles[criteria.base_date_column] != "DATE_CRITERIA":
+        issues.append(ErrorDetail(
+            field="analysis_criteria.base_date_column",
+            reason=f"'{criteria.base_date_column}' 은 DATE_CRITERIA role 이어야 합니다.",
         ))
 
     for col in criteria.group_by:
@@ -29,6 +35,11 @@ def validate_criteria_columns(
             issues.append(ErrorDetail(
                 field="analysis_criteria.group_by",
                 reason=f"'{col}' 은 data_source.columns 에 없습니다.",
+            ))
+        elif column_roles[col] != "DIMENSION":
+            issues.append(ErrorDetail(
+                field="analysis_criteria.group_by",
+                reason=f"'{col}' 은 DIMENSION role 이어야 합니다.",
             ))
 
     for f in criteria.filters:

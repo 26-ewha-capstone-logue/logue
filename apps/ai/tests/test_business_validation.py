@@ -104,6 +104,29 @@ def test_metric_rules_unknown_period() -> None:
     assert any("compare_period" in (i.field or "") for i in issues)
 
 
+def test_metric_rules_formula_mismatch_with_catalog() -> None:
+    issues = validate_catalog_references(
+        _criteria(formula_numerator="ghost_numerator"), _request(),
+    )
+    assert any(
+        "formula" in (i.field or "") and "매핑된 formula 와 일치" in i.reason
+        for i in issues
+    )
+
+
+def test_metric_rules_metric_type_mismatch_with_catalog() -> None:
+    req = _request()
+    req.catalog.metric_types = ["RATIO", "COUNT"]
+    issues = validate_catalog_references(
+        _criteria(metric_type="COUNT"), req,
+    )
+    assert any(
+        i.field == "analysis_criteria.metric_type"
+        and "매핑된 metric_type 과 일치" in i.reason
+        for i in issues
+    )
+
+
 # ---------- column_rules ----------
 
 
@@ -116,6 +139,28 @@ def test_column_rules_unknown_group_by() -> None:
         _criteria(group_by=["ghost_col"]), _request(),
     )
     assert any("group_by" in (i.field or "") for i in issues)
+
+
+def test_column_rules_base_date_column_wrong_role() -> None:
+    issues = validate_criteria_columns(
+        _criteria(base_date_column="channel"), _request(),
+    )
+    assert any(
+        i.field == "analysis_criteria.base_date_column"
+        and "DATE_CRITERIA role" in i.reason
+        for i in issues
+    )
+
+
+def test_column_rules_group_by_wrong_role() -> None:
+    issues = validate_criteria_columns(
+        _criteria(group_by=["signed_at"]), _request(),
+    )
+    assert any(
+        i.field == "analysis_criteria.group_by"
+        and "DIMENSION role" in i.reason
+        for i in issues
+    )
 
 
 def test_column_rules_unknown_filter_field() -> None:
