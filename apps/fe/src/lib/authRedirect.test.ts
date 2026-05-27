@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createStorage } from '../test-utils/storage';
 import {
   OAUTH_LOGIN_POPUP_BLOCKED_MESSAGE,
   OAUTH_POPUP_CALLBACK_MESSAGE_TYPE,
@@ -10,25 +11,6 @@ import {
   readOAuthPopupCallbackMessage,
   startOAuthLogin,
 } from './authRedirect';
-
-function createStorage() {
-  const store = new Map<string, string>();
-
-  return {
-    get length() {
-      return store.size;
-    },
-    clear: () => store.clear(),
-    getItem: (key: string) => store.get(key) ?? null,
-    key: (index: number) => Array.from(store.keys())[index] ?? null,
-    removeItem: (key: string) => {
-      store.delete(key);
-    },
-    setItem: (key: string, value: string) => {
-      store.set(key, value);
-    },
-  } satisfies Storage;
-}
 
 function installWindow(openResult: Window | null) {
   const sessionStorage = createStorage();

@@ -1,162 +1,115 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { type DataSourceSummary, type DataSourceSort } from '@/apis/datasource';
-import {
-  Checkbox,
-  ConfirmModal,
-  FileUploadModal,
-  ToastPortal,
-} from '@/components';
+import { ConfirmModal, FileUploadModal, ToastPortal } from '@/components';
+import { AUTH_MESSAGES, DATA_SOURCE_MESSAGES } from '@/constants/messages';
 import { useStartAnalysis } from '@/hooks/useStartAnalysis';
-import { useMyInfo } from '@/hooks/useMyInfo';
 import { useToast } from '@/hooks/useToast';
 import { validateCsvFile } from '@/lib/fileValidation';
-import { useAuthSession } from '@/providers/AuthProvider';
-import DataSourceRow from './_components/DataSourceRow';
-import SortDropdown from './_components/SortDropdown';
-import { useDeletedMockDataSources } from './_hooks/useDeletedMockDataSources';
+import DataSourceTable from './_components/DataSourceTable';
+import DataSourceToolbar from './_components/DataSourceToolbar';
 import { useDataSourceList } from './_hooks/useDataSourceList';
+import { useDataSourceSelection } from './_hooks/useDataSourceSelection';
+import { useDataSourceUserContext } from './_hooks/useDataSourceUserContext';
 import { useDeleteDataSources } from './_hooks/useDeleteDataSources';
 import { useUploadDataSource } from './_hooks/useUploadDataSource';
+import { getTableMessage } from './_utils/tableMessage';
 
 const DELETE_ILLUST_SRC = '/illusts/delete.svg';
-const LOGIN_REQUIRED_MESSAGE = '로그인이 필요해요. 다시 로그인해 주세요.';
-const LIST_ERROR_MESSAGE = '데이터 소스 목록을 불러오지 못했어요.';
-const UPLOAD_ERROR_MESSAGE =
-  '파일 업로드에 실패했어요. 잠시 후 다시 시도해 주세요.';
-const DELETE_ERROR_MESSAGE =
-  '파일 삭제에 실패했어요. 잠시 후 다시 시도해 주세요.';
-const DELETE_CONFLICT_ERROR_MESSAGE =
-  '연결된 분석 채팅이 있어 현재 삭제할 수 없어요. 채팅 삭제 기능이 준비되면 함께 삭제할 수 있습니다.';
-const START_CHAT_ERROR_MESSAGE =
-  '분석 채팅을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.';
 
 const SORT_OPTIONS = [
   { value: 'MOST_USED', label: '사용량 많은 순' },
   { value: 'LATEST', label: '최근 업로드 순' },
 ] satisfies Array<{ value: DataSourceSort; label: string }>;
 
-const DATA_FILE_MESSAGES = {
-  invalidType: '파일 형식이 맞지 않습니다.',
-  empty: '빈 CSV 파일은 업로드할 수 없어요.',
-  tooLarge: '파일이 너무 커요. 50MB까지만 업로드 가능해요.',
-};
-
 export default function DataPage() {
   const router = useRouter();
-  const { hasAccessToken, status } = useAuthSession();
-  const isAuthenticated = status === 'authenticated';
-  const { data: myInfo } = useMyInfo(isAuthenticated);
-  const { deletedMockDataSourceIds, markDeletedMockDataSources } =
-    useDeletedMockDataSources(myInfo?.id);
+  const {
+    deletedMockDataSourceIds,
+    hasAccessToken,
+    isAuthenticated,
+    markDeletedMockDataSources,
+    myInfo,
+    status,
+  } = useDataSourceUserContext();
   const { toast, showToast } = useToast();
   const [sortKey, setSortKey] = useState<DataSourceSort>('LATEST');
   const [page, setPage] = useState(0);
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const startAnalysis = useStartAnalysis({
-    loginRequiredMessage: LOGIN_REQUIRED_MESSAGE,
-    fallbackErrorMessage: START_CHAT_ERROR_MESSAGE,
+    loginRequiredMessage: AUTH_MESSAGES.loginRequired,
+    fallbackErrorMessage: DATA_SOURCE_MESSAGES.startChatError,
     onError: (message) => showToast(message, 'error'),
   });
 
   const dataSourcesQuery = useDataSourceList({
     deletedMockDataSourceIds,
     enabled: isAuthenticated,
-    fallbackErrorMessage: LIST_ERROR_MESSAGE,
+    fallbackErrorMessage: DATA_SOURCE_MESSAGES.listError,
     page,
     sort: sortKey,
   });
+  const dataSources = dataSourcesQuery.dataSources;
+  const {
+    allSelected,
+    clearSelection,
+    hasSelection,
+    partiallySelected,
+    selectedVisibleIds,
+    toggleAll,
+    toggleOne,
+  } = useDataSourceSelection(dataSources);
   const uploadDataSourceMutation = useUploadDataSource({
-    fallbackErrorMessage: UPLOAD_ERROR_MESSAGE,
+    fallbackErrorMessage: DATA_SOURCE_MESSAGES.uploadError,
     hasAccessToken,
-    loginRequiredMessage: LOGIN_REQUIRED_MESSAGE,
+    loginRequiredMessage: AUTH_MESSAGES.loginRequired,
     onSuccess: () => {
-      setSelectedIds(new Set());
+      clearSelection();
       setUploadOpen(false);
-      showToast('파일을 업로드했습니다.', 'success');
+      showToast(DATA_SOURCE_MESSAGES.uploadSuccess, 'success');
     },
   });
   const deleteDataSourcesMutation = useDeleteDataSources({
-    conflictErrorMessage: DELETE_CONFLICT_ERROR_MESSAGE,
-    fallbackErrorMessage: DELETE_ERROR_MESSAGE,
+    conflictErrorMessage: DATA_SOURCE_MESSAGES.deleteConflict,
+    fallbackErrorMessage: DATA_SOURCE_MESSAGES.deleteError,
     onDeletedMockDataSources: markDeletedMockDataSources,
     onError: (message) => {
       setDeleteOpen(false);
       showToast(message, 'error');
     },
     onSuccess: () => {
-      setSelectedIds(new Set());
+      clearSelection();
       setDeleteOpen(false);
-      showToast('파일을 삭제했습니다.', 'success');
+      showToast(DATA_SOURCE_MESSAGES.deleteSuccess, 'success');
     },
     userId: myInfo?.id,
   });
 
-  const dataSources = dataSourcesQuery.dataSources;
-  const visibleDataSourceIds = useMemo(
-    () => new Set(dataSources.map((dataSource) => dataSource.dataSourceId)),
-    [dataSources],
-  );
-  const selectedVisibleIds = useMemo(
-    () =>
-      new Set(
-        Array.from(selectedIds).filter((dataSourceId) =>
-          visibleDataSourceIds.has(dataSourceId),
-        ),
-      ),
-    [selectedIds, visibleDataSourceIds],
-  );
   const chatPendingDataSourceId = startAnalysis.pendingDataSourceId;
-  const allSelected =
-    dataSources.length > 0 &&
-    dataSources.every((dataSource) =>
-      selectedVisibleIds.has(dataSource.dataSourceId),
-    );
-  const partiallySelected = !allSelected && selectedVisibleIds.size > 0;
-  const hasSelection = selectedVisibleIds.size > 0;
-  const tableMessage =
-    !hasAccessToken && status !== 'initializing'
-      ? LOGIN_REQUIRED_MESSAGE
-      : status === 'initializing' || dataSourcesQuery.isLoading
-        ? '데이터 소스 목록을 불러오는 중이에요.'
-        : dataSourcesQuery.isError
-          ? dataSourcesQuery.errorMessage
-          : dataSources.length === 0
-            ? '업로드된 데이터 소스가 없습니다.'
-            : null;
-
-  const toggleAll = () => {
-    if (allSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(
-        new Set(dataSources.map((dataSource) => dataSource.dataSourceId)),
-      );
-    }
-  };
-
-  const toggleOne = (id: number) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  const tableMessage = getTableMessage({
+    dataSourceCount: dataSources.length,
+    emptyMessage: DATA_SOURCE_MESSAGES.tableEmpty,
+    errorMessage: dataSourcesQuery.errorMessage,
+    hasAccessToken,
+    isError: dataSourcesQuery.isError,
+    isLoading: dataSourcesQuery.isLoading,
+    loadingMessage: DATA_SOURCE_MESSAGES.tableLoading,
+    loginRequiredMessage: AUTH_MESSAGES.loginRequired,
+    status,
+  });
 
   const handleSortChange = (next: DataSourceSort) => {
     setSortKey(next);
     setPage(0);
-    setSelectedIds(new Set());
+    clearSelection();
   };
 
   const handleUploadClick = () => {
     if (!hasAccessToken) {
-      showToast(LOGIN_REQUIRED_MESSAGE, 'error');
+      showToast(AUTH_MESSAGES.loginRequired, 'error');
       return;
     }
 
@@ -164,7 +117,7 @@ export default function DataPage() {
   };
 
   const handleDeleteClick = () => {
-    if (selectedIds.size === 0) return;
+    if (!hasSelection) return;
     setDeleteOpen(true);
   };
 
@@ -174,7 +127,7 @@ export default function DataPage() {
 
   const handleChat = (dataSource: DataSourceSummary) => {
     if (!hasAccessToken) {
-      showToast(LOGIN_REQUIRED_MESSAGE, 'error');
+      showToast(AUTH_MESSAGES.loginRequired, 'error');
       return;
     }
 
@@ -195,93 +148,37 @@ export default function DataPage() {
         데이터 소스
       </h1>
 
-      <div className="mb-16 flex items-center justify-between">
-        <SortDropdown
-          options={SORT_OPTIONS}
-          value={sortKey}
-          onChange={handleSortChange}
-        />
-        <div className="flex items-center gap-16">
-          {hasSelection && (
-            <button
-              type="button"
-              onClick={handleDeleteClick}
-              disabled={deleteDataSourcesMutation.isPending}
-              className="text-body4 text-gray-700 underline underline-offset-2 hover:text-gray-900 disabled:cursor-not-allowed disabled:text-gray-400"
-            >
-              삭제하기
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={handleUploadClick}
-            disabled={uploadDataSourceMutation.isPending}
-            className="rounded-full bg-orange-500 px-16 py-8 text-body4 font-medium text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-400"
-          >
-            CSV 파일 업로드
-          </button>
-        </div>
-      </div>
+      <DataSourceToolbar
+        deletePending={deleteDataSourcesMutation.isPending}
+        hasSelection={hasSelection}
+        sortKey={sortKey}
+        sortOptions={SORT_OPTIONS}
+        uploadPending={uploadDataSourceMutation.isPending}
+        onDeleteClick={handleDeleteClick}
+        onSortChange={handleSortChange}
+        onUploadClick={handleUploadClick}
+      />
 
-      <div className="overflow-hidden rounded-12 border border-gray-300 bg-white">
-        <table className="w-full border-collapse text-body4">
-          <thead>
-            <tr className="bg-gray-200 text-gray-900">
-              <th className="w-[5.6rem] py-16 pl-24 text-left">
-                <Checkbox
-                  size="md"
-                  checked={allSelected}
-                  indeterminate={partiallySelected}
-                  onCheckedChange={toggleAll}
-                  aria-label="데이터 소스 전체 선택"
-                />
-              </th>
-              <th className="py-16 text-left font-semibold">파일명</th>
-              <th className="w-[14rem] py-16 text-left font-semibold">
-                파일 크기
-              </th>
-              <th className="w-[16rem] py-16 text-left font-semibold">
-                최근 업로드
-              </th>
-              <th className="w-[14rem] py-16 pr-24 text-right font-semibold">
-                액션
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {tableMessage ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="px-24 py-40 text-center text-gray-600"
-                >
-                  {tableMessage}
-                </td>
-              </tr>
-            ) : (
-              dataSources.map((dataSource) => (
-                <DataSourceRow
-                  key={dataSource.dataSourceId}
-                  checked={selectedVisibleIds.has(dataSource.dataSourceId)}
-                  chatDisabled={startAnalysis.isPending}
-                  chatPending={
-                    chatPendingDataSourceId === dataSource.dataSourceId
-                  }
-                  dataSource={dataSource}
-                  onChat={handleChat}
-                  onOpenDetail={goToDetail}
-                  onToggle={toggleOne}
-                />
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataSourceTable
+        allSelected={allSelected}
+        chatDisabled={startAnalysis.isPending}
+        chatPendingDataSourceId={chatPendingDataSourceId}
+        dataSources={dataSources}
+        partiallySelected={partiallySelected}
+        selectedVisibleIds={selectedVisibleIds}
+        tableMessage={tableMessage}
+        onChat={handleChat}
+        onOpenDetail={goToDetail}
+        onToggleAll={toggleAll}
+        onToggleOne={toggleOne}
+      />
 
       <FileUploadModal
         open={uploadOpen}
         onClose={() => setUploadOpen(false)}
-        validateFile={(file) => validateCsvFile(file, DATA_FILE_MESSAGES)}
+        validateFile={(file) =>
+          validateCsvFile(file, DATA_SOURCE_MESSAGES.fileValidation)
+        }
         onError={(message) => showToast(message, 'error')}
         onUpload={uploadDataSourceMutation.upload}
       />
@@ -290,10 +187,10 @@ export default function DataPage() {
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         onConfirm={() => void handleDeleteConfirm()}
-        title="파일을 삭제하시겠어요?"
-        description="삭제 후엔 복구할 수 없어요."
-        confirmLabel="삭제하기"
-        cancelLabel="취소하기"
+        title={DATA_SOURCE_MESSAGES.deleteTitle}
+        description={DATA_SOURCE_MESSAGES.deleteDescription}
+        confirmLabel={DATA_SOURCE_MESSAGES.deleteConfirmLabel}
+        cancelLabel={DATA_SOURCE_MESSAGES.deleteCancelLabel}
         confirmDisabled={deleteDataSourcesMutation.isPending}
         icon={
           <>
