@@ -3,13 +3,24 @@ package com.capstone.logue.data.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.capstone.logue.anal.repository.AiTaggingJobRepository;
+import com.capstone.logue.anal.repository.AnalysisCriteriaRepository;
+import com.capstone.logue.anal.repository.AnalysisFlowColumnRepository;
+import com.capstone.logue.anal.repository.AnalysisFlowRepository;
+import com.capstone.logue.anal.repository.AnalysisResultRepository;
+import com.capstone.logue.anal.repository.DataSourceColumnRepository;
+import com.capstone.logue.anal.repository.FlowDataWarningRepository;
+import com.capstone.logue.anal.repository.MessageRepository;
+import com.capstone.logue.anal.repository.SourceDataWarningRepository;
 import com.capstone.logue.data.dto.FilePreview;
 import com.capstone.logue.data.dto.GetDataSourceListResponse;
 import com.capstone.logue.data.dto.SortType;
@@ -30,6 +41,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -55,6 +67,15 @@ class DataSourceServiceTest {
     @Mock private UserLookupRepository userLookupRepository;
     @Mock private DataSourceStorage storage;
     @Mock private CsvParser csvParser;
+    @Mock private AnalysisFlowRepository analysisFlowRepository;
+    @Mock private AnalysisCriteriaRepository analysisCriteriaRepository;
+    @Mock private AnalysisResultRepository analysisResultRepository;
+    @Mock private FlowDataWarningRepository flowDataWarningRepository;
+    @Mock private AnalysisFlowColumnRepository analysisFlowColumnRepository;
+    @Mock private AiTaggingJobRepository aiTaggingJobRepository;
+    @Mock private MessageRepository messageRepository;
+    @Mock private SourceDataWarningRepository sourceDataWarningRepository;
+    @Mock private DataSourceColumnRepository dataSourceColumnRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -67,7 +88,16 @@ class DataSourceServiceTest {
                 userLookupRepository,
                 storage,
                 csvParser,
-                objectMapper
+                objectMapper,
+                analysisFlowRepository,
+                analysisCriteriaRepository,
+                analysisResultRepository,
+                flowDataWarningRepository,
+                analysisFlowColumnRepository,
+                aiTaggingJobRepository,
+                messageRepository,
+                sourceDataWarningRepository,
+                dataSourceColumnRepository
         );
     }
 
@@ -164,6 +194,70 @@ class DataSourceServiceTest {
 
         verify(storage, never()).delete(anyString());
         verify(dataSourceRepository, never()).deleteAll(any());
+    }
+
+    @Test
+    @DisplayName("DataSource 단건 삭제 시 연결된 AnalysisFlow 와 하위 엔티티가 자식부터 cascade 삭제된 뒤 DataSource 본체가 삭제된다")
+    void deleteOne_withChildEntities_cascadesAndDeletesDataSource() {
+        User owner = User.builder().id(OWNER_ID).email("o@test.com")
+                .providerUserId("p-1").name("o").provider("GOOGLE").build();
+        DataSource mine = DataSource.builder().id(5L).user(owner).fileName("a.csv").fileSize(1L)
+                .storageKey("k1").schemaJson(objectMapper.createObjectNode())
+                .rowCount(0).columnCount(0).build();
+        when(dataSourceRepository.findById(5L)).thenReturn(Optional.of(mine));
+        when(analysisFlowRepository.findIdsByDataSourceIds(List.of(5L)))
+                .thenReturn(List.of(10L, 11L));
+        when(analysisCriteriaRepository.findIdsByAnalysisFlowIds(List.of(10L, 11L)))
+                .thenReturn(List.of(20L, 21L));
+
+        service.deleteOne(OWNER_ID, 5L);
+
+        InOrder order = inOrder(
+                analysisResultRepository,
+                flowDataWarningRepository,
+                analysisCriteriaRepository,
+                analysisFlowColumnRepository,
+                aiTaggingJobRepository,
+                messageRepository,
+                analysisFlowRepository,
+                sourceDataWarningRepository,
+                dataSourceColumnRepository,
+                storage,
+                dataSourceRepository
+        );
+        order.verify(analysisResultRepository).deleteAllByAnalysisCriteriaIds(List.of(20L, 21L));
+        order.verify(flowDataWarningRepository).deleteAllByAnalysisCriteriaIds(List.of(20L, 21L));
+        order.verify(analysisCriteriaRepository).deleteAllByAnalysisFlowIds(List.of(10L, 11L));
+        order.verify(analysisFlowColumnRepository).deleteAllByAnalysisFlowIds(List.of(10L, 11L));
+        order.verify(aiTaggingJobRepository).deleteAllByAnalysisFlowIds(List.of(10L, 11L));
+        order.verify(messageRepository).deleteAllByAnalysisFlowIds(List.of(10L, 11L));
+        order.verify(analysisFlowRepository).deleteAllByDataSourceIds(List.of(5L));
+        order.verify(sourceDataWarningRepository).deleteAllByDataSourceIds(List.of(5L));
+        order.verify(dataSourceColumnRepository).deleteAllByDataSourceIds(List.of(5L));
+        order.verify(storage).delete("k1");
+        order.verify(dataSourceRepository).delete(mine);
+    }
+
+    @Test
+    @DisplayName("연결된 AnalysisFlow 가 없는 DataSource 단건 삭제 시 flow 의존 cascade 는 건너뛰고 본체만 삭제된다")
+    void deleteOne_withoutChildEntities_skipsFlowCascadeAndDeletesDataSource() {
+        User owner = User.builder().id(OWNER_ID).email("o@test.com")
+                .providerUserId("p-1").name("o").provider("GOOGLE").build();
+        DataSource mine = DataSource.builder().id(7L).user(owner).fileName("a.csv").fileSize(1L)
+                .storageKey("k2").schemaJson(objectMapper.createObjectNode())
+                .rowCount(0).columnCount(0).build();
+        when(dataSourceRepository.findById(7L)).thenReturn(Optional.of(mine));
+        when(analysisFlowRepository.findIdsByDataSourceIds(List.of(7L))).thenReturn(List.of());
+
+        service.deleteOne(OWNER_ID, 7L);
+
+        verify(analysisCriteriaRepository, never()).findIdsByAnalysisFlowIds(anyCollection());
+        verify(analysisResultRepository, never()).deleteAllByAnalysisCriteriaIds(anyCollection());
+        verify(analysisFlowRepository, never()).deleteAllByDataSourceIds(anyCollection());
+        verify(sourceDataWarningRepository).deleteAllByDataSourceIds(List.of(7L));
+        verify(dataSourceColumnRepository).deleteAllByDataSourceIds(List.of(7L));
+        verify(storage).delete("k2");
+        verify(dataSourceRepository).delete(mine);
     }
 
     @Test
