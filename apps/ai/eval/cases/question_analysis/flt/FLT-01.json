@@ -1,0 +1,21 @@
+{
+  "id": "FLT-01",
+  "layer": "필터 + RANKING",
+  "category": "flt",
+  "spec": {
+    "id": "FLT-01",
+    "dataset": "dataset-a",
+    "question": "internal_test 계정을 제외하고, 이번 주 가입 전환율 하위 5개 채널·디바이스"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "RANKING",
+      "metric_name": "signup_conversion_rate",
+      "base_date_column": "event_date",
+      "standard_period": "1W",
+      "group_by": ["channel", "device"],
+      "sort_direction": "asc",
+      "limit_num": 5
+    }
+  }
+}

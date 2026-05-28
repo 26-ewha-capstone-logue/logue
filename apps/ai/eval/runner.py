@@ -25,11 +25,15 @@ class RunResult:
 
 
 def run_case(suite: SuiteName, case: dict[str, Any]) -> RunResult:
-    """case["input"] 을 suite 별 schema 로 검증한 뒤 service 호출. 결과 dict 또는 error 반환."""
+    """case 의 `input` (raw) 또는 `spec` (composer 필요) 를 받아 service 호출.
+
+    `spec` 이 있으면 suite 별 composer 로 변환 후 service 호출. 둘 다 없으면 ValueError.
+    """
     case_id = case.get("id", "<unknown>")
     start = time.monotonic()
     try:
-        response = _dispatch(suite, case["input"])
+        payload = _resolve_payload(suite, case)
+        response = _dispatch(suite, payload)
     except Exception as exc:
         return RunResult(
             case_id=case_id,
@@ -45,6 +49,18 @@ def run_case(suite: SuiteName, case: dict[str, Any]) -> RunResult:
         error=None,
         latency_ms=int((time.monotonic() - start) * 1000),
     )
+
+
+def _resolve_payload(suite: SuiteName, case: dict[str, Any]) -> dict[str, Any]:
+    """case 가 raw input 을 가지면 그대로, spec 만 있으면 suite composer 로 변환."""
+    if "input" in case:
+        return case["input"]
+    if "spec" in case:
+        if suite == "question_analysis":
+            from eval.composers import compose_question_analysis_request
+            return compose_question_analysis_request(case["spec"])
+        raise ValueError(f"composer 미구현 suite: {suite!r}")
+    raise ValueError(f"case 에 'input' 또는 'spec' 필드가 필요합니다: id={case.get('id')!r}")
 
 
 def _dispatch(suite: SuiteName, input_payload: dict[str, Any]) -> dict[str, Any]:

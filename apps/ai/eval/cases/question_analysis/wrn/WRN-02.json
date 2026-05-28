@@ -1,0 +1,20 @@
+{
+  "id": "WRN-02",
+  "layer": "질문-데이터 불일치",
+  "category": "wrn",
+  "description": "질문에 '지역별' 포함 - region 컬럼 없음",
+  "spec": {
+    "id": "WRN-02",
+    "dataset": "dataset-a",
+    "question": "이번 주 지역별 가입 전환율 하위 5개"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "RANKING",
+      "metric_name": "signup_conversion_rate",
+      "base_date_column": "event_date",
+      "standard_period": "1W"
+    },
+    "warnings": {"QUESTION_DATA_MISMATCH": true}
+  }
+}

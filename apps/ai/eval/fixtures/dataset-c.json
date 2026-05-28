@@ -1,0 +1,15 @@
+{
+  "id": "dataset-c",
+  "table": "mixed_funnel_daily",
+  "fields": [
+    {"name": "event_date", "data_type": "date", "role": "DATE_CRITERIA"},
+    {"name": "created_at", "data_type": "datetime", "role": "DATE_CRITERIA"},
+    {"name": "channel", "data_type": "string", "role": "DIMENSION", "sample_values": ["paid_search", "organic"]},
+    {"name": "source", "data_type": "string", "role": "DIMENSION", "sample_values": ["paid_search", "organic"]},
+    {"name": "device", "data_type": "string", "role": "DIMENSION", "sample_values": ["mobile", "desktop"]},
+    {"name": "landing_sessions", "data_type": "integer", "role": "MEASURE"},
+    {"name": "signup_complete", "data_type": "integer", "role": "MEASURE"},
+    {"name": "signups", "data_type": "integer", "role": "MEASURE"},
+    {"name": "account_flag", "data_type": "string", "role": "FLAG", "sample_values": ["normal", "internal_test"]}
+  ]
+}

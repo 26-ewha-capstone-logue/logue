@@ -1,0 +1,21 @@
+{
+  "id": "CMP-08",
+  "layer": "스키마 변화",
+  "category": "cmp",
+  "spec": {
+    "id": "CMP-08",
+    "dataset": "dataset-b",
+    "question": "이번 주 가입 전환율이 지난주 대비 가장 많이 떨어진 소스·디바이스를 알려줘"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "COMPARISON",
+      "metric_name": "signup_conversion_rate",
+      "base_date_column": "created_at",
+      "standard_period": "1W",
+      "compare_period": "1W",
+      "group_by": ["source", "device_type"],
+      "sort_direction": "asc"
+    }
+  }
+}

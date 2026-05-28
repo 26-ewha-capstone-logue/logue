@@ -1,0 +1,21 @@
+{
+  "id": "CMP-03",
+  "layer": "정상 케이스",
+  "category": "cmp",
+  "spec": {
+    "id": "CMP-03",
+    "dataset": "dataset-a",
+    "question": "지난주 대비 이번 주 트라이얼 시작율이 가장 많이 떨어진 디바이스를 보여줘"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "COMPARISON",
+      "metric_name": "trial_start_rate",
+      "base_date_column": "event_date",
+      "standard_period": "1W",
+      "compare_period": "1W",
+      "group_by": ["device"],
+      "sort_direction": "asc"
+    }
+  }
+}

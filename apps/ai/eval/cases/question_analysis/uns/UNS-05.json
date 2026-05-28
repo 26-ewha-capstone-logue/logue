@@ -1,0 +1,16 @@
+{
+  "id": "UNS-05",
+  "layer": "모호성·경고",
+  "category": "uns",
+  "description": "DATE_CRITERIA role 컬럼 자체가 데이터셋에 없음",
+  "spec": {
+    "id": "UNS-05",
+    "dataset": "dataset-a",
+    "override_columns": {"event_date": {"remove": true}},
+    "question": "이번 주 가입 전환율 top 5 채널"
+  },
+  "expected": {
+    "analysis_criteria": null,
+    "unsupported_question": {"detected_intent": "missing_date_criteria"}
+  }
+}

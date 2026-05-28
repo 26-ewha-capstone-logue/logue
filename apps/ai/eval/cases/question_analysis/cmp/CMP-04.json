@@ -1,0 +1,21 @@
+{
+  "id": "CMP-04",
+  "layer": "정상 케이스",
+  "category": "cmp",
+  "spec": {
+    "id": "CMP-04",
+    "dataset": "dataset-a",
+    "question": "이번 분기 유료 전환율이 직전 분기 대비 가장 많이 하락한 채널·디바이스 조합은?"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "COMPARISON",
+      "metric_name": "paid_conversion_rate",
+      "base_date_column": "event_date",
+      "standard_period": "3M",
+      "compare_period": "3M",
+      "group_by": ["channel", "device"],
+      "sort_direction": "asc"
+    }
+  }
+}

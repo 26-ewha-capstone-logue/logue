@@ -1,0 +1,21 @@
+{
+  "id": "CMP-02",
+  "layer": "정상 케이스",
+  "category": "cmp",
+  "spec": {
+    "id": "CMP-02",
+    "dataset": "dataset-a",
+    "question": "이번 달 채널별 액티베이션율이 지난달 대비 가장 떨어진 곳은?"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "COMPARISON",
+      "metric_name": "activation_rate",
+      "base_date_column": "event_date",
+      "standard_period": "1M",
+      "compare_period": "1M",
+      "group_by": ["channel"],
+      "sort_direction": "asc"
+    }
+  }
+}

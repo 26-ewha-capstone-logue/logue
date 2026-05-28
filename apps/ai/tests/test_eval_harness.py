@@ -176,6 +176,21 @@ def test_score_file_analysis_normalizes_column_roles_list_to_dict() -> None:
     assert score.passed is True
 
 
+def test_score_question_analysis_normalizes_warnings_list_to_dict() -> None:
+    """question_analysis 의 warnings list 도 code key 기반 dict 로 정규화."""
+    score = score_case(
+        case_id="WRN-X", suite="question_analysis",
+        expected={"warnings": {"CRITICAL_NULL_DETECTED": True}},
+        actual={
+            "warnings": [
+                {"code": "CRITICAL_NULL_DETECTED", "related_fields": ["x"], "detail": "..."},
+            ],
+        },
+        error=None, latency_ms=100,
+    )
+    assert score.passed is True
+
+
 def test_score_file_analysis_normalizes_warnings_list_to_dict() -> None:
     """warnings list 도 code key 기반 dict 로 정규화."""
     score = score_case(
@@ -255,6 +270,76 @@ def test_runner_question_analysis_mock_path(monkeypatch: pytest.MonkeyPatch) -> 
     assert result.error is None
     assert result.response is not None
     assert result.response["request_id"] == "req_smoke"
+
+
+def test_composer_question_analysis_builds_valid_request() -> None:
+    """spec → composer → Pydantic 검증 통과."""
+    from eval.composers import compose_question_analysis_request
+    from schemas.api.question_analysis import QuestionAnalysisRequest
+
+    payload = compose_question_analysis_request({
+        "id": "CMP-X",
+        "dataset": "dataset-a",
+        "question": "이번 주 가입 전환율 top 5",
+    })
+    req = QuestionAnalysisRequest.model_validate(payload)
+    assert req.request_id == "cmp_x"
+    assert any(c.column_name == "event_date" for c in req.data_source.columns)
+    assert {m.metric_name for m in req.catalog.predefined_metrics} == {
+        "signup_conversion_rate", "activation_rate", "trial_start_rate", "paid_conversion_rate",
+    }
+
+
+def test_composer_applies_override_columns_remove() -> None:
+    from eval.composers import compose_question_analysis_request
+
+    payload = compose_question_analysis_request({
+        "id": "UNS-X",
+        "dataset": "dataset-a",
+        "override_columns": {"signup_complete": {"remove": True}},
+        "question": "이번 주 채널별 가입 전환율 top 5",
+    })
+    column_names = [c["column_name"] for c in payload["data_source"]["columns"]]
+    assert "signup_complete" not in column_names
+
+
+def test_composer_applies_add_columns() -> None:
+    from eval.composers import compose_question_analysis_request
+
+    payload = compose_question_analysis_request({
+        "id": "AMB-X",
+        "dataset": "dataset-a",
+        "add_columns": [
+            {"name": "new_col", "data_type": "string", "role": "DIMENSION"},
+        ],
+        "question": "x",
+    })
+    column_names = [c["column_name"] for c in payload["data_source"]["columns"]]
+    assert "new_col" in column_names
+
+
+def test_all_question_analysis_case_files_load_and_compose() -> None:
+    """43개 02 케이스가 모두 Pydantic 검증을 통과하는지 (단순 로드 + composer + validate)."""
+    from eval.composers import compose_question_analysis_request
+    from schemas.api.question_analysis import QuestionAnalysisRequest
+
+    expected_count = {"cmp": 10, "rnk": 10, "flt": 3, "wrn": 3, "uns": 8, "amb": 9}
+    for category, count in expected_count.items():
+        cases = load_cases("question_analysis", category)
+        assert len(cases) == count, f"{category} count mismatch: got {len(cases)}, expected {count}"
+        for case in cases:
+            payload = compose_question_analysis_request(case["spec"])
+            QuestionAnalysisRequest.model_validate(payload)
+
+
+def test_all_file_analysis_case_files_load_and_validate() -> None:
+    """기존 14개 01 케이스가 Pydantic 검증 통과 (regression guard)."""
+    from schemas.api.file_analysis import FileAnalysisRequest
+
+    cases = load_cases("file_analysis")
+    assert len(cases) == 14
+    for case in cases:
+        FileAnalysisRequest.model_validate(case["input"])
 
 
 def test_runner_unknown_suite_returns_error() -> None:

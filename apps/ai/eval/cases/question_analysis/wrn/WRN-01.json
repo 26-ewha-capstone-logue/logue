@@ -1,0 +1,23 @@
+{
+  "id": "WRN-01",
+  "layer": "데이터 품질 경고",
+  "category": "wrn",
+  "description": "landing_sessions null_ratio=0.42 override - critical_null_detected",
+  "spec": {
+    "id": "WRN-01",
+    "dataset": "dataset-a",
+    "override_columns": {"landing_sessions": {"null_ratio": 0.42}},
+    "question": "이번 주 채널·디바이스별 가입 전환율 하위 5개"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "RANKING",
+      "metric_name": "signup_conversion_rate",
+      "base_date_column": "event_date",
+      "standard_period": "1W",
+      "group_by": ["channel", "device"],
+      "limit_num": 5
+    },
+    "warnings": {"CRITICAL_NULL_DETECTED": true}
+  }
+}

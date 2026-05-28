@@ -1,0 +1,15 @@
+{
+  "id": "UNS-02",
+  "layer": "모호성·경고",
+  "category": "uns",
+  "description": "TREND 시계열 미지원 (COMPARISON/RANKING만)",
+  "spec": {
+    "id": "UNS-02",
+    "dataset": "dataset-a",
+    "question": "지난 3개월간 일별 가입 전환율 추이를 그려줘"
+  },
+  "expected": {
+    "analysis_criteria": null,
+    "unsupported_question": {"detected_intent": "trend_request"}
+  }
+}
