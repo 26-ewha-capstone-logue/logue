@@ -2,7 +2,7 @@
 
 `resolve()` 가 외부 진입점. 내부 흐름:
 1. LLM 호출 → `QuestionAnalysisResponse` 도출
-2. `validate_llm_output(response, req)` 로 셀프 검증
+2. `rules.business_validation.validate(response, req)` 로 셀프 검증
 3. 검증 통과 시 response 반환
 
 LLM 구현체는 `services.question_analysis.v1_baseline` 에 위치한다.
@@ -16,12 +16,12 @@ import logging
 
 from config.settings import is_mock_mode
 from core.errors import AppError, ErrorDetail, LLMCallFailedError
+from rules.business_validation import validate as validate_business_rules
 from schemas.api.question_analysis import (
     QuestionAnalysisRequest,
     QuestionAnalysisResponse,
 )
 from schemas.enums import SemanticRoleType
-from services.llm_output_validator import validate_llm_output
 
 
 logger = logging.getLogger("logue_ai")
@@ -48,7 +48,7 @@ def resolve(req: QuestionAnalysisRequest) -> QuestionAnalysisResponse:
             details=[ErrorDetail(reason="업스트림 LLM 호출 중 오류가 발생했습니다.")],
         ) from exc
 
-    validate_llm_output(response, req)
+    validate_business_rules(response, req)
     return response
 
 

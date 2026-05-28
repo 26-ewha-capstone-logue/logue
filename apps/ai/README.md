@@ -38,6 +38,7 @@ apps/ai/
   prompts/                # system prompt 저장 (<name>_<version>.system.md)
   config/                 # 환경변수 접근 + API별 모델/temperature/token 설정
   eval/                   # LLM 출력 품질 평가 하네스 (loader · runner · scoring · CLI)
+  rules/                  # LLM 응답 비즈니스 검증 (metric/column/warning + facade)
   core/                   # 에러·예외 핸들러·검증 헬퍼
   tests/
 ```
