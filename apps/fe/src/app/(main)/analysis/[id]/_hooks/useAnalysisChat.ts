@@ -1,21 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useReducer } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import {
-  dataSourceKeys,
-  getDataSource,
-  type FilePreview,
-} from '@/apis/datasource';
-import { getApiErrorMessage } from '@/apis/errors';
 import { useToast } from '@/hooks/useToast';
 import { markAnalysisStartPayloadConsumed } from '@/lib/analysisStartPayload';
 import type { PromptInputValue } from '../../_components/PromptInput';
-import { normalizeAnalysisError } from '../_adapters/normalizeAnalysisError';
+import { getAnalysisErrorMessage } from '../_adapters/normalizeAnalysisError';
 import { createUpdateCriteriaRequest } from '../_adapters/normalizeCriteria';
-import type { DataTableColumn } from '../_components/DataTablePreview';
 import type { CriteriaEditValues } from '../_models/analysisViewModels';
 import { uniqueStrings } from '../_utils/stringList';
+import { useAnalysisDataPreview } from './useAnalysisDataPreview';
 import {
   useAnalysisChatMessages,
   type CriteriaInitialMode,
@@ -55,27 +48,6 @@ const GET_RESULT_ERROR_MESSAGE =
 const GET_DATA_SOURCE_ERROR_MESSAGE =
   'CSV 미리보기를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
 
-function getAnalysisErrorMessage(error: unknown, fallbackMessage: string) {
-  return normalizeAnalysisError(error, fallbackMessage).message;
-}
-
-function createPreviewTable(preview?: FilePreview | null) {
-  if (!preview || preview.headers.length === 0) return null;
-
-  const columns: DataTableColumn[] = preview.headers.map((header, index) => ({
-    key: `col-${index}`,
-    label: header || `컬럼 ${index + 1}`,
-  }));
-  const rows = preview.rows.map((row) =>
-    columns.reduce<Record<string, string>>((acc, column, index) => {
-      acc[column.key] = row[index] ?? '';
-      return acc;
-    }, {}),
-  );
-
-  return { columns, rows };
-}
-
 type UseAnalysisChatParams = {
   hasAccessToken: boolean;
   routeConversationId: string;
@@ -114,15 +86,6 @@ export function useAnalysisChat({
     questionSubmissionLocked,
   } = flow;
 
-  const dataSourceQuery = useQuery({
-    queryKey: dataSourceKeys.detail(dataSourceId ?? 0),
-    queryFn: () => {
-      if (dataSourceId === null) throw new Error(INVALID_ROUTE_MESSAGE);
-      return getDataSource(dataSourceId);
-    },
-    enabled: hasAccessToken && dataSourceId !== null,
-  });
-
   const { summary, summaryErrorMessage, summaryPending } = useSummaryPhase({
     analysisFlowId,
     conversationId,
@@ -133,15 +96,17 @@ export function useAnalysisChat({
     routeReady: hasAccessToken && routeReady,
     statusPollIntervalMs: STATUS_POLL_INTERVAL_MS,
   });
-  const dataSourcePreview = hasAccessToken
-    ? dataSourceQuery.data?.preview
-    : undefined;
-  const previewTable = createPreviewTable(dataSourcePreview);
-  const dataSourceErrorMessage = dataSourceQuery.isError
-    ? getApiErrorMessage(dataSourceQuery.error, GET_DATA_SOURCE_ERROR_MESSAGE)
-    : null;
-  const isDataSourceEmpty =
-    hasAccessToken && dataSourceQuery.isSuccess && !previewTable;
+  const {
+    dataSourceErrorMessage,
+    isDataSourceEmpty,
+    isDataSourceLoading,
+    previewTable,
+  } = useAnalysisDataPreview({
+    dataSourceId,
+    enabled: hasAccessToken,
+    errorMessage: GET_DATA_SOURCE_ERROR_MESSAGE,
+    invalidRouteMessage: INVALID_ROUTE_MESSAGE,
+  });
   const { questionAnalysisMutation, updateCriteriaMutation } = useCriteriaPhase(
     {
       getCriteriaErrorMessage: GET_CRITERIA_ERROR_MESSAGE,
@@ -400,7 +365,7 @@ export function useAnalysisChat({
     initialMessage,
     inputDisabled,
     dataSourceErrorMessage,
-    isDataSourceLoading: hasAccessToken && dataSourceQuery.isLoading,
+    isDataSourceLoading,
     isDataSourceEmpty,
     previewTable,
     restMessages,

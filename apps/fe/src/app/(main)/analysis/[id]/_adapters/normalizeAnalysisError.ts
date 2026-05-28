@@ -136,6 +136,13 @@ export function normalizeAnalysisError(
   };
 }
 
+export function getAnalysisErrorMessage(
+  error: unknown,
+  fallbackMessage: string,
+) {
+  return normalizeAnalysisError(error, fallbackMessage).message;
+}
+
 export function normalizeAnalysisStatus(
   status: AnalysisJobStatus | null | undefined,
 ): AnalysisUiStatus {
