@@ -14,3 +14,6 @@ wheels/
 
 # IDE settings
 .idea/
+
+# Eval 결과 JSONL (baseline 만 commit)
+eval/results/*.jsonl

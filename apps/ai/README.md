@@ -37,6 +37,7 @@ apps/ai/
   llm/                    # OpenAI 호출 공통 모듈 (LLMClient + retry + prompt_loader)
   prompts/                # system prompt 저장 (<name>_<version>.system.md)
   config/                 # 환경변수 접근 + API별 모델/temperature/token 설정
+  eval/                   # LLM 출력 품질 평가 하네스 (loader · runner · scoring · CLI)
   observability/          # LLM 호출 이벤트 로깅 (stdout JSONL → CloudWatch) + cost · hashing · redaction
   rules/                  # LLM 응답 비즈니스 검증 (metric/column/warning + facade)
   core/                   # 에러·예외 핸들러·검증 헬퍼
