@@ -1,8 +1,12 @@
-"""파일 분석 LLM 호출용 정규화 입력 DTO (TBD).
+"""파일 분석 LLM 호출용 정규화 입력 DTO.
 
-01 파일 분석 API 담당자가 LLM 호출 구현 시 본 모듈을 채운다 — 현재는 API 요청 DTO 와
-형태가 동일한 pass-through 모델로 두어 import 경로 컨벤션만 유지한다. 필드 정규화
-정책이 결정되면 `from_request()` 와 필드를 갱신한다.
+API 요청 DTO 와 동일 형태의 pass-through 로 유지한다 — FA 입력은 이미 BE 단에서
+`row_count` / `column_count` / `null_ratio` / `unique_ratio` / `sample_values` 등
+프로파일링 메타데이터만 담겨 오므로 LLM 호출 전에 추가로 trim 할 필드가 없다.
+
+`from_request()` 는 호출부에서 `model_dump(exclude={"request_id"})` 로 LLM payload 를
+구성할 때 진입점 역할을 한다 — 향후 정규화 정책 (예: file_name 마스킹, sample_values
+길이 제한) 이 결정되면 본 모듈에서 처리한다.
 """
 
 from __future__ import annotations

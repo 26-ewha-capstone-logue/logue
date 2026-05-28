@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 import main
@@ -6,7 +7,10 @@ import main
 client = TestClient(main.app)
 
 
-def test_analyze_data_source_returns_roles_and_source_warning() -> None:
+def test_analyze_data_source_returns_roles_and_source_warning(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ANAL_LLM_MOCK", "true")
     response = client.post(
         "/v1/llm/data-sources/analyze",
         json={
