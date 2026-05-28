@@ -6,6 +6,13 @@ import type {
 } from '../_models/analysisErrorTypes';
 
 const ERROR_BY_CODE: Record<string, UserFacingAnalysisError> = {
+  REQUEST_VALIDATION_FAILED: {
+    code: 'REQUEST_VALIDATION_FAILED',
+    title: '분석 요청 값을 확인해야 해요',
+    message:
+      '분석에 필요한 입력값이 올바르지 않아 요청을 완료할 수 없습니다. 입력값을 확인한 뒤 다시 시도해 주세요.',
+    retryable: false,
+  },
   LLM_OUTPUT_INVALID: {
     code: 'LLM_OUTPUT_INVALID',
     title: '분석 응답을 해석하지 못했어요',
@@ -47,6 +54,13 @@ const ERROR_BY_CODE: Record<string, UserFacingAnalysisError> = {
     retryable: true,
   },
 };
+
+const FIXED_USER_FACING_MESSAGE_CODES = new Set([
+  'REQUEST_VALIDATION_FAILED',
+  'LLM_OUTPUT_INVALID',
+  'LLM_REFERENCE_VIOLATION',
+  'LLM_CALL_FAILED',
+]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -102,7 +116,9 @@ export function normalizeAnalysisError(
   if (known) {
     return {
       ...known,
-      message: resolveErrorMessage(payload) ?? known.message,
+      message: FIXED_USER_FACING_MESSAGE_CODES.has(code)
+        ? known.message
+        : (resolveErrorMessage(payload) ?? known.message),
     };
   }
 
@@ -118,6 +134,13 @@ export function normalizeAnalysisError(
     message,
     retryable: true,
   };
+}
+
+export function getAnalysisErrorMessage(
+  error: unknown,
+  fallbackMessage: string,
+) {
+  return normalizeAnalysisError(error, fallbackMessage).message;
 }
 
 export function normalizeAnalysisStatus(

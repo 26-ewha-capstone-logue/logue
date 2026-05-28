@@ -1,20 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useReducer } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import {
-  dataSourceKeys,
-  getDataSource,
-  type FilePreview,
-} from '@/apis/datasource';
-import { getApiErrorMessage } from '@/apis/errors';
 import { useToast } from '@/hooks/useToast';
 import { markAnalysisStartPayloadConsumed } from '@/lib/analysisStartPayload';
 import type { PromptInputValue } from '../../_components/PromptInput';
+import { getAnalysisErrorMessage } from '../_adapters/normalizeAnalysisError';
 import { createUpdateCriteriaRequest } from '../_adapters/normalizeCriteria';
-import type { DataTableColumn } from '../_components/DataTablePreview';
 import type { CriteriaEditValues } from '../_models/analysisViewModels';
 import { uniqueStrings } from '../_utils/stringList';
+import { useAnalysisDataPreview } from './useAnalysisDataPreview';
 import {
   useAnalysisChatMessages,
   type CriteriaInitialMode,
@@ -51,22 +45,8 @@ const UPDATE_CRITERIA_ERROR_MESSAGE =
 const GET_RESULT_ERROR_MESSAGE =
   '최종 분석 결과를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
 
-function createPreviewTable(preview?: FilePreview | null) {
-  if (!preview || preview.headers.length === 0) return null;
-
-  const columns: DataTableColumn[] = preview.headers.map((header, index) => ({
-    key: `col-${index}`,
-    label: header || `컬럼 ${index + 1}`,
-  }));
-  const rows = preview.rows.map((row) =>
-    columns.reduce<Record<string, string>>((acc, column, index) => {
-      acc[column.key] = row[index] ?? '';
-      return acc;
-    }, {}),
-  );
-
-  return { columns, rows };
-}
+const GET_DATA_SOURCE_ERROR_MESSAGE =
+  'CSV 미리보기를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
 
 type UseAnalysisChatParams = {
   hasAccessToken: boolean;
@@ -106,15 +86,6 @@ export function useAnalysisChat({
     questionSubmissionLocked,
   } = flow;
 
-  const dataSourceQuery = useQuery({
-    queryKey: dataSourceKeys.detail(dataSourceId ?? 0),
-    queryFn: () => {
-      if (dataSourceId === null) throw new Error(INVALID_ROUTE_MESSAGE);
-      return getDataSource(dataSourceId);
-    },
-    enabled: hasAccessToken && dataSourceId !== null,
-  });
-
   const { summary, summaryErrorMessage, summaryPending } = useSummaryPhase({
     analysisFlowId,
     conversationId,
@@ -125,9 +96,17 @@ export function useAnalysisChat({
     routeReady: hasAccessToken && routeReady,
     statusPollIntervalMs: STATUS_POLL_INTERVAL_MS,
   });
-  const dataSourcePreview = hasAccessToken
-    ? dataSourceQuery.data?.preview
-    : undefined;
+  const {
+    dataSourceErrorMessage,
+    isDataSourceEmpty,
+    isDataSourceLoading,
+    previewTable,
+  } = useAnalysisDataPreview({
+    dataSourceId,
+    enabled: hasAccessToken,
+    errorMessage: GET_DATA_SOURCE_ERROR_MESSAGE,
+    invalidRouteMessage: INVALID_ROUTE_MESSAGE,
+  });
   const { questionAnalysisMutation, updateCriteriaMutation } = useCriteriaPhase(
     {
       getCriteriaErrorMessage: GET_CRITERIA_ERROR_MESSAGE,
@@ -182,7 +161,7 @@ export function useAnalysisChat({
           },
           onError: (error) => {
             dispatchFlow({ type: 'question-submission-finished' });
-            const message = getApiErrorMessage(
+            const message = getAnalysisErrorMessage(
               error,
               CREATE_QUESTION_ERROR_MESSAGE,
             );
@@ -286,7 +265,7 @@ export function useAnalysisChat({
               },
               onError: (error) => {
                 dispatchFlow({ type: 'criteria-submission-finished' });
-                const message = getApiErrorMessage(
+                const message = getAnalysisErrorMessage(
                   error,
                   GET_RESULT_ERROR_MESSAGE,
                 );
@@ -298,7 +277,7 @@ export function useAnalysisChat({
         },
         onError: (error) => {
           dispatchFlow({ type: 'criteria-submission-finished' });
-          const message = getApiErrorMessage(
+          const message = getAnalysisErrorMessage(
             error,
             UPDATE_CRITERIA_ERROR_MESSAGE,
           );
@@ -385,8 +364,10 @@ export function useAnalysisChat({
     handleSubmit,
     initialMessage,
     inputDisabled,
-    isDataSourceLoading: hasAccessToken && dataSourceQuery.isLoading,
-    previewTable: createPreviewTable(dataSourcePreview),
+    dataSourceErrorMessage,
+    isDataSourceLoading,
+    isDataSourceEmpty,
+    previewTable,
     restMessages,
     shouldShowAnalyzing,
     startInitialQuestion,

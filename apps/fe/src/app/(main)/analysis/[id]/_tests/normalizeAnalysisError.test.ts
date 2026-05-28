@@ -4,6 +4,7 @@ import {
   failedStatusResponse,
   llmCallFailedError,
   llmOutputInvalidError,
+  requestValidationFailedError,
 } from '../_fixtures/analysis.fixtures';
 import {
   normalizeAnalysisError,
@@ -28,6 +29,17 @@ describe('normalizeAnalysisError', () => {
       code: 'LLM_CALL_FAILED',
       retryable: true,
     });
+  });
+
+  it('normalizes AI request validation errors', () => {
+    const error = normalizeAnalysisError(requestValidationFailedError);
+
+    expect(error).toMatchObject({
+      code: 'REQUEST_VALIDATION_FAILED',
+      retryable: false,
+    });
+    expect(error.message).not.toBe('Invalid analysis criteria.');
+    expect(error.message).toContain('입력값');
   });
 
   it('normalizes FAILED statuses to retryable user-facing errors', () => {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   normalCriteriaResponse,
   partialNullCriteriaResponse,
+  rankingMissingLimitCriteriaResponse,
   unknownWarningCodeCriteriaResponse,
   warningCodeOnlyCriteriaResponse,
 } from '../_fixtures/analysis.fixtures';
@@ -55,6 +56,17 @@ describe('normalizeCriteria', () => {
     });
   });
 
+  it('requires limit count for ranking criteria', () => {
+    const criteria = normalizeCriteria(rankingMissingLimitCriteriaResponse);
+
+    expect(criteria.missingFields).toContain('조회 개수');
+    expect(
+      criteria.warnings.some(
+        (warning) => warning.code === 'MISSING_ANALYSIS_FIELDS',
+      ),
+    ).toBe(true);
+  });
+
   it('converts edit values back to the existing update request contract', () => {
     const criteria = normalizeCriteria(normalCriteriaResponse);
     const request = createUpdateCriteriaRequest(
@@ -66,7 +78,7 @@ describe('normalizeCriteria', () => {
       standardPeriod: '이번 주',
       comparePeriod: '지난 주',
       groupBy: ['channel', 'device'],
-      sortDirection: 'ASC',
+      sortDirection: 'asc',
       confirmed: true,
     });
   });

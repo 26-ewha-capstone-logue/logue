@@ -37,6 +37,17 @@ export default function AnalysisChatPage({
           />
         ) : chat.isDataSourceLoading ? (
           <LoadingDataPreview message="CSV 미리보기를 불러오는 중이에요" />
+        ) : chat.dataSourceErrorMessage ? (
+          <LoadingDataPreview
+            message={chat.dataSourceErrorMessage}
+            showSpinner={false}
+            tone="error"
+          />
+        ) : chat.isDataSourceEmpty ? (
+          <LoadingDataPreview
+            message="표시할 CSV 미리보기 데이터가 없습니다."
+            showSpinner={false}
+          />
         ) : (
           <LoadingDataPreview />
         )
