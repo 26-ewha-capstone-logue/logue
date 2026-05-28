@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import ArrowLeftIcon from '@/assets/icons/arrow-left.svg';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg';
 import { Button, Stepper } from '@/components';
+import { useAuthenticatedUser } from '@/hooks/useAuthenticatedUser';
 import {
   CheckboxList,
   DomainGrid,
@@ -37,6 +38,8 @@ function CheckIcon() {
 type StepKey = 1 | 2 | 3;
 
 const STEPS = ['도메인 선택', '업무리스트', '사용 툴 선택'];
+const FALLBACK_USER_NAME = '사용자';
+const USER_NAME_PLACEHOLDER = '{사용자}';
 
 const DOMAIN_OPTIONS = [
   '마케팅',
@@ -85,8 +88,20 @@ const STEP_COPY: Record<StepKey, { title: string; description: string }> = {
   },
 };
 
+function replaceUserNamePlaceholder(
+  copy: { title: string; description: string },
+  userName: string,
+) {
+  return {
+    ...copy,
+    title: copy.title.replace(USER_NAME_PLACEHOLDER, userName),
+  };
+}
+
 export default function OnboardingPage() {
   const router = useRouter();
+  const { isAuthenticated, isUserInfoError, isUserInfoLoading, myInfo } =
+    useAuthenticatedUser();
   const [step, setStep] = useState<StepKey>(1);
 
   // 1) 도메인 (단일 선택)
@@ -128,7 +143,13 @@ export default function OnboardingPage() {
     });
   };
 
-  const copy = STEP_COPY[step];
+  const shouldUseFetchedUserName =
+    isAuthenticated && !isUserInfoLoading && !isUserInfoError;
+  const userName =
+    shouldUseFetchedUserName && myInfo?.name.trim()
+      ? myInfo.name
+      : FALLBACK_USER_NAME;
+  const copy = replaceUserNamePlaceholder(STEP_COPY[step], userName);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-200 px-24 py-40">
