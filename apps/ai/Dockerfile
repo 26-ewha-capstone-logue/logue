@@ -8,8 +8,13 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --no-dev --frozen --no-cache
 
 COPY main.py .
+COPY config ./config
 COPY core ./core
+COPY llm ./llm
+COPY observability ./observability
+COPY prompts ./prompts
 COPY routers ./routers
+COPY rules ./rules
 COPY schemas ./schemas
 COPY services ./services
 
