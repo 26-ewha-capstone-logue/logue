@@ -1,13 +1,8 @@
 'use client';
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import { type ReactNode } from 'react';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg';
+import { useResizableSplit } from '../_hooks/useResizableSplit';
 
 export type AnalysisResizableSplitProps = {
   left: ReactNode;
@@ -26,9 +21,6 @@ export type AnalysisResizableSplitProps = {
   collapsedRightRem?: number;
 };
 
-// 1rem = 10px (globals.css 의 base font-size 설정과 동일)
-const REM = 10;
-
 export default function AnalysisResizableSplit({
   left,
   right,
@@ -39,82 +31,22 @@ export default function AnalysisResizableSplit({
   onRightCollapsedChange,
   collapsedRightRem = 3.9,
 }: AnalysisResizableSplitProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [rightRem, setRightRem] = useState<number | null>(
-    initialRightRem ?? null,
-  );
-  const [isDragging, setIsDragging] = useState(false);
-  const [internalCollapsed, setInternalCollapsed] = useState(false);
-  const isRightCollapsed = rightCollapsed ?? internalCollapsed;
-
-  const setCollapsed = useCallback(
-    (collapsed: boolean) => {
-      onRightCollapsedChange?.(collapsed);
-      if (rightCollapsed === undefined) {
-        setInternalCollapsed(collapsed);
-      }
-    },
-    [onRightCollapsedChange, rightCollapsed],
-  );
-
-  // 마운트 후 컨테이너 width 기반으로 초기 width 계산
-  useEffect(() => {
-    if (rightRem !== null) return;
-    const el = containerRef.current;
-    if (!el) return;
-    const totalRem = el.getBoundingClientRect().width / REM;
-    // 기본값: 우측 영역 = 최소값 + 4rem 여유 또는 컨테이너 절반 중 큰 값
-    const half = totalRem / 2;
-    setRightRem(Math.max(minRightRem, Math.min(half, 56)));
-  }, [rightRem, minRightRem]);
-
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      if (isRightCollapsed) return;
-      setIsDragging(true);
-    },
-    [isRightCollapsed],
-  );
-
-  useEffect(() => {
-    if (!isDragging || isRightCollapsed) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const el = containerRef.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      // 컨테이너 우측 끝부터 마우스 X까지 거리 = 우측 영역 width
-      const rightPx = rect.right - e.clientX;
-      const totalRem = rect.width / REM;
-      const nextRightRem = Math.min(
-        Math.max(rightPx / REM, minRightRem),
-        totalRem - minLeftRem,
-      );
-      setRightRem(nextRightRem);
-    };
-    const handleMouseUp = () => setIsDragging(false);
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-
-    // 드래그 중 텍스트 선택 방지
-    const prevUserSelect = document.body.style.userSelect;
-    const prevCursor = document.body.style.cursor;
-    document.body.style.userSelect = 'none';
-    document.body.style.cursor = 'ew-resize';
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.userSelect = prevUserSelect;
-      document.body.style.cursor = prevCursor;
-    };
-  }, [isDragging, isRightCollapsed, minRightRem, minLeftRem]);
-
-  const displayRightRem = isRightCollapsed
-    ? collapsedRightRem
-    : (rightRem ?? minRightRem);
+  const {
+    containerRef,
+    displayRightRem,
+    handleMouseDown,
+    isDragging,
+    isRightCollapsed,
+    minWidthRem,
+    setCollapsed,
+  } = useResizableSplit({
+    collapsedRightRem,
+    initialRightRem,
+    minLeftRem,
+    minRightRem,
+    onRightCollapsedChange,
+    rightCollapsed,
+  });
 
   return (
     <div ref={containerRef} className="relative flex flex-1 overflow-hidden">
@@ -159,7 +91,7 @@ export default function AnalysisResizableSplit({
         }`}
         style={{
           width: `${displayRightRem}rem`,
-          minWidth: `${isRightCollapsed ? collapsedRightRem : minRightRem}rem`,
+          minWidth: `${minWidthRem}rem`,
         }}
       >
         {isRightCollapsed ? (
