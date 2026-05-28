@@ -3,6 +3,7 @@ package com.capstone.logue.global.exception;
 import com.capstone.logue.global.discord.DiscordWebhookService;
 import com.capstone.logue.global.response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -46,6 +47,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleValidationException(MethodArgumentNotValidException e) {
         log.warn("[ValidationException] {}", e.getMessage());
+        return ResponseEntity
+                .status(ErrorCode.INVALID_INPUT.getHttpStatus())
+                .body(ApiResponse.error(ErrorCode.INVALID_INPUT));
+    }
+
+    /**
+     * `@Validated` 가 적용된 컨트롤러에서 `@PathVariable` · `@RequestParam` 의
+     * 제약 어노테이션(`@Min` · `@NotNull` 등) 위반 시 발생합니다. 핸들러 없으면 500 으로
+     * 폴백되므로 RequestBody 검증 실패와 동일한 400 / `INVALID_INPUT` 으로 정렬합니다.
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(ConstraintViolationException e) {
+        log.warn("[ConstraintViolation] {}", e.getMessage());
         return ResponseEntity
                 .status(ErrorCode.INVALID_INPUT.getHttpStatus())
                 .body(ApiResponse.error(ErrorCode.INVALID_INPUT));
