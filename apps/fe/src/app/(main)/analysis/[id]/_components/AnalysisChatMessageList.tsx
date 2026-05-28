@@ -5,6 +5,7 @@ import { ChatBubble } from '@/components';
 import AnalysisResult from './AnalysisResult';
 import AnalyzingIndicator from './AnalyzingIndicator';
 import QuestionAnalysisResult from './QuestionAnalysisResult';
+import UploadedFileBadge from './UploadedFileBadge';
 import VerificationResult from './VerificationResult';
 import type { ChatMessage } from '../_hooks/useAnalysisChatMessages';
 import type { AnalysisChatMessageListViewModel } from '../_hooks/useAnalysisChatViewModel';
@@ -49,16 +50,20 @@ export default function AnalysisChatMessageList({
 
   const renderMessage = (message: ChatMessage) => {
     if (message.role === 'user') {
+      if (message.fileName) {
+        return (
+          <div
+            key={message.id}
+            className="flex w-full flex-col items-end gap-8"
+          >
+            <UploadedFileBadge fileName={message.fileName} />
+            <ChatBubble role="user">{message.content}</ChatBubble>
+          </div>
+        );
+      }
+
       return (
-        <ChatBubble
-          key={message.id}
-          role="user"
-          file={
-            message.fileName
-              ? { name: message.fileName, status: 'uploaded' }
-              : undefined
-          }
-        >
+        <ChatBubble key={message.id} role="user">
           {message.content}
         </ChatBubble>
       );

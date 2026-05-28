@@ -32,11 +32,3 @@ export const Bot: Story = {
 export const BotLoading: Story = {
   args: { role: 'bot', loading: true },
 };
-
-export const UserWithFile: Story = {
-  args: {
-    role: 'user',
-    children: '데이터분석 결과 알려줘',
-    file: { name: '업로드된 CSV 파일명.csv', status: 'uploaded' },
-  },
-};
