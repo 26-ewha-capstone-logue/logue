@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -58,6 +59,15 @@ public class GlobalExceptionHandler {
                 .status(ErrorCode.MISSING_REQUEST_PARAMETER.getHttpStatus())
                 .body(ApiResponse.error(ErrorCode.MISSING_REQUEST_PARAMETER));
     }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingRequestHeader(MissingRequestHeaderException e) {
+        log.warn("[MissingRequestHeader] {}", e.getMessage());
+        return ResponseEntity
+                .status(ErrorCode.MISSING_REQUEST_PARAMETER.getHttpStatus())
+                .body(ApiResponse.error(ErrorCode.MISSING_REQUEST_PARAMETER));
+    }
+
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiResponse<Void>> handleArgumentTypeMismatch(MethodArgumentTypeMismatchException e) {
