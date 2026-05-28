@@ -101,13 +101,19 @@ public class AnalService {
      * @throws LogueException 대화를 찾을 수 없는 경우(CV001), 데이터 소스를 찾을 수 없는 경우(D001)
      */
     public CreateAnalysisFlowResponse createAnalysisFlow(
-            Long conversationId, CreateAnalysisFlowRequest request) {
+            Long userId, Long conversationId, CreateAnalysisFlowRequest request) {
 
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new LogueException(ErrorCode.CONVERSATION_NOT_FOUND));
+        if (!conversation.getUser().getId().equals(userId)) {
+            throw new LogueException(ErrorCode.FORBIDDEN);
+        }
 
         DataSource dataSource = dataSourceRepository.findById(request.dataSourceId())
                 .orElseThrow(() -> new LogueException(ErrorCode.DATASOURCE_NOT_FOUND));
+        if (!dataSource.getUser().getId().equals(userId)) {
+            throw new LogueException(ErrorCode.DATASOURCE_FORBIDDEN);
+        }
 
         AnalysisFlow analysisFlow = AnalysisFlow.builder()
                 .conversation(conversation)
