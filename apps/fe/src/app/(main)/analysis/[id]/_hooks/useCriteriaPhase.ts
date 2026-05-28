@@ -15,6 +15,7 @@ import { createPolledFetcher, useJobPoller } from './useJobPoller';
 
 export type QuestionAnalysisVariables = {
   initialMode: CriteriaInitialMode;
+  operationKey: string;
   targetConversationId: number;
   targetAnalysisFlowId: number;
   question: string;
@@ -29,12 +30,17 @@ export type UpdateCriteriaVariables = {
 
 type UseCriteriaPhaseOptions = {
   getCriteriaErrorMessage: string;
+  onQuestionCreated?: (context: {
+    operationKey: string;
+    params: QuestionCriteriaParams;
+  }) => void;
   questionAnalysisTimeoutMs: number;
   statusPollIntervalMs: number;
 };
 
 export function useCriteriaPhase({
   getCriteriaErrorMessage,
+  onQuestionCreated,
   questionAnalysisTimeoutMs,
   statusPollIntervalMs,
 }: UseCriteriaPhaseOptions) {
@@ -56,6 +62,7 @@ export function useCriteriaPhase({
     mutationFn: async ({
       targetConversationId,
       targetAnalysisFlowId,
+      operationKey,
       question,
     }: QuestionAnalysisVariables) => {
       const createdQuestion = await createQuestion(
@@ -70,6 +77,7 @@ export function useCriteriaPhase({
         analysisFlowId: targetAnalysisFlowId,
         messageId: createdQuestion.messageId,
       };
+      onQuestionCreated?.({ operationKey, params: criteriaParams });
 
       return getCriteriaAfterPolling(criteriaParams);
     },

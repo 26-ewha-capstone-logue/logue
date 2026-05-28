@@ -15,7 +15,10 @@ type AnalysisChatMessageListProps = {
   chat: Pick<
     UseAnalysisChatResult,
     | 'analyzingMessage'
+    | 'canCancelAnalyzing'
+    | 'cancelAnalyzingDisabled'
     | 'criteriaSubmitting'
+    | 'handleCancelAnalyzing'
     | 'handleConfirmCriteria'
     | 'initialMessage'
     | 'restMessages'
@@ -141,7 +144,13 @@ export default function AnalysisChatMessageList({
       {chat.restMessages.map(renderMessage)}
       {chat.shouldShowAnalyzing && (
         <MessageFrame>
-          <AnalyzingIndicator message={chat.analyzingMessage} />
+          <AnalyzingIndicator
+            cancelDisabled={chat.cancelAnalyzingDisabled}
+            message={chat.analyzingMessage}
+            onCancel={
+              chat.canCancelAnalyzing ? chat.handleCancelAnalyzing : undefined
+            }
+          />
         </MessageFrame>
       )}
     </>

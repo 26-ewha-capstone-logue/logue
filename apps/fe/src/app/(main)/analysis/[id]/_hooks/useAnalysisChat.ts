@@ -1,12 +1,27 @@
 'use client';
 
-import { useCallback, useEffect, useReducer } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  analysisQueryKeys,
+  cancelCriteria,
+  cancelResult,
+  cancelSummary,
+  type AnalysisStatusResponse,
+  type QuestionResultParams,
+} from '@/apis/analysis';
 import { useToast } from '@/hooks/useToast';
 import { markAnalysisStartPayloadConsumed } from '@/lib/analysisStartPayload';
 import type { PromptInputValue } from '../../_components/PromptInput';
 import { getAnalysisErrorMessage } from '../_adapters/normalizeAnalysisError';
 import { createUpdateCriteriaRequest } from '../_adapters/normalizeCriteria';
 import type { CriteriaEditValues } from '../_models/analysisViewModels';
+import {
+  getAnalysisCancelTarget,
+  getResultCancelKey,
+  type AnalysisCancelTarget,
+  type PendingCriteriaCancelTarget,
+} from '../_utils/analysisCancelTarget';
 import { uniqueStrings } from '../_utils/stringList';
 import { useAnalysisDataPreview } from './useAnalysisDataPreview';
 import {
@@ -47,6 +62,21 @@ const GET_RESULT_ERROR_MESSAGE =
 
 const GET_DATA_SOURCE_ERROR_MESSAGE =
   'CSV 미리보기를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
+const CANCEL_ANALYSIS_ERROR_MESSAGE =
+  '분석을 취소하지 못했어요. 잠시 후 다시 시도해 주세요.';
+const SUMMARY_CANCELED_MESSAGE = 'CSV 데이터 요약을 취소했어요.';
+const CRITERIA_CANCELED_MESSAGE = '질문 분석을 취소했어요.';
+const RESULT_CANCELED_MESSAGE = '최종 분석 결과 생성을 취소했어요.';
+
+function getAnalysisFlowKey({
+  analysisFlowId,
+  conversationId,
+}: {
+  analysisFlowId: number;
+  conversationId: number;
+}) {
+  return `${conversationId}:${analysisFlowId}`;
+}
 
 type UseAnalysisChatParams = {
   hasAccessToken: boolean;
@@ -60,6 +90,19 @@ export function useAnalysisChat({
   const { analysisFlowId, conversationId, dataSourceId, routeReady } =
     useAnalysisRouteParams(routeConversationId);
   const { toast, showToast } = useToast();
+  const queryClient = useQueryClient();
+  const operationSequenceRef = useRef(0);
+  const canceledCriteriaOperationKeysRef = useRef(new Set<string>());
+  const canceledResultKeysRef = useRef(new Set<string>());
+  const [canceledSummaryKey, setCanceledSummaryKey] = useState<string | null>(
+    null,
+  );
+  const [pendingCriteriaOperationKey, setPendingCriteriaOperationKey] =
+    useState<string | null>(null);
+  const [pendingCriteriaCancelTarget, setPendingCriteriaCancelTarget] =
+    useState<PendingCriteriaCancelTarget | null>(null);
+  const [pendingResultCancelParams, setPendingResultCancelParams] =
+    useState<QuestionResultParams | null>(null);
   const [flow, dispatchFlow] = useReducer(
     analysisChatFlowReducer,
     initialAnalysisChatFlowState,
@@ -85,6 +128,30 @@ export function useAnalysisChat({
     hasStartedInitialQuestion,
     questionSubmissionLocked,
   } = flow;
+  const createOperationKey = useCallback((stage: string) => {
+    operationSequenceRef.current += 1;
+    return `${stage}-${operationSequenceRef.current}`;
+  }, []);
+  const clearPendingCriteriaOperation = useCallback((operationKey: string) => {
+    setPendingCriteriaOperationKey((current) =>
+      current === operationKey ? null : current,
+    );
+    setPendingCriteriaCancelTarget((current) =>
+      current?.operationKey === operationKey ? null : current,
+    );
+  }, []);
+  const clearPendingResultCancelParams = useCallback(
+    (
+      params: Pick<QuestionResultParams, 'analysisCriteriaId' | 'messageId'>,
+    ) => {
+      const canceledKey = getResultCancelKey(params);
+
+      setPendingResultCancelParams((current) =>
+        current && getResultCancelKey(current) === canceledKey ? null : current,
+      );
+    },
+    [],
+  );
 
   const { summary, summaryErrorMessage, summaryPending } = useSummaryPhase({
     analysisFlowId,
@@ -110,6 +177,7 @@ export function useAnalysisChat({
   const { questionAnalysisMutation, updateCriteriaMutation } = useCriteriaPhase(
     {
       getCriteriaErrorMessage: GET_CRITERIA_ERROR_MESSAGE,
+      onQuestionCreated: setPendingCriteriaCancelTarget,
       questionAnalysisTimeoutMs: QUESTION_ANALYSIS_TIMEOUT_MS,
       statusPollIntervalMs: STATUS_POLL_INTERVAL_MS,
     },
@@ -122,6 +190,90 @@ export function useAnalysisChat({
     getResultErrorMessage: GET_RESULT_ERROR_MESSAGE,
     resultAnalysisTimeoutMs: RESULT_ANALYSIS_TIMEOUT_MS,
     statusPollIntervalMs: STATUS_POLL_INTERVAL_MS,
+  });
+  const markCancelStatus = useCallback(
+    (target: AnalysisCancelTarget) => {
+      const canceledStatus = {
+        status: 'CANCELED',
+      } satisfies AnalysisStatusResponse;
+
+      if (target.stage === 'summary') {
+        queryClient.setQueryData(
+          analysisQueryKeys.summaryStatus(
+            target.params.conversationId,
+            target.params.analysisFlowId,
+          ),
+          canceledStatus,
+        );
+        return;
+      }
+
+      if (target.stage === 'criteria') {
+        queryClient.setQueryData(
+          analysisQueryKeys.criteriaStatus(
+            target.params.conversationId,
+            target.params.analysisFlowId,
+            target.params.messageId,
+          ),
+          canceledStatus,
+        );
+        return;
+      }
+
+      queryClient.setQueryData(
+        analysisQueryKeys.resultStatus(
+          target.params.conversationId,
+          target.params.analysisFlowId,
+          target.params.messageId,
+          target.params.analysisCriteriaId,
+        ),
+        canceledStatus,
+      );
+    },
+    [queryClient],
+  );
+  const cancelAnalysisMutation = useMutation({
+    mutationFn: (target: AnalysisCancelTarget) => {
+      if (target.stage === 'summary') {
+        return cancelSummary(target.params);
+      }
+
+      if (target.stage === 'criteria') {
+        return cancelCriteria(target.params);
+      }
+
+      return cancelResult(target.params);
+    },
+    onSuccess: (_response, target) => {
+      markCancelStatus(target);
+
+      if (target.stage === 'summary') {
+        setCanceledSummaryKey(getAnalysisFlowKey(target.params));
+        appendNotice(SUMMARY_CANCELED_MESSAGE);
+        return;
+      }
+
+      if (target.stage === 'criteria') {
+        canceledCriteriaOperationKeysRef.current.add(target.operationKey);
+        clearPendingCriteriaOperation(target.operationKey);
+        dispatchFlow({ type: 'question-submission-finished' });
+        appendNotice(CRITERIA_CANCELED_MESSAGE);
+        return;
+      }
+
+      canceledResultKeysRef.current.add(getResultCancelKey(target.params));
+      clearPendingResultCancelParams(target.params);
+      dispatchFlow({ type: 'criteria-submission-finished' });
+      appendNotice(RESULT_CANCELED_MESSAGE);
+    },
+    onError: (error) => {
+      const message = getAnalysisErrorMessage(
+        error,
+        CANCEL_ANALYSIS_ERROR_MESSAGE,
+      );
+      showToast(message);
+      appendNotice(message, 'error');
+    },
   });
 
   const startQuestion = useCallback(
@@ -141,6 +293,9 @@ export function useAnalysisChat({
       const normalizedQuestion = question.trim();
       if (!normalizedQuestion) return;
 
+      const operationKey = createOperationKey('criteria');
+      setPendingCriteriaOperationKey(operationKey);
+      setPendingCriteriaCancelTarget(null);
       dispatchFlow({ type: 'question-submission-started' });
 
       if (appendUserMessage) {
@@ -149,6 +304,7 @@ export function useAnalysisChat({
 
       mutateQuestionAnalysis(
         {
+          operationKey,
           targetConversationId: conversationId,
           targetAnalysisFlowId: analysisFlowId,
           question: normalizedQuestion,
@@ -156,10 +312,20 @@ export function useAnalysisChat({
         },
         {
           onSuccess: (criteria, variables) => {
+            clearPendingCriteriaOperation(variables.operationKey);
             dispatchFlow({ type: 'question-submission-finished' });
             appendCriteriaMessage(criteria, variables.initialMode);
           },
-          onError: (error) => {
+          onError: (error, variables) => {
+            clearPendingCriteriaOperation(variables.operationKey);
+            if (
+              canceledCriteriaOperationKeysRef.current.delete(
+                variables.operationKey,
+              )
+            ) {
+              return;
+            }
+
             dispatchFlow({ type: 'question-submission-finished' });
             const message = getAnalysisErrorMessage(
               error,
@@ -176,7 +342,9 @@ export function useAnalysisChat({
       appendCriteriaMessage,
       appendNotice,
       appendUserQuestion,
+      clearPendingCriteriaOperation,
       conversationId,
+      createOperationKey,
       dispatchFlow,
       mutateQuestionAnalysis,
       questionSubmissionLocked,
@@ -240,6 +408,7 @@ export function useAnalysisChat({
     }
 
     dispatchFlow({ type: 'criteria-submission-started' });
+    setPendingResultCancelParams(null);
 
     updateCriteriaMutation.mutate(
       {
@@ -251,6 +420,13 @@ export function useAnalysisChat({
       {
         onSuccess: ({ analysisCriteriaId }) => {
           appendNotice('분석 기준이 확정되었어요.');
+          const resultParams = {
+            conversationId,
+            analysisFlowId,
+            messageId,
+            analysisCriteriaId,
+          };
+          setPendingResultCancelParams(resultParams);
           resultAnalysisMutation.mutate(
             {
               targetConversationId: conversationId,
@@ -260,10 +436,20 @@ export function useAnalysisChat({
             },
             {
               onSuccess: (result) => {
+                clearPendingResultCancelParams(resultParams);
                 dispatchFlow({ type: 'criteria-submission-finished' });
                 appendResultMessage(result);
               },
-              onError: (error) => {
+              onError: (error, variables) => {
+                clearPendingResultCancelParams(variables);
+                if (
+                  canceledResultKeysRef.current.delete(
+                    getResultCancelKey(variables),
+                  )
+                ) {
+                  return;
+                }
+
                 dispatchFlow({ type: 'criteria-submission-finished' });
                 const message = getAnalysisErrorMessage(
                   error,
@@ -276,6 +462,7 @@ export function useAnalysisChat({
           );
         },
         onError: (error) => {
+          setPendingResultCancelParams(null);
           dispatchFlow({ type: 'criteria-submission-finished' });
           const message = getAnalysisErrorMessage(
             error,
@@ -329,11 +516,29 @@ export function useAnalysisChat({
     ...(summary?.measureOptions ?? []),
     ...summaryColumnOptions,
   ]);
+  const questionAnalysisActive =
+    isQuestionAnalysisPending && pendingCriteriaOperationKey !== null;
+  const resultAnalysisActive =
+    resultAnalysisMutation.isPending && pendingResultCancelParams !== null;
   const shouldShowAnalyzing =
     summaryPending ||
-    isQuestionAnalysisPending ||
+    questionAnalysisActive ||
     updateCriteriaMutation.isPending ||
-    resultAnalysisMutation.isPending;
+    resultAnalysisActive;
+  const activeCancelTarget = getAnalysisCancelTarget({
+    analysisFlowId,
+    conversationId,
+    isQuestionAnalysisPending: questionAnalysisActive,
+    isResultAnalysisPending: resultAnalysisActive,
+    pendingCriteriaCancelTarget,
+    pendingResultCancelParams,
+    summaryPending,
+  });
+  const handleCancelAnalyzing = () => {
+    if (!activeCancelTarget || cancelAnalysisMutation.isPending) return;
+
+    cancelAnalysisMutation.mutate(activeCancelTarget);
+  };
   const analyzingMessage = summaryPending
     ? 'CSV 데이터를 분석 중이에요'
     : updateCriteriaMutation.isPending
@@ -343,23 +548,33 @@ export function useAnalysisChat({
         : '질문을 분석 중이에요';
   const inputDisabled =
     !summary ||
-    isQuestionAnalysisPending ||
+    questionAnalysisActive ||
     updateCriteriaMutation.isPending ||
-    resultAnalysisMutation.isPending;
+    resultAnalysisActive;
   const summaryWarnings = summary?.warnings ?? [];
   const summaryActionDisabled =
     hasStartedInitialQuestion ||
     !hasResolvedStartPayload ||
     !canAutoStartInitialQuestion ||
-    isQuestionAnalysisPending ||
+    questionAnalysisActive ||
     updateCriteriaMutation.isPending;
   const criteriaSubmitting =
     criteriaSubmissionLocked ||
     updateCriteriaMutation.isPending ||
-    resultAnalysisMutation.isPending;
+    resultAnalysisActive;
+  const currentSummaryKey =
+    conversationId !== null && analysisFlowId !== null
+      ? getAnalysisFlowKey({ analysisFlowId, conversationId })
+      : null;
+  const hasCanceledCurrentSummary =
+    currentSummaryKey !== null && canceledSummaryKey === currentSummaryKey;
+
   return {
     analyzingMessage,
+    canCancelAnalyzing: activeCancelTarget !== null,
+    cancelAnalyzingDisabled: cancelAnalysisMutation.isPending,
     criteriaSubmitting,
+    handleCancelAnalyzing,
     handleConfirmCriteria,
     handleSubmit,
     initialMessage,
@@ -374,7 +589,7 @@ export function useAnalysisChat({
     summary,
     summaryActionDisabled,
     summaryColumnOptions,
-    summaryErrorMessage,
+    summaryErrorMessage: hasCanceledCurrentSummary ? null : summaryErrorMessage,
     summarySortOptions,
     summaryWarnings,
     toast,
