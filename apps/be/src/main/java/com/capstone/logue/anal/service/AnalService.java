@@ -171,14 +171,14 @@ public class AnalService {
      * @param conversationId 대화 ID
      * @param analysisFlowId 분석 흐름 ID
      * @return 데이터 상태 요약 결과 (컬럼 정보, 경고 메시지 등)
-     * @throws LogueException 분석 흐름 또는 데이터 소스를 찾을 수 없는 경우 (D001),
+     * @throws LogueException 분석 흐름을 찾을 수 없는 경우 (AN003),
      *                        요약이 아직 완료되지 않은 경우 (D101)
      */
     public GetSummaryResponse getSummary(Long conversationId, Long analysisFlowId) {
 
         validateConversationAccess(conversationId, analysisFlowId);
         AnalysisFlow analysisFlow = analysisFlowRepository.findById(analysisFlowId)
-                .orElseThrow(() -> new LogueException(ErrorCode.DATASOURCE_NOT_FOUND));
+                .orElseThrow(() -> new LogueException(ErrorCode.ANALYSIS_FLOW_NOT_FOUND));
 
         AiTaggingJob job = aiTaggingJobRepository
                 .findTopByAnalysisFlowIdAndStageOrderByCreatedAtDescIdDesc(analysisFlowId, JobStage.DATA_STATUS)
@@ -291,7 +291,7 @@ public class AnalService {
      * @param analysisFlowId 분석 흐름 ID
      * @throws LogueException 대화를 찾을 수 없는 경우 (CV001),
      *                        현재 사용자가 대화 소유자가 아닌 경우 (A002),
-     *                        분석 흐름을 찾을 수 없는 경우 (D001),
+     *                        분석 흐름을 찾을 수 없는 경우 (AN003),
      *                        분석 흐름이 해당 대화에 속하지 않는 경우 (A002)
      */
     private void validateConversationAccess(Long conversationId, Long analysisFlowId) {
@@ -304,7 +304,7 @@ public class AnalService {
         }
 
         AnalysisFlow analysisFlow = analysisFlowRepository.findById(analysisFlowId)
-                .orElseThrow(() -> new LogueException(ErrorCode.DATASOURCE_NOT_FOUND));
+                .orElseThrow(() -> new LogueException(ErrorCode.ANALYSIS_FLOW_NOT_FOUND));
 
         if (!analysisFlow.getConversation().getId().equals(conversationId)) {
             throw new LogueException(ErrorCode.FORBIDDEN);

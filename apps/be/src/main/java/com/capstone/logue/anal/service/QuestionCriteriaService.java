@@ -301,7 +301,7 @@ public class QuestionCriteriaService {
         }
 
         AnalysisFlow flow = analysisFlowRepository.findById(analysisFlowId)
-                .orElseThrow(() -> new LogueException(ErrorCode.DATASOURCE_NOT_FOUND));
+                .orElseThrow(() -> new LogueException(ErrorCode.ANALYSIS_FLOW_NOT_FOUND));
 
         if (!flow.getConversation().getId().equals(conversationId)) {
             throw new LogueException(ErrorCode.FORBIDDEN);

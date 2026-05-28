@@ -3,6 +3,7 @@ package com.capstone.logue.global.exception;
 import com.capstone.logue.global.discord.DiscordWebhookService;
 import com.capstone.logue.global.response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -10,10 +11,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Arrays;
@@ -51,6 +54,19 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ErrorCode.INVALID_INPUT));
     }
 
+    /**
+     * `@Validated` 가 적용된 컨트롤러에서 `@PathVariable` · `@RequestParam` 의
+     * 제약 어노테이션(`@Min` · `@NotNull` 등) 위반 시 발생합니다. 핸들러 없으면 500 으로
+     * 폴백되므로 RequestBody 검증 실패와 동일한 400 / `INVALID_INPUT` 으로 정렬합니다.
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(ConstraintViolationException e) {
+        log.warn("[ConstraintViolation] {}", e.getMessage());
+        return ResponseEntity
+                .status(ErrorCode.INVALID_INPUT.getHttpStatus())
+                .body(ApiResponse.error(ErrorCode.INVALID_INPUT));
+    }
+
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ApiResponse<Void>> handleMissingRequestParameter(MissingServletRequestParameterException e) {
         log.warn("[MissingRequestParameter] {}", e.getMessage());
@@ -58,6 +74,23 @@ public class GlobalExceptionHandler {
                 .status(ErrorCode.MISSING_REQUEST_PARAMETER.getHttpStatus())
                 .body(ApiResponse.error(ErrorCode.MISSING_REQUEST_PARAMETER));
     }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingRequestHeader(MissingRequestHeaderException e) {
+        log.warn("[MissingRequestHeader] {}", e.getMessage());
+        return ResponseEntity
+                .status(ErrorCode.MISSING_REQUEST_PARAMETER.getHttpStatus())
+                .body(ApiResponse.error(ErrorCode.MISSING_REQUEST_PARAMETER));
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingRequestPart(MissingServletRequestPartException e) {
+        log.warn("[MissingRequestPart] {}", e.getMessage());
+        return ResponseEntity
+                .status(ErrorCode.MISSING_REQUEST_PARAMETER.getHttpStatus())
+                .body(ApiResponse.error(ErrorCode.MISSING_REQUEST_PARAMETER));
+    }
+
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiResponse<Void>> handleArgumentTypeMismatch(MethodArgumentTypeMismatchException e) {
