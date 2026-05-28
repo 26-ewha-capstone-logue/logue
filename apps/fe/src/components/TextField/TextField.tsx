@@ -141,7 +141,7 @@ const TextField = forwardRef<HTMLTextAreaElement, TextFieldProps>(
           onKeyDown={handleKeyDown}
           onChange={handleChange}
           className={`scrollbar-hide min-w-0 w-full flex-1 resize-none bg-transparent outline-none ${
-            isCompact ? 'text-body2' : 'text-head3'
+            isCompact ? 'text-body2' : 'text-body1'
           } ${toneClass}`}
           {...textareaProps}
         />
