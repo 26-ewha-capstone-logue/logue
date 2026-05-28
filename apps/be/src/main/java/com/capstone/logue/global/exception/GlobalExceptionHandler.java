@@ -15,6 +15,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Arrays;
@@ -63,6 +64,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MissingRequestHeaderException.class)
     public ResponseEntity<ApiResponse<Void>> handleMissingRequestHeader(MissingRequestHeaderException e) {
         log.warn("[MissingRequestHeader] {}", e.getMessage());
+        return ResponseEntity
+                .status(ErrorCode.MISSING_REQUEST_PARAMETER.getHttpStatus())
+                .body(ApiResponse.error(ErrorCode.MISSING_REQUEST_PARAMETER));
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingRequestPart(MissingServletRequestPartException e) {
+        log.warn("[MissingRequestPart] {}", e.getMessage());
         return ResponseEntity
                 .status(ErrorCode.MISSING_REQUEST_PARAMETER.getHttpStatus())
                 .body(ApiResponse.error(ErrorCode.MISSING_REQUEST_PARAMETER));
