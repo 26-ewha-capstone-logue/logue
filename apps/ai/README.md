@@ -38,6 +38,7 @@ apps/ai/
   prompts/                # system prompt 저장 (<name>_<version>.system.md)
   config/                 # 환경변수 접근 + API별 모델/temperature/token 설정
   eval/                   # LLM 출력 품질 평가 하네스 (loader · runner · scoring · CLI)
+  observability/          # LLM 호출 이벤트 로깅 (stdout JSONL → CloudWatch) + cost · hashing · redaction
   rules/                  # LLM 응답 비즈니스 검증 (metric/column/warning + facade)
   core/                   # 에러·예외 핸들러·검증 헬퍼
   tests/
@@ -74,6 +75,7 @@ response = client.complete_structured(
 
 - API 별 모델·temperature·token 한도는 `config/model_config.py` 단일 출처
 - system prompt 는 `prompts/<name>_<version>.system.md` 파일로 분리 — 버전업 시 `_v2.system.md` 추가 후 `load_system_prompt(name, version="v2")` 호출. `prompt_version_id()` 로 로깅용 식별자 획득
+- LLM 호출 메타데이터 로깅은 `observability.LLMEventBuilder` 로 누적해 finalize 시점에 한 줄 JSONL 이벤트로 stdout emit (CloudWatch 자동 수집, 파일 I/O 없음)
 
 | prompt 파일 | 상태 |
 |---|---|
