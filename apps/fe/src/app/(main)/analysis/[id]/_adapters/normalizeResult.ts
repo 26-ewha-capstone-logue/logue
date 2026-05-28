@@ -3,21 +3,12 @@ import type {
   QuestionResultViewModel,
   ResultCriteriaItemViewModel,
 } from '../_models/analysisViewModels';
+import { compactStrings, normalizeString } from '../_utils/stringList';
 import { normalizeAnalysisStatusError } from './normalizeAnalysisError';
 import { normalizeChartData } from './normalizeChartData';
 
-function normalizeString(value: string | null | undefined) {
-  const trimmed = value?.trim();
-  return trimmed || null;
-}
-
 function joinList(values: string[] | null | undefined) {
-  return Array.isArray(values)
-    ? values
-        .map((value) => normalizeString(value))
-        .filter(Boolean)
-        .join(', ')
-    : '';
+  return compactStrings(values).join(', ');
 }
 
 function createCriteriaItems(

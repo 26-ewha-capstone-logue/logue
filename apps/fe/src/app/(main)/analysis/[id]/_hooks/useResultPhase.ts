@@ -1,13 +1,12 @@
 'use client';
 
-import { useMutation } from '@tanstack/react-query';
 import {
   getResult,
   getResultStatus,
   type QuestionResultParams,
 } from '@/apis/analysis';
 import { normalizeResult } from '../_adapters/normalizeResult';
-import { createPolledFetcher, useJobPoller } from './useJobPoller';
+import { useAnalysisJobPhase } from './useAnalysisJobPhase';
 
 export type ResultAnalysisVariables = {
   targetConversationId: number;
@@ -27,35 +26,25 @@ export function useResultPhase({
   resultAnalysisTimeoutMs,
   statusPollIntervalMs,
 }: UseResultPhaseOptions) {
-  const waitForResultSuccess = useJobPoller<QuestionResultParams>(
-    getResultStatus,
-    {
-      errorMessage: getResultErrorMessage,
-      intervalMs: statusPollIntervalMs,
-      timeoutMs: resultAnalysisTimeoutMs,
-    },
-  );
-  const getResultAfterPolling = createPolledFetcher(
-    waitForResultSuccess,
-    async (params: QuestionResultParams) =>
-      normalizeResult(await getResult(params)),
-  );
-
-  return useMutation({
-    mutationFn: async ({
+  return useAnalysisJobPhase({
+    errorMessage: getResultErrorMessage,
+    fetchResult: getResult,
+    fetchStatus: getResultStatus,
+    intervalMs: statusPollIntervalMs,
+    normalizeResult,
+    prepareParams: ({
       targetConversationId,
       targetAnalysisFlowId,
       messageId,
       analysisCriteriaId,
-    }: ResultAnalysisVariables) => {
-      const resultParams = {
+    }: ResultAnalysisVariables): QuestionResultParams => {
+      return {
         conversationId: targetConversationId,
         analysisFlowId: targetAnalysisFlowId,
         messageId,
         analysisCriteriaId,
       };
-
-      return getResultAfterPolling(resultParams);
     },
+    timeoutMs: resultAnalysisTimeoutMs,
   });
 }

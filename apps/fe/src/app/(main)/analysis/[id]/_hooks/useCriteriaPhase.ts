@@ -9,12 +9,13 @@ import {
   type QuestionCriteriaParams,
   type UpdateQuestionCriteriaRequest,
 } from '@/apis/analysis';
-import type { CriteriaInitialMode } from './useAnalysisChat';
+import type { CriteriaInitialMode } from './useAnalysisChatMessages';
 import { normalizeCriteria } from '../_adapters/normalizeCriteria';
-import { createPolledFetcher, useJobPoller } from './useJobPoller';
+import { useAnalysisJobPhase } from './useAnalysisJobPhase';
 
 export type QuestionAnalysisVariables = {
   initialMode: CriteriaInitialMode;
+  operationKey: string;
   targetConversationId: number;
   targetAnalysisFlowId: number;
   question: string;
@@ -29,33 +30,30 @@ export type UpdateCriteriaVariables = {
 
 type UseCriteriaPhaseOptions = {
   getCriteriaErrorMessage: string;
+  onQuestionCreated?: (context: {
+    operationKey: string;
+    params: QuestionCriteriaParams;
+  }) => void;
   questionAnalysisTimeoutMs: number;
   statusPollIntervalMs: number;
 };
 
-export function useCriteriaPhase({
+export function useQuestionAnalysisPhase({
   getCriteriaErrorMessage,
+  onQuestionCreated,
   questionAnalysisTimeoutMs,
   statusPollIntervalMs,
 }: UseCriteriaPhaseOptions) {
-  const waitForCriteriaSuccess = useJobPoller<QuestionCriteriaParams>(
-    getCriteriaStatus,
-    {
-      errorMessage: getCriteriaErrorMessage,
-      intervalMs: statusPollIntervalMs,
-      timeoutMs: questionAnalysisTimeoutMs,
-    },
-  );
-  const getCriteriaAfterPolling = createPolledFetcher(
-    waitForCriteriaSuccess,
-    async (params: QuestionCriteriaParams) =>
-      normalizeCriteria(await getCriteria(params)),
-  );
-
-  const questionAnalysisMutation = useMutation({
-    mutationFn: async ({
+  return useAnalysisJobPhase({
+    errorMessage: getCriteriaErrorMessage,
+    fetchResult: getCriteria,
+    fetchStatus: getCriteriaStatus,
+    intervalMs: statusPollIntervalMs,
+    normalizeResult: normalizeCriteria,
+    prepareParams: async ({
       targetConversationId,
       targetAnalysisFlowId,
+      operationKey,
       question,
     }: QuestionAnalysisVariables) => {
       const createdQuestion = await createQuestion(
@@ -70,30 +68,35 @@ export function useCriteriaPhase({
         analysisFlowId: targetAnalysisFlowId,
         messageId: createdQuestion.messageId,
       };
+      onQuestionCreated?.({ operationKey, params: criteriaParams });
 
-      return getCriteriaAfterPolling(criteriaParams);
+      return criteriaParams;
     },
+    timeoutMs: questionAnalysisTimeoutMs,
   });
+}
 
-  const updateCriteriaMutation = useMutation({
-    mutationFn: ({
-      targetConversationId,
-      targetAnalysisFlowId,
-      messageId,
-      request,
-    }: UpdateCriteriaVariables) =>
-      updateCriteria(
+export function useUpdateCriteriaMutation() {
+  return useMutation({
+    mutationFn: (variables: UpdateCriteriaVariables) => {
+      const { targetConversationId, targetAnalysisFlowId, messageId, request } =
+        variables;
+
+      return updateCriteria(
         {
           conversationId: targetConversationId,
           analysisFlowId: targetAnalysisFlowId,
           messageId,
         },
         request,
-      ),
+      );
+    },
   });
+}
 
+export function useCriteriaPhase(options: UseCriteriaPhaseOptions) {
   return {
-    questionAnalysisMutation,
-    updateCriteriaMutation,
+    questionAnalysisMutation: useQuestionAnalysisPhase(options),
+    updateCriteriaMutation: useUpdateCriteriaMutation(),
   };
 }
