@@ -86,6 +86,8 @@ def score_case(
             latency_ms=latency_ms,
         )
 
+    actual = _normalize_actual(suite, actual)
+
     comparisons: list[FieldComparison] = []
     for path, expected_value in _flatten_expected(expected):
         actual_value = _get_path(actual, path)
@@ -144,6 +146,31 @@ def summarize_suite(suite: str, scores: list[CaseScore]) -> SuiteReport:
 
 
 # ---------- internals ----------
+
+
+def _normalize_actual(suite: str, actual: dict[str, Any]) -> dict[str, Any]:
+    """suite 별 응답 형태 정규화 — list of dicts 를 dot-notation 비교 가능한 dict 로 변환.
+
+    file_analysis: `column_roles[{column_name, semantic_role, ...}]` → `{column_name: semantic_role}`.
+    `warnings[{code, ...}]` → `{code1: True, code2: True}` (셋 비교용).
+    """
+    if suite != "file_analysis":
+        return actual
+
+    normalized = {**actual}
+    if isinstance(actual.get("column_roles"), list):
+        normalized["column_roles"] = {
+            cr["column_name"]: cr["semantic_role"]
+            for cr in actual["column_roles"]
+            if "column_name" in cr and "semantic_role" in cr
+        }
+    if isinstance(actual.get("warnings"), list):
+        normalized["warnings"] = {
+            w["code"]: True
+            for w in actual["warnings"]
+            if "code" in w
+        }
+    return normalized
 
 
 def _flatten_expected(d: Any, prefix: str = "") -> list[tuple[str, Any]]:
