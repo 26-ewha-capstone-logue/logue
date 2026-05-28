@@ -27,7 +27,7 @@ export function createSummaryKeyPoints(
   if (!summary) return [];
 
   return SUMMARY_GROUPS.flatMap((group) =>
-    compactStrings(summary[group.key]).map((value) => ({
+    uniqueStrings(summary[group.key]).map((value) => ({
       name: group.name,
       example: value,
     })),

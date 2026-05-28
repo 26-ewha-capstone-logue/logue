@@ -4,11 +4,11 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { dataSourceKeys, type DataSourceSort } from '@/apis/datasource';
 import { getDataSources } from '@/apis/dataSourceRepository';
-import { getApiErrorMessage } from '@/apis/errors';
 import {
   filterVisibleMockDataSources,
   getMockDataSourceListResponse,
 } from '@/apis/mockDataSource';
+import { getDataSourceErrorMessage } from '../_utils/dataSourceErrorMessage';
 
 const DATA_SOURCE_PAGE_SIZE = 20;
 
@@ -56,7 +56,7 @@ export function useDataSourceList({
     isLoading: query.isLoading && !hasDataSources,
     errorMessage:
       query.isError && !hasDataSources
-        ? getApiErrorMessage(query.error, fallbackErrorMessage)
+        ? getDataSourceErrorMessage(query.error, fallbackErrorMessage)
         : null,
   };
 }

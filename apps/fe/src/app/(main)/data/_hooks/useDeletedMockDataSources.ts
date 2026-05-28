@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import {
+  isMockDataSourceId,
   markMockDataSourcesDeleted,
   readDeletedMockDataSourceIds,
 } from '@/apis/mockDataSource';
@@ -57,9 +58,16 @@ export function useDeletedMockDataSources(userId: number | null | undefined) {
     },
     [userId],
   );
+  const isDeletedMockDataSource = useCallback(
+    (dataSourceId: number) =>
+      isMockDataSourceId(dataSourceId) &&
+      deletedMockDataSourceIds.has(dataSourceId),
+    [deletedMockDataSourceIds],
+  );
 
   return {
     deletedMockDataSourceIds,
+    isDeletedMockDataSource,
     markDeletedMockDataSources,
   };
 }

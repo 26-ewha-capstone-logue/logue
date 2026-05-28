@@ -7,6 +7,7 @@ import {
   type GetFileResponse,
 } from './datasource';
 import {
+  getServerDataSourceIds,
   getMockDataSource,
   getMockDataSourceListResponse,
   isMockDataSourceId,
@@ -18,12 +19,6 @@ type DataSourceDetailReader = (
 ) => Promise<GetFileResponse>;
 type DataSourcesDeleteRequest = (dataSourceIds: number[]) => Promise<void>;
 type DataSourceDeleteRequest = (dataSourceId: number) => Promise<void>;
-
-function getServerDataSourceIds(dataSourceIds: number[]) {
-  return dataSourceIds.filter(
-    (dataSourceId) => !isMockDataSourceId(dataSourceId),
-  );
-}
 
 async function getMockAwareDataSource(
   dataSourceId: number,

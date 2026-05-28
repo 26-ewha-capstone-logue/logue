@@ -5,6 +5,12 @@ import { useRouter } from 'next/navigation';
 import ArrowLeftIcon from '@/assets/icons/arrow-left.svg';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg';
 import { Button, Stepper } from '@/components';
+import {
+  CheckboxList,
+  DomainGrid,
+  OnboardingProgressBar,
+  RadioList,
+} from './_components/OnboardingOptionGroup';
 
 /**
  * 완료 버튼용 체크 아이콘.
@@ -147,7 +153,7 @@ export default function OnboardingPage() {
                 {copy.title}
               </h3>
               <p className="text-body4 text-gray-700">{copy.description}</p>
-              <ProgressBar current={step} total={3} />
+              <OnboardingProgressBar current={step} total={3} />
             </div>
 
             <div className="flex-1">
@@ -212,154 +218,5 @@ export default function OnboardingPage() {
         </div>
       </div>
     </main>
-  );
-}
-
-/** 상단 진행 막대 (3분할). 현재 단계까지 오렌지, 이후는 회색 */
-function ProgressBar({ current, total }: { current: number; total: number }) {
-  return (
-    <div className="flex gap-8">
-      {Array.from({ length: total }).map((_, i) => {
-        const filled = i < current;
-        return (
-          <span
-            key={i}
-            className={`h-4 flex-1 rounded-full transition-colors ${
-              filled ? 'bg-orange-500' : 'bg-gray-300'
-            }`}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
-/** 도메인 선택: 2열 그리드 카드형 옵션 */
-function DomainGrid({
-  options,
-  value,
-  onChange,
-}: {
-  options: string[];
-  value: string | null;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="grid grid-cols-2 gap-12">
-      {options.map((opt) => {
-        const active = opt === value;
-        return (
-          <button
-            key={opt}
-            type="button"
-            onClick={() => onChange(opt)}
-            className={`rounded-12 border px-16 py-12 text-body2 transition-colors ${
-              active
-                ? 'border-orange-500 bg-orange-100 text-orange-600'
-                : 'border-gray-300 bg-white text-gray-800 hover:border-gray-400'
-            }`}
-          >
-            {opt}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-/** 업무 단일 선택: 라디오 버튼 리스트 */
-function RadioList({
-  options,
-  value,
-  onChange,
-}: {
-  options: string[];
-  value: string | null;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-12">
-      {options.map((opt) => {
-        const active = opt === value;
-        return (
-          <button
-            key={opt}
-            type="button"
-            onClick={() => onChange(opt)}
-            className={`flex items-center justify-between rounded-12 border px-16 py-12 text-left text-body2 transition-colors ${
-              active
-                ? 'border-orange-500 bg-orange-100 text-orange-600'
-                : 'border-gray-300 bg-white text-gray-800 hover:border-gray-400'
-            }`}
-          >
-            <span>{opt}</span>
-            <span
-              className={`relative inline-flex h-[1.8rem] w-[1.8rem] items-center justify-center rounded-full border-2 transition-colors ${
-                active ? 'border-orange-500' : 'border-gray-400'
-              }`}
-            >
-              {active && (
-                <span className="absolute inline-block h-8 w-8 rounded-full bg-orange-500" />
-              )}
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-/** 사용 툴 다중 선택: 체크박스 리스트 */
-function CheckboxList({
-  options,
-  values,
-  onToggle,
-}: {
-  options: string[];
-  values: Set<string>;
-  onToggle: (v: string) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-12">
-      {options.map((opt) => {
-        const active = values.has(opt);
-        return (
-          <button
-            key={opt}
-            type="button"
-            onClick={() => onToggle(opt)}
-            className={`flex items-center justify-between rounded-12 border px-16 py-12 text-left text-body2 transition-colors ${
-              active
-                ? 'border-orange-500 bg-orange-100 text-orange-600'
-                : 'border-gray-300 bg-white text-gray-800 hover:border-gray-400'
-            }`}
-          >
-            <span>{opt}</span>
-            <span
-              className={`inline-flex h-[1.8rem] w-[1.8rem] items-center justify-center rounded-4 border-2 transition-colors ${
-                active
-                  ? 'border-orange-500 bg-orange-500'
-                  : 'border-gray-400 bg-white'
-              }`}
-            >
-              {active && (
-                <svg
-                  aria-hidden
-                  viewBox="0 0 12 10"
-                  className="h-[1rem] w-12 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M1 5 4.5 8.5 11 1.5" />
-                </svg>
-              )}
-            </span>
-          </button>
-        );
-      })}
-    </div>
   );
 }

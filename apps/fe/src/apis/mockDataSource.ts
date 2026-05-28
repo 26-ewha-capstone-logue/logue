@@ -80,6 +80,16 @@ export function isMockDataSourceId(dataSourceId: number) {
   return dataSourceId === MOCK_MARKETING_CVR_DATA_SOURCE_ID;
 }
 
+export function getMockDataSourceIds(dataSourceIds: number[]) {
+  return dataSourceIds.filter(isMockDataSourceId);
+}
+
+export function getServerDataSourceIds(dataSourceIds: number[]) {
+  return dataSourceIds.filter(
+    (dataSourceId) => !isMockDataSourceId(dataSourceId),
+  );
+}
+
 export function getDeletedMockDataSourceStorageKey(userId: number) {
   return `${DELETED_MOCK_DATA_SOURCE_STORAGE_PREFIX}${userId}`;
 }
@@ -113,7 +123,7 @@ export function markMockDataSourcesDeleted(
   dataSourceIds: number[],
 ) {
   const mockDataSourceIds = Array.from(
-    new Set(dataSourceIds.filter(isMockDataSourceId)),
+    new Set(getMockDataSourceIds(dataSourceIds)),
   );
 
   if (mockDataSourceIds.length === 0) return [];

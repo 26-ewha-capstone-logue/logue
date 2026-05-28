@@ -31,6 +31,7 @@ const REQUIRED_FIELD_LABELS = {
   groupBy: '비교 기준',
   sortBy: '정렬 기준',
   sortDirection: '정렬 순서',
+  limitNum: '조회 개수',
 } as const;
 
 function normalizeString(value: string | null | undefined) {
@@ -40,6 +41,10 @@ function normalizeString(value: string | null | undefined) {
 
 function normalizeSortDirection(value: string | null | undefined) {
   return normalizeString(value)?.toUpperCase() ?? null;
+}
+
+function normalizeSortDirectionForRequest(value: string | null | undefined) {
+  return normalizeString(value)?.toLowerCase() ?? null;
 }
 
 function normalizeStringList(values: string[] | null | undefined) {
@@ -112,6 +117,12 @@ function getMissingFields(criteria?: CriteriaInfo | null) {
     !normalizeString(criteria.comparePeriod)
   ) {
     missing.push(REQUIRED_FIELD_LABELS.comparePeriod);
+  }
+  if (
+    analysisType === 'RANKING' &&
+    (criteria.limitNum == null || criteria.limitNum <= 0)
+  ) {
+    missing.push(REQUIRED_FIELD_LABELS.limitNum);
   }
   if (normalizeStringList(criteria.groupBy).length === 0) {
     missing.push(REQUIRED_FIELD_LABELS.groupBy);
@@ -216,7 +227,7 @@ export function createCriteriaEditValues(
 export function createUpdateCriteriaRequest(
   values: CriteriaEditValues,
 ): UpdateQuestionCriteriaRequest {
-  const sortDirection = normalizeSortDirection(values.sortDirection);
+  const sortDirection = normalizeSortDirectionForRequest(values.sortDirection);
 
   return {
     baseDateColumn: values.baseDateColumn || undefined,

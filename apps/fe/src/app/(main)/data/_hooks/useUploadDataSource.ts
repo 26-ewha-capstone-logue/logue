@@ -3,7 +3,7 @@
 import { useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { dataSourceKeys, uploadDataSource } from '@/apis/datasource';
-import { getApiErrorMessage } from '@/apis/errors';
+import { getDataSourceErrorMessage } from '../_utils/dataSourceErrorMessage';
 
 type UseUploadDataSourceOptions = {
   fallbackErrorMessage: string;
@@ -36,7 +36,7 @@ export function useUploadDataSource({
         });
         onSuccess();
       } catch (error) {
-        throw new Error(getApiErrorMessage(error, fallbackErrorMessage));
+        throw new Error(getDataSourceErrorMessage(error, fallbackErrorMessage));
       }
     },
     [
