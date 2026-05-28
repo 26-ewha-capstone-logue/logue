@@ -70,14 +70,17 @@ public class AnalController {
     @Operation(summary = "AnalysisFlow 시작", description = "대화 내 새로운 분석 흐름을 생성합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "AnalysisFlow 생성 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "대화 또는 데이터 소스 소유자 불일치 (A002, D002)"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "해당 파일을 찾을 수 없음 (D001)"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 내부 오류 (C004)"),
     })
     @PostMapping("/conversations/{conversationId}/analysisFlows")
     public ResponseEntity<ApiResponse<CreateAnalysisFlowResponse>> createAnalysisFlow(
+            @CurrentUser UserPrincipal userPrincipal,
             @PathVariable Long conversationId,
             @Valid @RequestBody CreateAnalysisFlowRequest request) {
-        return ResponseEntity.ok(ApiResponse.success("Analysis Flow 생성 성공", analService.createAnalysisFlow(conversationId, request)));
+        return ResponseEntity.ok(ApiResponse.success("Analysis Flow 생성 성공",
+                analService.createAnalysisFlow(userPrincipal.userId(), conversationId, request)));
     }
 
     /**
