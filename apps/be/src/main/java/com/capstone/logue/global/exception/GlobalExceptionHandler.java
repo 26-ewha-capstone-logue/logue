@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
@@ -86,6 +87,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MissingServletRequestPartException.class)
     public ResponseEntity<ApiResponse<Void>> handleMissingRequestPart(MissingServletRequestPartException e) {
         log.warn("[MissingRequestPart] {}", e.getMessage());
+        return ResponseEntity
+                .status(ErrorCode.MISSING_REQUEST_PARAMETER.getHttpStatus())
+                .body(ApiResponse.error(ErrorCode.MISSING_REQUEST_PARAMETER));
+    }
+
+    /**
+     * multipart/form-data 가 아닌 Content-Type 으로 multipart 엔드포인트(예: 파일 업로드)
+     * 호출 시 발생합니다. `MissingServletRequestPartException` 과는 다른 예외이므로
+     * 별도 핸들러로 매핑하지 않으면 500 으로 폴백됩니다.
+     */
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException e) {
+        log.warn("[MediaTypeNotSupported] {}", e.getMessage());
         return ResponseEntity
                 .status(ErrorCode.MISSING_REQUEST_PARAMETER.getHttpStatus())
                 .body(ApiResponse.error(ErrorCode.MISSING_REQUEST_PARAMETER));
