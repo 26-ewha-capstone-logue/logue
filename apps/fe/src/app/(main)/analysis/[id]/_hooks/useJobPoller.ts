@@ -1,15 +1,8 @@
 'use client';
 
 import { useCallback } from 'react';
-import type {
-  AnalysisJobStatus,
-  AnalysisStatusResponse,
-} from '@/apis/analysis';
-import {
-  isFailedAnalysisStatus,
-  normalizeAnalysisStatusError,
-  shouldPollAnalysisStatus,
-} from '../_adapters/normalizeAnalysisError';
+import type { AnalysisStatusResponse } from '@/apis/analysis';
+import { waitForAnalysisJobSuccess } from '../_utils/analysisPolling';
 
 type FetchStatus<TParams> = (
   params: TParams,
@@ -21,41 +14,17 @@ type UseJobPollerOptions = {
   timeoutMs: number;
 };
 
-function wait(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-export function shouldPollJobStatus(status?: AnalysisJobStatus) {
-  return shouldPollAnalysisStatus(status);
-}
-
-export function isFailedJobStatus(status?: AnalysisJobStatus) {
-  return isFailedAnalysisStatus(status);
-}
-
 export function useJobPoller<TParams>(
   fetchStatus: FetchStatus<TParams>,
   { errorMessage, intervalMs, timeoutMs }: UseJobPollerOptions,
 ) {
   return useCallback(
     async (params: TParams) => {
-      const startedAt = Date.now();
-
-      while (Date.now() - startedAt < timeoutMs) {
-        const { status } = await fetchStatus(params);
-
-        if (status === 'SUCCESS') return;
-        if (isFailedJobStatus(status)) {
-          throw new Error(
-            normalizeAnalysisStatusError(status, errorMessage)?.message ??
-              errorMessage,
-          );
-        }
-
-        await wait(intervalMs);
-      }
-
-      throw new Error(errorMessage);
+      await waitForAnalysisJobSuccess(fetchStatus, params, {
+        errorMessage,
+        intervalMs,
+        timeoutMs,
+      });
     },
     [errorMessage, fetchStatus, intervalMs, timeoutMs],
   );

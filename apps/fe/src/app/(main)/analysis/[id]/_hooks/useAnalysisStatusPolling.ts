@@ -2,7 +2,7 @@
 
 import { useQuery, type QueryKey } from '@tanstack/react-query';
 import type { AnalysisStatusResponse } from '@/apis/analysis';
-import { shouldPollJobStatus } from './useJobPoller';
+import { getAnalysisStatusRefetchInterval } from '../_utils/analysisPolling';
 
 type UseAnalysisStatusPollingParams<TParams> = {
   enabled: boolean;
@@ -32,11 +32,11 @@ export function useAnalysisStatusPolling<TParams>({
     },
     enabled,
     refetchInterval: (query) => {
-      const status = query.state.data?.status;
-
-      if (query.state.error || !status) return false;
-
-      return shouldPollJobStatus(status) ? intervalMs : false;
+      return getAnalysisStatusRefetchInterval({
+        hasError: query.state.error !== null,
+        intervalMs,
+        status: query.state.data?.status,
+      });
     },
   });
 }

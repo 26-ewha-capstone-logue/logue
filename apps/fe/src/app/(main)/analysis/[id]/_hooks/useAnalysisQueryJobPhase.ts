@@ -6,8 +6,8 @@ import {
   normalizeAnalysisError,
   normalizeAnalysisStatusError,
 } from '../_adapters/normalizeAnalysisError';
+import { isFailedAnalysisJobStatus } from '../_utils/analysisPolling';
 import { useAnalysisStatusPolling } from './useAnalysisStatusPolling';
-import { isFailedJobStatus } from './useJobPoller';
 
 type UseAnalysisQueryJobPhaseOptions<TParams, TResponse, TResult> = {
   enabled: boolean;
@@ -71,7 +71,7 @@ export function useAnalysisQueryJobPhase<TParams, TResponse, TResult>({
     !statusQuery.isError &&
     !resultQuery.isError &&
     !result &&
-    !isFailedJobStatus(status);
+    !isFailedAnalysisJobStatus(status);
 
   return {
     error,
