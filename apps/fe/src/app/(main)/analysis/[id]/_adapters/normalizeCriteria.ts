@@ -12,27 +12,14 @@ import type {
 } from '../_models/analysisViewModels';
 import type { AnalysisWarningViewModel } from '../_models/analysisWarningTypes';
 import {
+  ANALYSIS_TYPE_LABELS,
+  getMissingCriteriaFields,
+} from '../_config/criteriaFieldConfig';
+import {
   createMissingFieldWarning,
   normalizeDataWarningItems,
   normalizeWarningText,
 } from './normalizeWarnings';
-
-const ANALYSIS_TYPE_LABELS: Record<string, string> = {
-  COMPARISON: '비교 분석',
-  RANKING: '순위 분석',
-};
-
-const REQUIRED_FIELD_LABELS = {
-  analysisType: '분석 방식',
-  metricName: '지표',
-  baseDateColumn: '날짜 기준',
-  standardPeriod: '분석 기간',
-  comparePeriod: '비교 기간',
-  groupBy: '비교 기준',
-  sortBy: '정렬 기준',
-  sortDirection: '정렬 순서',
-  limitNum: '조회 개수',
-} as const;
 
 function normalizeString(value: string | null | undefined) {
   const trimmed = value?.trim();
@@ -99,42 +86,6 @@ function normalizeFilters(filters: FilterInfo[] | null | undefined) {
   });
 }
 
-function getMissingFields(criteria?: CriteriaInfo | null) {
-  if (!criteria) return Object.values(REQUIRED_FIELD_LABELS);
-
-  const missing: string[] = [];
-  const analysisType = normalizeString(criteria.analysisType);
-
-  if (!analysisType) missing.push(REQUIRED_FIELD_LABELS.analysisType);
-  if (!normalizeString(criteria.metricName))
-    missing.push(REQUIRED_FIELD_LABELS.metricName);
-  if (!normalizeString(criteria.baseDateColumn))
-    missing.push(REQUIRED_FIELD_LABELS.baseDateColumn);
-  if (!normalizeString(criteria.standardPeriod))
-    missing.push(REQUIRED_FIELD_LABELS.standardPeriod);
-  if (
-    analysisType === 'COMPARISON' &&
-    !normalizeString(criteria.comparePeriod)
-  ) {
-    missing.push(REQUIRED_FIELD_LABELS.comparePeriod);
-  }
-  if (
-    analysisType === 'RANKING' &&
-    (criteria.limitNum == null || criteria.limitNum <= 0)
-  ) {
-    missing.push(REQUIRED_FIELD_LABELS.limitNum);
-  }
-  if (normalizeStringList(criteria.groupBy).length === 0) {
-    missing.push(REQUIRED_FIELD_LABELS.groupBy);
-  }
-  if (!normalizeString(criteria.sortBy))
-    missing.push(REQUIRED_FIELD_LABELS.sortBy);
-  if (!normalizeString(criteria.sortDirection))
-    missing.push(REQUIRED_FIELD_LABELS.sortDirection);
-
-  return missing;
-}
-
 function createUnknownEnumWarnings(criteria?: CriteriaInfo | null) {
   const warnings: AnalysisWarningViewModel[] = [];
   const analysisType = normalizeString(criteria?.analysisType);
@@ -166,7 +117,7 @@ export function normalizeCriteria(
   const groupBy = normalizeStringList(criteria?.groupBy);
   const sortBy = normalizeString(criteria?.sortBy);
   const sortDirection = normalizeSortDirection(criteria?.sortDirection);
-  const missingFields = getMissingFields(criteria);
+  const missingFields = getMissingCriteriaFields(criteria);
   const missingWarning = createMissingFieldWarning(missingFields, 'criteria');
   const warnings = [
     ...normalizeDataWarningItems(criteria?.dataWarning, 'criteria'),

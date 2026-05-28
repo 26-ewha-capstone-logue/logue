@@ -6,30 +6,11 @@ import AnalysisResult from './AnalysisResult';
 import AnalyzingIndicator from './AnalyzingIndicator';
 import QuestionAnalysisResult from './QuestionAnalysisResult';
 import VerificationResult from './VerificationResult';
-import type {
-  ChatMessage,
-  UseAnalysisChatResult,
-} from '../_hooks/useAnalysisChat';
+import type { ChatMessage } from '../_hooks/useAnalysisChatMessages';
+import type { AnalysisChatMessageListViewModel } from '../_hooks/useAnalysisChatViewModel';
 
 type AnalysisChatMessageListProps = {
-  chat: Pick<
-    UseAnalysisChatResult,
-    | 'analyzingMessage'
-    | 'canCancelAnalyzing'
-    | 'cancelAnalyzingDisabled'
-    | 'criteriaSubmitting'
-    | 'handleCancelAnalyzing'
-    | 'handleConfirmCriteria'
-    | 'initialMessage'
-    | 'restMessages'
-    | 'shouldShowAnalyzing'
-    | 'startInitialQuestion'
-    | 'summary'
-    | 'summaryActionDisabled'
-    | 'summaryColumnOptions'
-    | 'summaryErrorMessage'
-    | 'summarySortOptions'
-  >;
+  viewModel: AnalysisChatMessageListViewModel;
 };
 
 function MessageFrame({ children }: { children: ReactNode }) {
@@ -41,37 +22,27 @@ function MessageFrame({ children }: { children: ReactNode }) {
 }
 
 export default function AnalysisChatMessageList({
-  chat,
+  viewModel,
 }: AnalysisChatMessageListProps) {
   const renderSummaryMessage = () => {
-    if (!chat.summary) return null;
-
-    const hasWarnings = chat.summary.warnings.length > 0;
+    if (!viewModel.summary) return null;
 
     return (
       <MessageFrame key="summary">
         <AnalysisResult
-          summary={chat.summary}
-          warningActions={
-            hasWarnings
-              ? {
-                  disabled: chat.summaryActionDisabled,
-                  onEdit: () => chat.startInitialQuestion('edit'),
-                  onContinue: () => chat.startInitialQuestion(),
-                }
-              : undefined
-          }
+          summary={viewModel.summary}
+          warningActions={viewModel.summaryWarningActions}
         />
       </MessageFrame>
     );
   };
 
   const renderErrorMessage = () => {
-    if (!chat.summaryErrorMessage) return null;
+    if (!viewModel.summaryErrorMessage) return null;
 
     return (
       <ChatBubble key="summary-error" role="bot">
-        <p className="text-error-500">{chat.summaryErrorMessage}</p>
+        <p className="text-error-500">{viewModel.summaryErrorMessage}</p>
       </ChatBubble>
     );
   };
@@ -121,15 +92,16 @@ export default function AnalysisChatMessageList({
           criteria={message.criteria}
           initialMode={message.initialMode}
           baseDateColumnOptions={
-            chat.summary?.dateFieldOptions.length
-              ? chat.summary.dateFieldOptions
-              : chat.summaryColumnOptions
+            viewModel.criteriaMessage.baseDateColumnOptions
           }
-          groupByOptions={chat.summaryColumnOptions}
-          sortByOptions={chat.summarySortOptions}
-          isSubmitting={chat.criteriaSubmitting}
+          groupByOptions={viewModel.criteriaMessage.groupByOptions}
+          sortByOptions={viewModel.criteriaMessage.sortByOptions}
+          isSubmitting={viewModel.criteriaMessage.isSubmitting}
           onContinue={(values) =>
-            chat.handleConfirmCriteria(message.criteria.messageId, values)
+            viewModel.criteriaMessage.onConfirm(
+              message.criteria.messageId,
+              values,
+            )
           }
         />
       </MessageFrame>
@@ -138,18 +110,18 @@ export default function AnalysisChatMessageList({
 
   return (
     <>
-      {chat.initialMessage ? renderMessage(chat.initialMessage) : null}
+      {viewModel.initialMessage
+        ? renderMessage(viewModel.initialMessage)
+        : null}
       {renderSummaryMessage()}
       {renderErrorMessage()}
-      {chat.restMessages.map(renderMessage)}
-      {chat.shouldShowAnalyzing && (
+      {viewModel.restMessages.map(renderMessage)}
+      {viewModel.analyzing && (
         <MessageFrame>
           <AnalyzingIndicator
-            cancelDisabled={chat.cancelAnalyzingDisabled}
-            message={chat.analyzingMessage}
-            onCancel={
-              chat.canCancelAnalyzing ? chat.handleCancelAnalyzing : undefined
-            }
+            cancelDisabled={viewModel.analyzing.cancelDisabled}
+            message={viewModel.analyzing.message}
+            onCancel={viewModel.analyzing.onCancel}
           />
         </MessageFrame>
       )}
