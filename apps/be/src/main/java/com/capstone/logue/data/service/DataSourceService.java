@@ -1,5 +1,14 @@
 package com.capstone.logue.data.service;
 
+import com.capstone.logue.anal.repository.AiTaggingJobRepository;
+import com.capstone.logue.anal.repository.AnalysisCriteriaRepository;
+import com.capstone.logue.anal.repository.AnalysisFlowColumnRepository;
+import com.capstone.logue.anal.repository.AnalysisFlowRepository;
+import com.capstone.logue.anal.repository.AnalysisResultRepository;
+import com.capstone.logue.anal.repository.DataSourceColumnRepository;
+import com.capstone.logue.anal.repository.FlowDataWarningRepository;
+import com.capstone.logue.anal.repository.MessageRepository;
+import com.capstone.logue.anal.repository.SourceDataWarningRepository;
 import com.capstone.logue.data.dto.DataSourceSummary;
 import com.capstone.logue.data.dto.FilePreview;
 import com.capstone.logue.data.dto.GetDataSourceListResponse;
@@ -58,6 +67,15 @@ public class DataSourceService {
     private final DataSourceStorage storage;
     private final CsvParser csvParser;
     private final ObjectMapper objectMapper;
+    private final AnalysisFlowRepository analysisFlowRepository;
+    private final AnalysisCriteriaRepository analysisCriteriaRepository;
+    private final AnalysisResultRepository analysisResultRepository;
+    private final FlowDataWarningRepository flowDataWarningRepository;
+    private final AnalysisFlowColumnRepository analysisFlowColumnRepository;
+    private final AiTaggingJobRepository aiTaggingJobRepository;
+    private final MessageRepository messageRepository;
+    private final SourceDataWarningRepository sourceDataWarningRepository;
+    private final DataSourceColumnRepository dataSourceColumnRepository;
 
     /**
      * CSV 파일을 업로드해 DataSource 엔티티로 저장합니다.
@@ -168,11 +186,13 @@ public class DataSourceService {
     }
 
     /**
-     * DataSource 단건 삭제. 스토리지 파일도 best-effort 로 제거합니다.
+     * DataSource 단건 삭제. 연결된 AnalysisFlow 와 하위 엔티티(메시지·분석기준·결과·경고·태깅잡)
+     * 도 함께 cascade 삭제하며, 스토리지 파일도 best-effort 로 제거합니다.
      */
     @Transactional
     public void deleteOne(Long userId, Long dataSourceId) {
         DataSource dataSource = loadOwnedDataSource(userId, dataSourceId);
+        cascadeDeleteByDataSourceIds(List.of(dataSourceId));
         deleteStorageQuietly(dataSource.getStorageKey());
         dataSourceRepository.delete(dataSource);
     }
@@ -181,7 +201,8 @@ public class DataSourceService {
      * DataSource 다건 삭제.
      *
      * <p>요청 id 중 하나라도 존재하지 않으면 404, 타 사용자 소유면 403 을 발생시키며
-     * 전체 요청을 실패 처리합니다. 모든 id 가 현재 사용자 소유여야 삭제가 수행됩니다.</p>
+     * 전체 요청을 실패 처리합니다. 모든 id 가 현재 사용자 소유여야 삭제가 수행됩니다.
+     * 단건 삭제와 동일하게 연결된 AnalysisFlow 및 하위 엔티티를 cascade 삭제합니다.</p>
      */
     @Transactional
     public void deleteMany(Long userId, Collection<Long> ids) {
@@ -200,10 +221,48 @@ public class DataSourceService {
                 throw new LogueException(ErrorCode.DATASOURCE_FORBIDDEN);
             }
         }
+        cascadeDeleteByDataSourceIds(foundIds);
         for (DataSource dataSource : found) {
             deleteStorageQuietly(dataSource.getStorageKey());
         }
         dataSourceRepository.deleteAll(found);
+    }
+
+    /**
+     * DataSource 에 연결된 모든 하위 엔티티를 자식부터 일괄 삭제합니다.
+     *
+     * <p>FK 제약 위반이 발생하지 않도록 다음 순서로 진행합니다.</p>
+     * <ol>
+     *   <li>AnalysisCriteria 의 자식: AnalysisResult, FlowDataWarning</li>
+     *   <li>AnalysisFlow 의 자식: AnalysisCriteria, AnalysisFlowColumn, AiTaggingJob, Message</li>
+     *   <li>AnalysisFlow 본체</li>
+     *   <li>DataSource 의 그 외 자식: SourceDataWarning, DataSourceColumn</li>
+     * </ol>
+     *
+     * <p>DataSource 본체 삭제는 호출자가 수행합니다.</p>
+     */
+    private void cascadeDeleteByDataSourceIds(Collection<Long> dataSourceIds) {
+        if (dataSourceIds == null || dataSourceIds.isEmpty()) {
+            return;
+        }
+        List<Long> flowIds = analysisFlowRepository.findIdsByDataSourceIds(dataSourceIds);
+        List<Long> criteriaIds = flowIds.isEmpty()
+                ? List.of()
+                : analysisCriteriaRepository.findIdsByAnalysisFlowIds(flowIds);
+
+        if (!criteriaIds.isEmpty()) {
+            analysisResultRepository.deleteAllByAnalysisCriteriaIds(criteriaIds);
+            flowDataWarningRepository.deleteAllByAnalysisCriteriaIds(criteriaIds);
+        }
+        if (!flowIds.isEmpty()) {
+            analysisCriteriaRepository.deleteAllByAnalysisFlowIds(flowIds);
+            analysisFlowColumnRepository.deleteAllByAnalysisFlowIds(flowIds);
+            aiTaggingJobRepository.deleteAllByAnalysisFlowIds(flowIds);
+            messageRepository.deleteAllByAnalysisFlowIds(flowIds);
+            analysisFlowRepository.deleteAllByDataSourceIds(dataSourceIds);
+        }
+        sourceDataWarningRepository.deleteAllByDataSourceIds(dataSourceIds);
+        dataSourceColumnRepository.deleteAllByDataSourceIds(dataSourceIds);
     }
 
     private void validateCsv(MultipartFile file) {

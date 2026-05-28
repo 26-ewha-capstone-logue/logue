@@ -43,6 +43,7 @@ public enum ErrorCode {
     // Analysis
     JOB_NOT_FOUND(HttpStatus.NOT_FOUND, "AN001", "분석 작업을 찾을 수 없습니다."),
     JOB_NOT_RETRYABLE(HttpStatus.BAD_REQUEST, "AN002", "재시도는 FAILED 상태에서만 가능합니다."),
+    ANALYSIS_FLOW_NOT_FOUND(HttpStatus.NOT_FOUND, "AN003", "분석 흐름을 찾을 수 없습니다."),
 
     // Question Analysis Criteria
     CRITERIA_NOT_FOUND(HttpStatus.NOT_FOUND, "AN101", "분석 기준을 찾을 수 없습니다."),

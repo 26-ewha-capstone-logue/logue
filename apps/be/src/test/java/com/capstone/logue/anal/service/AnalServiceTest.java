@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -201,12 +202,14 @@ class AnalServiceTest {
 
         CreateAnalysisFlowRequest request = new CreateAnalysisFlowRequest(DATASOURCE_ID);
 
-        CreateAnalysisFlowResponse response = analService.createAnalysisFlow(CONVERSATION_ID, request);
+        CreateAnalysisFlowResponse response = analService.createAnalysisFlow(USER_ID, CONVERSATION_ID, request);
 
         assertThat(response.analysisFlowId()).isEqualTo(ANALYSIS_FLOW_ID);
         assertThat(response.dataSourceId()).isEqualTo(DATASOURCE_ID);
         verify(analysisFlowRepository).save(any(AnalysisFlow.class));
-        verify(aiTaggingJobRepository).save(any(AiTaggingJob.class));
+        // AnalService.createAnalysisFlow 는 INSERT 직후 생성된 jobId 로 requestPayload 를
+        // 채워 한 번 더 save 하므로 총 2회 호출된다.
+        verify(aiTaggingJobRepository, times(2)).save(any(AiTaggingJob.class));
         verify(fileAnalysisAsyncService).analyzeFileAsync(eq(1L), eq(DATASOURCE_ID));
     }
 
@@ -227,7 +230,7 @@ class AnalServiceTest {
 
         CreateAnalysisFlowRequest request = new CreateAnalysisFlowRequest(DATASOURCE_ID);
 
-        assertThatThrownBy(() -> analService.createAnalysisFlow(999L, request))
+        assertThatThrownBy(() -> analService.createAnalysisFlow(USER_ID, 999L, request))
                 .isInstanceOf(LogueException.class)
                 .extracting("errorCode").isEqualTo(ErrorCode.CONVERSATION_NOT_FOUND);
     }
@@ -258,8 +261,65 @@ class AnalServiceTest {
 
         CreateAnalysisFlowRequest request = new CreateAnalysisFlowRequest(999L);
 
-        assertThatThrownBy(() -> analService.createAnalysisFlow(CONVERSATION_ID, request))
+        assertThatThrownBy(() -> analService.createAnalysisFlow(USER_ID, CONVERSATION_ID, request))
                 .isInstanceOf(LogueException.class)
                 .extracting("errorCode").isEqualTo(ErrorCode.DATASOURCE_NOT_FOUND);
     }
+
+    /**
+     * 다른 사용자 소유의 conversation으로 AnalysisFlow 생성 시 {@link ErrorCode#FORBIDDEN} 예외가 발생하는지 검증한다.
+     */
+    @Test
+    @DisplayName("다른 사용자의 conversation으로 AnalysisFlow 생성 시 FORBIDDEN 예외가 발생한다")
+    void createAnalysisFlow_conversationForbidden_throwsException() {
+        Long otherUserId = 99L;
+        User otherUser = User.builder()
+                .id(otherUserId).email("other@test.com")
+                .providerUserId("p-2").name("다른사람").provider("GOOGLE")
+                .build();
+        Conversation conversation = Conversation.builder()
+                .id(CONVERSATION_ID).user(otherUser).title("새 대화")
+                .build();
+
+        when(conversationRepository.findById(CONVERSATION_ID)).thenReturn(Optional.of(conversation));
+
+        CreateAnalysisFlowRequest request = new CreateAnalysisFlowRequest(DATASOURCE_ID);
+
+        assertThatThrownBy(() -> analService.createAnalysisFlow(USER_ID, CONVERSATION_ID, request))
+                .isInstanceOf(LogueException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.FORBIDDEN);
+    }
+
+    /**
+     * 다른 사용자 소유의 dataSource로 AnalysisFlow 생성 시 {@link ErrorCode#DATASOURCE_FORBIDDEN} 예외가 발생하는지 검증한다.
+     */
+    @Test
+    @DisplayName("다른 사용자의 dataSource로 AnalysisFlow 생성 시 DATASOURCE_FORBIDDEN 예외가 발생한다")
+    void createAnalysisFlow_dataSourceForbidden_throwsException() {
+        Long otherUserId = 99L;
+        User owner = User.builder()
+                .id(USER_ID).email("test@test.com")
+                .providerUserId("p-1").name("테스트").provider("GOOGLE")
+                .build();
+        User otherUser = User.builder()
+                .id(otherUserId).email("other@test.com")
+                .providerUserId("p-2").name("다른사람").provider("GOOGLE")
+                .build();
+        Conversation conversation = Conversation.builder()
+                .id(CONVERSATION_ID).user(owner).title("새 대화")
+                .build();
+        DataSource otherDataSource = DataSource.builder()
+                .id(DATASOURCE_ID).user(otherUser).fileName("other.csv")
+                .build();
+
+        when(conversationRepository.findById(CONVERSATION_ID)).thenReturn(Optional.of(conversation));
+        when(dataSourceRepository.findById(DATASOURCE_ID)).thenReturn(Optional.of(otherDataSource));
+
+        CreateAnalysisFlowRequest request = new CreateAnalysisFlowRequest(DATASOURCE_ID);
+
+        assertThatThrownBy(() -> analService.createAnalysisFlow(USER_ID, CONVERSATION_ID, request))
+                .isInstanceOf(LogueException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.DATASOURCE_FORBIDDEN);
+    }
+
 }
