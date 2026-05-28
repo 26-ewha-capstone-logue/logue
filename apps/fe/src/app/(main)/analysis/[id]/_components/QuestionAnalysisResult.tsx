@@ -5,7 +5,7 @@ import { createCriteriaEditValues } from '../_adapters/normalizeCriteria';
 import {
   createCriteriaEditRows,
   type CriteriaEditRowSpec,
-} from '../_config/criteriaFieldConfig';
+} from '../_config/criteriaEditRows';
 import type {
   CriteriaEditValues,
   CriteriaViewModel,

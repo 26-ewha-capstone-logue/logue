@@ -38,13 +38,13 @@ type UseCriteriaPhaseOptions = {
   statusPollIntervalMs: number;
 };
 
-export function useCriteriaPhase({
+export function useQuestionAnalysisPhase({
   getCriteriaErrorMessage,
   onQuestionCreated,
   questionAnalysisTimeoutMs,
   statusPollIntervalMs,
 }: UseCriteriaPhaseOptions) {
-  const questionAnalysisMutation = useAnalysisJobPhase({
+  return useAnalysisJobPhase({
     errorMessage: getCriteriaErrorMessage,
     fetchResult: getCriteria,
     fetchStatus: getCriteriaStatus,
@@ -74,26 +74,29 @@ export function useCriteriaPhase({
     },
     timeoutMs: questionAnalysisTimeoutMs,
   });
+}
 
-  const updateCriteriaMutation = useMutation({
-    mutationFn: ({
-      targetConversationId,
-      targetAnalysisFlowId,
-      messageId,
-      request,
-    }: UpdateCriteriaVariables) =>
-      updateCriteria(
+export function useUpdateCriteriaMutation() {
+  return useMutation({
+    mutationFn: (variables: UpdateCriteriaVariables) => {
+      const { targetConversationId, targetAnalysisFlowId, messageId, request } =
+        variables;
+
+      return updateCriteria(
         {
           conversationId: targetConversationId,
           analysisFlowId: targetAnalysisFlowId,
           messageId,
         },
         request,
-      ),
+      );
+    },
   });
+}
 
+export function useCriteriaPhase(options: UseCriteriaPhaseOptions) {
   return {
-    questionAnalysisMutation,
-    updateCriteriaMutation,
+    questionAnalysisMutation: useQuestionAnalysisPhase(options),
+    updateCriteriaMutation: useUpdateCriteriaMutation(),
   };
 }

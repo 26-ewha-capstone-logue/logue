@@ -14,7 +14,7 @@ import type { AnalysisWarningViewModel } from '../_models/analysisWarningTypes';
 import {
   ANALYSIS_TYPE_LABELS,
   getMissingCriteriaFields,
-} from '../_config/criteriaFieldConfig';
+} from '../_config/criteriaSchema';
 import {
   createMissingFieldWarning,
   normalizeDataWarningItems,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   analysisQueryKeys,
@@ -13,7 +13,6 @@ import {
 import { getAnalysisErrorMessage } from '../_adapters/normalizeAnalysisError';
 import {
   getAnalysisCancelTarget,
-  getResultCancelKey,
   type AnalysisCancelTarget,
   type PendingCriteriaCancelTarget,
 } from '../_utils/analysisCancelTarget';
@@ -32,6 +31,8 @@ type UseAnalysisCancelControllerParams = {
     params: Pick<QuestionResultParams, 'analysisCriteriaId' | 'messageId'>,
   ) => void;
   conversationId: number | null;
+  markCriteriaCanceled: (operationKey: string) => void;
+  markResultCanceled: (params: QuestionResultParams) => void;
   onCriteriaCanceled: () => void;
   onResultCanceled: () => void;
   pendingCriteriaCancelTarget: PendingCriteriaCancelTarget | null;
@@ -58,6 +59,8 @@ export function useAnalysisCancelController({
   clearPendingCriteriaOperation,
   clearPendingResultCancelParams,
   conversationId,
+  markCriteriaCanceled,
+  markResultCanceled,
   onCriteriaCanceled,
   onResultCanceled,
   pendingCriteriaCancelTarget,
@@ -68,8 +71,6 @@ export function useAnalysisCancelController({
   summaryPending,
 }: UseAnalysisCancelControllerParams) {
   const queryClient = useQueryClient();
-  const canceledCriteriaOperationKeysRef = useRef(new Set<string>());
-  const canceledResultKeysRef = useRef(new Set<string>());
   const [canceledSummaryKey, setCanceledSummaryKey] = useState<string | null>(
     null,
   );
@@ -137,14 +138,14 @@ export function useAnalysisCancelController({
       }
 
       if (target.stage === 'criteria') {
-        canceledCriteriaOperationKeysRef.current.add(target.operationKey);
+        markCriteriaCanceled(target.operationKey);
         clearPendingCriteriaOperation(target.operationKey);
         onCriteriaCanceled();
         appendNotice(CRITERIA_CANCELED_MESSAGE);
         return;
       }
 
-      canceledResultKeysRef.current.add(getResultCancelKey(target.params));
+      markResultCanceled(target.params);
       clearPendingResultCancelParams(target.params);
       onResultCanceled();
       appendNotice(RESULT_CANCELED_MESSAGE);
@@ -173,16 +174,6 @@ export function useAnalysisCancelController({
 
     cancelAnalysisMutation.mutate(activeCancelTarget);
   }, [activeCancelTarget, cancelAnalysisMutation]);
-  const consumeCanceledCriteriaOperation = useCallback(
-    (operationKey: string) =>
-      canceledCriteriaOperationKeysRef.current.delete(operationKey),
-    [],
-  );
-  const consumeCanceledResult = useCallback(
-    (params: Pick<QuestionResultParams, 'analysisCriteriaId' | 'messageId'>) =>
-      canceledResultKeysRef.current.delete(getResultCancelKey(params)),
-    [],
-  );
   const currentSummaryKey =
     conversationId !== null && analysisFlowId !== null
       ? getAnalysisFlowKey({ analysisFlowId, conversationId })
@@ -193,8 +184,6 @@ export function useAnalysisCancelController({
   return {
     canCancelAnalyzing: activeCancelTarget !== null,
     cancelAnalyzingDisabled: cancelAnalysisMutation.isPending,
-    consumeCanceledCriteriaOperation,
-    consumeCanceledResult,
     handleCancelAnalyzing,
     hasCanceledCurrentSummary,
   };

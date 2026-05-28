@@ -5,13 +5,15 @@ import {
   analysisQueryKeys,
   getSummary,
   getSummaryStatus,
+  type AnalysisFlowParams,
 } from '@/apis/analysis';
 import {
   normalizeAnalysisError,
   normalizeAnalysisStatusError,
 } from '../_adapters/normalizeAnalysisError';
 import { normalizeSummary } from '../_adapters/normalizeSummary';
-import { isFailedJobStatus, shouldPollJobStatus } from './useJobPoller';
+import { useAnalysisStatusPolling } from './useAnalysisStatusPolling';
+import { isFailedJobStatus } from './useJobPoller';
 
 type UseSummaryPhaseParams = {
   analysisFlowId: number | null;
@@ -32,26 +34,20 @@ export function useSummaryPhase({
   routeReady,
   statusPollIntervalMs,
 }: UseSummaryPhaseParams) {
-  const summaryStatusQuery = useQuery({
+  const statusParams =
+    conversationId === null || analysisFlowId === null
+      ? null
+      : { conversationId, analysisFlowId };
+  const summaryStatusQuery = useAnalysisStatusPolling<AnalysisFlowParams>({
+    enabled: routeReady,
+    fetchStatus: getSummaryStatus,
+    invalidRouteMessage,
+    intervalMs: statusPollIntervalMs,
+    params: statusParams,
     queryKey: analysisQueryKeys.summaryStatus(
       conversationId ?? 0,
       analysisFlowId ?? 0,
     ),
-    queryFn: () => {
-      if (conversationId === null || analysisFlowId === null) {
-        throw new Error(invalidRouteMessage);
-      }
-
-      return getSummaryStatus({ conversationId, analysisFlowId });
-    },
-    enabled: routeReady,
-    refetchInterval: (query) => {
-      const status = query.state.data?.status;
-
-      if (query.state.error || !status) return false;
-
-      return shouldPollJobStatus(status) ? statusPollIntervalMs : false;
-    },
   });
   const summaryStatus = routeReady
     ? summaryStatusQuery.data?.status
