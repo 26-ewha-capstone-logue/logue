@@ -62,7 +62,7 @@ export const FullWidth: Story = {
 
 export const Compact: Story = {
   args: {
-    size: 'md',
+    variant: 'compact',
     fullWidth: true,
   },
   parameters: { layout: 'padded' },
@@ -142,7 +142,7 @@ export const AllVariants: Story = {
       <section>
         <h3 className="mb-12 text-head4 text-gray-900">Compact</h3>
         <TextField
-          size="md"
+          variant="compact"
           placeholder="이번달이랑 지난달 비교해서 지역별 매출 높은 순으로 5개 보여줘"
           fullWidth
           onSubmit={fn()}
