@@ -84,7 +84,7 @@ def _run_question_analysis(payload: dict[str, Any]) -> dict[str, Any]:
 
 def _run_file_analysis(payload: dict[str, Any]) -> dict[str, Any]:
     from schemas.api.file_analysis import FileAnalysisRequest
-    from services.file_analysis import analyze_file
+    from services.file_analysis_service import analyze_file
 
     req = FileAnalysisRequest.model_validate(payload)
     response = asyncio.run(analyze_file(req))
