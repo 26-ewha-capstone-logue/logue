@@ -32,6 +32,7 @@ apps/ai/.venv/
 apps/ai/.env
 apps/ai/dist/
 apps/ai/*.egg-info/
+apps/ai/smoke/*/results/
 
 # ── test ──────────────────────────
 test/node_modules/
