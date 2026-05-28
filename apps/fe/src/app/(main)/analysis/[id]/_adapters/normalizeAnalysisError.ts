@@ -55,6 +55,13 @@ const ERROR_BY_CODE: Record<string, UserFacingAnalysisError> = {
   },
 };
 
+const FIXED_USER_FACING_MESSAGE_CODES = new Set([
+  'REQUEST_VALIDATION_FAILED',
+  'LLM_OUTPUT_INVALID',
+  'LLM_REFERENCE_VIOLATION',
+  'LLM_CALL_FAILED',
+]);
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
@@ -109,7 +116,9 @@ export function normalizeAnalysisError(
   if (known) {
     return {
       ...known,
-      message: resolveErrorMessage(payload) ?? known.message,
+      message: FIXED_USER_FACING_MESSAGE_CODES.has(code)
+        ? known.message
+        : (resolveErrorMessage(payload) ?? known.message),
     };
   }
 

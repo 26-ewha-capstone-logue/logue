@@ -36,9 +36,10 @@ describe('normalizeAnalysisError', () => {
 
     expect(error).toMatchObject({
       code: 'REQUEST_VALIDATION_FAILED',
-      message: 'Invalid analysis criteria.',
       retryable: false,
     });
+    expect(error.message).not.toBe('Invalid analysis criteria.');
+    expect(error.message).toContain('입력값');
   });
 
   it('normalizes FAILED statuses to retryable user-facing errors', () => {

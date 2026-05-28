@@ -11,6 +11,7 @@ import { getApiErrorMessage } from '@/apis/errors';
 import { useToast } from '@/hooks/useToast';
 import { markAnalysisStartPayloadConsumed } from '@/lib/analysisStartPayload';
 import type { PromptInputValue } from '../../_components/PromptInput';
+import { normalizeAnalysisError } from '../_adapters/normalizeAnalysisError';
 import { createUpdateCriteriaRequest } from '../_adapters/normalizeCriteria';
 import type { DataTableColumn } from '../_components/DataTablePreview';
 import type { CriteriaEditValues } from '../_models/analysisViewModels';
@@ -53,6 +54,10 @@ const GET_RESULT_ERROR_MESSAGE =
 
 const GET_DATA_SOURCE_ERROR_MESSAGE =
   'CSV 미리보기를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
+
+function getAnalysisErrorMessage(error: unknown, fallbackMessage: string) {
+  return normalizeAnalysisError(error, fallbackMessage).message;
+}
 
 function createPreviewTable(preview?: FilePreview | null) {
   if (!preview || preview.headers.length === 0) return null;
@@ -191,7 +196,7 @@ export function useAnalysisChat({
           },
           onError: (error) => {
             dispatchFlow({ type: 'question-submission-finished' });
-            const message = getApiErrorMessage(
+            const message = getAnalysisErrorMessage(
               error,
               CREATE_QUESTION_ERROR_MESSAGE,
             );
@@ -295,7 +300,7 @@ export function useAnalysisChat({
               },
               onError: (error) => {
                 dispatchFlow({ type: 'criteria-submission-finished' });
-                const message = getApiErrorMessage(
+                const message = getAnalysisErrorMessage(
                   error,
                   GET_RESULT_ERROR_MESSAGE,
                 );
@@ -307,7 +312,7 @@ export function useAnalysisChat({
         },
         onError: (error) => {
           dispatchFlow({ type: 'criteria-submission-finished' });
-          const message = getApiErrorMessage(
+          const message = getAnalysisErrorMessage(
             error,
             UPDATE_CRITERIA_ERROR_MESSAGE,
           );
