@@ -99,10 +99,10 @@ def test_summarize_segments_plain_text_mismatch_returns_502() -> None:
         response = client.post("/v1/llm/analysis-results/describe", json=request_body)
 
     assert response.status_code == 502
-    detail = response.json()["detail"]
-    assert detail["error_code"] == "LLM_OUTPUT_INVALID"
-    assert detail["request_id"] == "req_test_002"
-    assert "plain_text" in detail["message"]
+    body = response.json()
+    assert body["error_code"] == "LLM_OUTPUT_INVALID"
+    assert body["request_id"] == "req_test_002"
+    assert "plain_text" in body["message"]
 
 
 def test_comparison_without_compare_period_returns_422() -> None:
