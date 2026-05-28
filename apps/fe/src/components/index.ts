@@ -86,6 +86,17 @@ export type {
   ListboxDropdownShellPanelProps,
   ListboxDropdownShellProps,
 } from './ListboxDropdownShell/ListboxDropdownShell';
+export {
+  ListboxCheckboxOptionList,
+  ListboxOptionList,
+} from './ListboxDropdownShell/ListboxOptionList';
+export type {
+  ListboxCheckboxOptionListProps,
+  ListboxOption,
+  ListboxOptionListProps,
+} from './ListboxDropdownShell/ListboxOptionList';
+export { default as SimpleListboxDropdown } from './ListboxDropdownShell/SimpleListboxDropdown';
+export type { SimpleListboxDropdownProps } from './ListboxDropdownShell/SimpleListboxDropdown';
 
 export { default as MenuTab } from './MenuTab/MenuTab';
 export type { MenuTabProps } from './MenuTab/MenuTab';

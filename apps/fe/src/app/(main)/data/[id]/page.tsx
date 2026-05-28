@@ -2,12 +2,15 @@
 
 import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getApiErrorMessage, isApiConflictError } from '@/apis/errors';
+import { isMockDataSourceId } from '@/apis/mockDataSource';
 import { ToastPortal } from '@/components';
+import { AUTH_MESSAGES, DATA_SOURCE_MESSAGES } from '@/constants/messages';
 import { useToast } from '@/hooks/useToast';
-import { useAuthSession } from '@/providers/AuthProvider';
 import DataDetailStatus from './_components/DataDetailStatus';
 import DataDetailView from './_components/DataDetailView';
 import { useDataDetail } from './_hooks/useDataDetail';
+import { useDataSourceUserContext } from '../_hooks/useDataSourceUserContext';
 
 type PageParams = { id: string };
 
@@ -18,27 +21,47 @@ export default function DataDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
-  const { hasAccessToken, status } = useAuthSession();
-  const isAuthenticated = status === 'authenticated';
+  const {
+    deletedMockDataSourceIds,
+    hasAccessToken,
+    isAuthenticated,
+    markDeletedMockDataSources,
+    myInfo,
+    status,
+  } = useDataSourceUserContext();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const { toast, showToast } = useToast();
 
   const dataSourceId = Number(id);
   const isValidDataSourceId =
     Number.isSafeInteger(dataSourceId) && dataSourceId > 0;
+  const isDeletedMockDataSource =
+    isMockDataSourceId(dataSourceId) &&
+    deletedMockDataSourceIds.has(dataSourceId);
   const dataDetail = useDataDetail({
     dataSourceId: isValidDataSourceId ? dataSourceId : 0,
-    enabled: isAuthenticated && isValidDataSourceId,
+    enabled: isAuthenticated && isValidDataSourceId && !isDeletedMockDataSource,
   });
 
   const handleDeleteConfirm = async () => {
     try {
-      await dataDetail.deleteDataSource();
+      if (isMockDataSourceId(dataSourceId)) {
+        if (!myInfo?.id) throw new Error(AUTH_MESSAGES.userInfoRequired);
+
+        markDeletedMockDataSources([dataSourceId]);
+      } else {
+        await dataDetail.deleteDataSource();
+      }
+
       setDeleteOpen(false);
       router.push('/data');
-    } catch {
+    } catch (error) {
       setDeleteOpen(false);
-      showToast('파일 삭제에 실패했습니다.');
+      showToast(
+        isApiConflictError(error)
+          ? DATA_SOURCE_MESSAGES.deleteConflict
+          : getApiErrorMessage(error, DATA_SOURCE_MESSAGES.detailDeleteError),
+      );
     }
   };
 
@@ -60,7 +83,7 @@ export default function DataDetailPage({
     return <DataDetailStatus message="데이터 소스를 불러오는 중입니다." />;
   }
 
-  if (dataDetail.isError || !dataDetail.detail) {
+  if (isDeletedMockDataSource || dataDetail.isError || !dataDetail.detail) {
     return <DataDetailStatus message="데이터 소스를 불러오지 못했습니다." />;
   }
 

@@ -5,11 +5,15 @@ import { useQuery } from '@tanstack/react-query';
 import { dataSourceKeys, type DataSourceSort } from '@/apis/datasource';
 import { getDataSources } from '@/apis/dataSourceRepository';
 import { getApiErrorMessage } from '@/apis/errors';
-import { getMockDataSourceListResponse } from '@/apis/mockDataSource';
+import {
+  filterVisibleMockDataSources,
+  getMockDataSourceListResponse,
+} from '@/apis/mockDataSource';
 
 const DATA_SOURCE_PAGE_SIZE = 20;
 
 type UseDataSourceListParams = {
+  deletedMockDataSourceIds: ReadonlySet<number>;
   enabled: boolean;
   fallbackErrorMessage: string;
   page: number;
@@ -17,6 +21,7 @@ type UseDataSourceListParams = {
 };
 
 export function useDataSourceList({
+  deletedMockDataSourceIds,
   enabled,
   fallbackErrorMessage,
   page,
@@ -32,9 +37,16 @@ export function useDataSourceList({
     queryFn: () => getDataSources(listParams),
     enabled,
   });
-  const dataSources =
-    query.data?.dataSources ??
-    getMockDataSourceListResponse(listParams).dataSources;
+  const dataSources = useMemo(() => {
+    const rawDataSources =
+      query.data?.dataSources ??
+      getMockDataSourceListResponse(listParams).dataSources;
+
+    return filterVisibleMockDataSources(
+      rawDataSources,
+      deletedMockDataSourceIds,
+    );
+  }, [deletedMockDataSourceIds, listParams, query.data?.dataSources]);
   const hasDataSources = dataSources.length > 0;
 
   return {

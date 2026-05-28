@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createJwt } from '../test-utils/jwt';
+import { installWindowStorage } from '../test-utils/storage';
 import {
   ACCESS_TOKEN_STORAGE_KEY,
   LEGACY_ACCESS_TOKEN_STORAGE_KEY,
@@ -13,56 +15,6 @@ import {
   shouldRefreshAccessToken,
   skipNextPrivatePathRedirect,
 } from './auth';
-
-function createStorage() {
-  const store = new Map<string, string>();
-
-  return {
-    get length() {
-      return store.size;
-    },
-    clear: () => store.clear(),
-    getItem: (key: string) => store.get(key) ?? null,
-    key: (index: number) => Array.from(store.keys())[index] ?? null,
-    removeItem: (key: string) => {
-      store.delete(key);
-    },
-    setItem: (key: string, value: string) => {
-      store.set(key, value);
-    },
-  } satisfies Storage;
-}
-
-function installWindowStorage() {
-  const localStorage = createStorage();
-  const sessionStorage = createStorage();
-  const dispatchEvent = vi.fn();
-
-  Object.defineProperty(globalThis, 'window', {
-    configurable: true,
-    value: {
-      localStorage,
-      sessionStorage,
-      dispatchEvent,
-    },
-  });
-
-  return { dispatchEvent, localStorage, sessionStorage };
-}
-
-function encodeBase64Url(value: unknown) {
-  return Buffer.from(JSON.stringify(value))
-    .toString('base64')
-    .replaceAll('+', '-')
-    .replaceAll('/', '_')
-    .replaceAll('=', '');
-}
-
-function createJwt(payload: Record<string, unknown>) {
-  return `${encodeBase64Url({ alg: 'none' })}.${encodeBase64Url(
-    payload,
-  )}.signature`;
-}
 
 afterEach(() => {
   Reflect.deleteProperty(globalThis, 'window');
