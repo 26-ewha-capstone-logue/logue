@@ -4,10 +4,10 @@ import { use, useState } from 'react';
 import { ToastPortal } from '@/components';
 import { useAuthSession } from '@/providers/AuthProvider';
 import PromptInput from '../_components/PromptInput';
+import AnalysisResizableSplit from './_components/AnalysisResizableSplit';
 import AnalysisChatMessageList from './_components/AnalysisChatMessageList';
 import DataTablePreview from './_components/DataTablePreview';
 import LoadingDataPreview from './_components/LoadingDataPreview';
-import ResizableSplit from './_components/ResizableSplit';
 import { useAnalysisChat } from './_hooks/useAnalysisChat';
 
 type PageParams = { id: string };
@@ -26,7 +26,7 @@ export default function AnalysisChatPage({
   });
 
   return (
-    <ResizableSplit
+    <AnalysisResizableSplit
       rightCollapsed={isChatCollapsed}
       onRightCollapsedChange={setIsChatCollapsed}
       left={

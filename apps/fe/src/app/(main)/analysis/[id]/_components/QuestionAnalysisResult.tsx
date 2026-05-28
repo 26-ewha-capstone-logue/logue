@@ -83,7 +83,7 @@ export default function QuestionAnalysisResult({
     onContinue?.(values);
   };
 
-  const renderStaticValue = (row: RowSpec) => {
+  const renderStaticValue = (row: CriteriaEditRowSpec) => {
     if (row.kind === 'static') return row.value || '-';
     if (row.kind === 'multi') return values.groupBy.join(', ') || '-';
     return values[row.key] || '-';

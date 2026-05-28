@@ -1,77 +1,126 @@
-import type { CriteriaInfo } from '@/apis/analysis';
+import type {
+  CriteriaInfo,
+  UpdateQuestionCriteriaRequest,
+} from '@/apis/analysis';
+import type { CriteriaEditValues } from '../_models/analysisViewModels';
+import { normalizeString, uniqueStrings } from '../_utils/stringList';
 
 export const ANALYSIS_TYPE_LABELS: Record<string, string> = {
   COMPARISON: '비교 분석',
   RANKING: '순위 분석',
 };
 
+type CriteriaFieldDefinition = {
+  label: string;
+  requiredWhenCriteriaAbsent?: boolean;
+  isMissing?: (criteria: CriteriaInfo) => boolean;
+};
+
+function isComparisonCriteria(criteria: CriteriaInfo) {
+  return normalizeString(criteria.analysisType) === 'COMPARISON';
+}
+
+function isRankingCriteria(criteria: CriteriaInfo) {
+  return normalizeString(criteria.analysisType) === 'RANKING';
+}
+
+export const CRITERIA_FIELD_DEFINITIONS = {
+  analysisType: {
+    label: '분석 방식',
+    isMissing: (criteria) => !normalizeString(criteria.analysisType),
+  },
+  metricName: {
+    label: '지표',
+    isMissing: (criteria) => !normalizeString(criteria.metricName),
+  },
+  baseDateColumn: {
+    label: '날짜 기준',
+    isMissing: (criteria) => !normalizeString(criteria.baseDateColumn),
+  },
+  standardPeriod: {
+    label: '분석 기간',
+    isMissing: (criteria) => !normalizeString(criteria.standardPeriod),
+  },
+  comparePeriod: {
+    label: '비교 기간',
+    isMissing: (criteria) =>
+      isComparisonCriteria(criteria) &&
+      !normalizeString(criteria.comparePeriod),
+  },
+  groupBy: {
+    label: '비교 기준',
+    isMissing: (criteria) => uniqueStrings(criteria.groupBy).length === 0,
+  },
+  sortBy: {
+    label: '정렬 기준',
+    isMissing: (criteria) => !normalizeString(criteria.sortBy),
+  },
+  sortDirection: {
+    label: '정렬 순서',
+    isMissing: (criteria) => !normalizeString(criteria.sortDirection),
+  },
+  limitNum: {
+    label: '조회 개수',
+    isMissing: (criteria) =>
+      isRankingCriteria(criteria) &&
+      (criteria.limitNum == null || criteria.limitNum <= 0),
+  },
+  filters: {
+    label: '적용 조건',
+    requiredWhenCriteriaAbsent: false,
+  },
+} satisfies Record<string, CriteriaFieldDefinition>;
+
 export const CRITERIA_FIELD_LABELS = {
-  analysisType: '분석 방식',
-  metricName: '지표',
-  baseDateColumn: '날짜 기준',
-  standardPeriod: '분석 기간',
-  comparePeriod: '비교 기간',
-  groupBy: '비교 기준',
-  sortBy: '정렬 기준',
-  sortDirection: '정렬 순서',
-  limitNum: '조회 개수',
-  filters: '적용 조건',
+  analysisType: CRITERIA_FIELD_DEFINITIONS.analysisType.label,
+  metricName: CRITERIA_FIELD_DEFINITIONS.metricName.label,
+  baseDateColumn: CRITERIA_FIELD_DEFINITIONS.baseDateColumn.label,
+  standardPeriod: CRITERIA_FIELD_DEFINITIONS.standardPeriod.label,
+  comparePeriod: CRITERIA_FIELD_DEFINITIONS.comparePeriod.label,
+  groupBy: CRITERIA_FIELD_DEFINITIONS.groupBy.label,
+  sortBy: CRITERIA_FIELD_DEFINITIONS.sortBy.label,
+  sortDirection: CRITERIA_FIELD_DEFINITIONS.sortDirection.label,
+  limitNum: CRITERIA_FIELD_DEFINITIONS.limitNum.label,
+  filters: CRITERIA_FIELD_DEFINITIONS.filters.label,
 } as const;
 
-function normalizeString(value: string | null | undefined) {
-  const trimmed = value?.trim();
-  return trimmed || null;
-}
-
-function normalizeStringList(values: string[] | null | undefined) {
-  return Array.isArray(values)
-    ? Array.from(
-        new Set(
-          values
-            .map((value) => normalizeString(value))
-            .filter(Boolean) as string[],
-        ),
-      )
-    : [];
-}
+const CRITERIA_FIELD_LIST = Object.values(
+  CRITERIA_FIELD_DEFINITIONS,
+) as CriteriaFieldDefinition[];
+const REQUIRED_WHEN_CRITERIA_ABSENT = CRITERIA_FIELD_LIST.filter(
+  (definition) => definition.requiredWhenCriteriaAbsent !== false,
+);
 
 export function getMissingCriteriaFields(criteria?: CriteriaInfo | null) {
   if (!criteria) {
-    return Object.values(CRITERIA_FIELD_LABELS).filter(
-      (label) => label !== CRITERIA_FIELD_LABELS.filters,
-    );
+    return REQUIRED_WHEN_CRITERIA_ABSENT.map((definition) => definition.label);
   }
 
-  const missing: string[] = [];
-  const analysisType = normalizeString(criteria.analysisType);
+  return CRITERIA_FIELD_LIST.filter((definition) =>
+    definition.isMissing?.(criteria),
+  ).map((definition) => definition.label);
+}
 
-  if (!analysisType) missing.push(CRITERIA_FIELD_LABELS.analysisType);
-  if (!normalizeString(criteria.metricName))
-    missing.push(CRITERIA_FIELD_LABELS.metricName);
-  if (!normalizeString(criteria.baseDateColumn))
-    missing.push(CRITERIA_FIELD_LABELS.baseDateColumn);
-  if (!normalizeString(criteria.standardPeriod))
-    missing.push(CRITERIA_FIELD_LABELS.standardPeriod);
-  if (
-    analysisType === 'COMPARISON' &&
-    !normalizeString(criteria.comparePeriod)
-  ) {
-    missing.push(CRITERIA_FIELD_LABELS.comparePeriod);
-  }
-  if (
-    analysisType === 'RANKING' &&
-    (criteria.limitNum == null || criteria.limitNum <= 0)
-  ) {
-    missing.push(CRITERIA_FIELD_LABELS.limitNum);
-  }
-  if (normalizeStringList(criteria.groupBy).length === 0) {
-    missing.push(CRITERIA_FIELD_LABELS.groupBy);
-  }
-  if (!normalizeString(criteria.sortBy))
-    missing.push(CRITERIA_FIELD_LABELS.sortBy);
-  if (!normalizeString(criteria.sortDirection)) {
-    missing.push(CRITERIA_FIELD_LABELS.sortDirection);
-  }
+function optionalString(value: string | null | undefined) {
+  return normalizeString(value) ?? undefined;
+}
 
-  return missing;
+export function createUpdateCriteriaRequestPayload(
+  values: CriteriaEditValues,
+): UpdateQuestionCriteriaRequest {
+  return {
+    baseDateColumn: optionalString(values.baseDateColumn),
+    standardPeriod: optionalString(values.standardPeriod),
+    comparePeriod: optionalString(values.comparePeriod),
+    groupBy: values.groupBy,
+    sortBy: optionalString(values.sortBy),
+    sortDirection: normalizeString(values.sortDirection)?.toLowerCase(),
+    limitNum: values.limitNum ?? undefined,
+    filters: values.filters.map((filter) => ({
+      field: filter.field,
+      operator: filter.operator,
+      value: filter.value,
+    })),
+    confirmed: true,
+  };
 }

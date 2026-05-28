@@ -11,17 +11,12 @@ import {
   type QuestionResultParams,
 } from '@/apis/analysis';
 import { getAnalysisErrorMessage } from '../_adapters/normalizeAnalysisError';
+import { ANALYSIS_WORKFLOW_MESSAGES } from '../_config/analysisWorkflowMessages';
 import {
   getAnalysisCancelTarget,
   type AnalysisCancelTarget,
   type PendingCriteriaCancelTarget,
 } from '../_utils/analysisCancelTarget';
-
-const CANCEL_ANALYSIS_ERROR_MESSAGE =
-  '분석을 취소하지 못했어요. 잠시 후 다시 시도해 주세요.';
-const SUMMARY_CANCELED_MESSAGE = 'CSV 데이터 요약을 취소했어요.';
-const CRITERIA_CANCELED_MESSAGE = '질문 분석을 취소했어요.';
-const RESULT_CANCELED_MESSAGE = '최종 분석 결과 생성을 취소했어요.';
 
 type UseAnalysisCancelControllerParams = {
   analysisFlowId: number | null;
@@ -133,7 +128,7 @@ export function useAnalysisCancelController({
 
       if (target.stage === 'summary') {
         setCanceledSummaryKey(getAnalysisFlowKey(target.params));
-        appendNotice(SUMMARY_CANCELED_MESSAGE);
+        appendNotice(ANALYSIS_WORKFLOW_MESSAGES.summary.canceled);
         return;
       }
 
@@ -141,19 +136,19 @@ export function useAnalysisCancelController({
         markCriteriaCanceled(target.operationKey);
         clearPendingCriteriaOperation(target.operationKey);
         onCriteriaCanceled();
-        appendNotice(CRITERIA_CANCELED_MESSAGE);
+        appendNotice(ANALYSIS_WORKFLOW_MESSAGES.question.canceled);
         return;
       }
 
       markResultCanceled(target.params);
       clearPendingResultCancelParams(target.params);
       onResultCanceled();
-      appendNotice(RESULT_CANCELED_MESSAGE);
+      appendNotice(ANALYSIS_WORKFLOW_MESSAGES.result.canceled);
     },
     onError: (error) => {
       const message = getAnalysisErrorMessage(
         error,
-        CANCEL_ANALYSIS_ERROR_MESSAGE,
+        ANALYSIS_WORKFLOW_MESSAGES.cancel.error,
       );
       showToast(message);
       appendNotice(message, 'error');

@@ -8,13 +8,12 @@ import type {
   QuestionResultViewModel,
   SummaryViewModel,
 } from '../_models/analysisViewModels';
+import { ANALYSIS_WORKFLOW_MESSAGES } from '../_config/analysisWorkflowMessages';
 import type { CriteriaInitialMode } from './useAnalysisChatMessages';
 import { useAnalysisCancelController } from './useAnalysisCancelController';
 import { useAnalysisCancellationRegistry } from './useAnalysisCancellationRegistry';
 import { useCriteriaConfirmationController } from './useCriteriaConfirmationController';
 import { useQuestionAnalysisController } from './useQuestionAnalysisController';
-
-const SUMMARY_NOT_READY_MESSAGE = 'CSV 데이터 요약이 끝난 뒤 질문할 수 있어요.';
 
 type UseAnalysisWorkflowControllerParams = {
   analysisFlowId: number | null;
@@ -112,7 +111,7 @@ export function useAnalysisWorkflowController({
   const handleSubmit = useCallback(
     (value: PromptInputValue) => {
       if (!summary) {
-        showToast(SUMMARY_NOT_READY_MESSAGE);
+        showToast(ANALYSIS_WORKFLOW_MESSAGES.summary.notReady);
         return;
       }
 
@@ -137,12 +136,12 @@ export function useAnalysisWorkflowController({
     criteriaConfirmationController.updateCriteriaPending ||
     criteriaConfirmationController.resultAnalysisActive;
   const analyzingMessage = summaryPending
-    ? 'CSV 데이터를 분석 중이에요'
+    ? ANALYSIS_WORKFLOW_MESSAGES.summary.pending
     : criteriaConfirmationController.updateCriteriaPending
-      ? '분석 기준을 확정 중이에요'
+      ? ANALYSIS_WORKFLOW_MESSAGES.criteria.pending
       : criteriaConfirmationController.resultAnalysisPending
-        ? '최종 분석 결과를 생성 중이에요'
-        : '질문을 분석 중이에요';
+        ? ANALYSIS_WORKFLOW_MESSAGES.result.pending
+        : ANALYSIS_WORKFLOW_MESSAGES.question.pending;
   const inputDisabled =
     !summary ||
     questionController.questionAnalysisActive ||

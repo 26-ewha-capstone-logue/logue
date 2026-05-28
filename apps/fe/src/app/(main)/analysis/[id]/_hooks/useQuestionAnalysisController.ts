@@ -3,18 +3,12 @@
 import { useCallback, useRef, useState } from 'react';
 import type { QuestionCriteriaParams } from '@/apis/analysis';
 import { getAnalysisErrorMessage } from '../_adapters/normalizeAnalysisError';
+import { ANALYSIS_WORKFLOW_MESSAGES } from '../_config/analysisWorkflowMessages';
+import { ANALYSIS_JOB_POLICY } from '../_config/analysisWorkflowPolicy';
 import type { CriteriaViewModel } from '../_models/analysisViewModels';
 import type { PendingCriteriaCancelTarget } from '../_utils/analysisCancelTarget';
 import type { CriteriaInitialMode } from './useAnalysisChatMessages';
 import { useQuestionAnalysisPhase } from './useCriteriaPhase';
-
-const STATUS_POLL_INTERVAL_MS = 1500;
-const QUESTION_ANALYSIS_TIMEOUT_MS = 120000;
-const INVALID_ROUTE_MESSAGE = '분석 정보를 찾지 못했어요. 다시 시작해 주세요.';
-const CREATE_QUESTION_ERROR_MESSAGE =
-  '질문 분석을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.';
-const GET_CRITERIA_ERROR_MESSAGE =
-  '분석 기준을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
 
 type UseQuestionAnalysisControllerParams = {
   analysisFlowId: number | null;
@@ -65,13 +59,14 @@ export function useQuestionAnalysisController({
   }, []);
 
   const questionAnalysisMutation = useQuestionAnalysisPhase({
-    getCriteriaErrorMessage: GET_CRITERIA_ERROR_MESSAGE,
+    getCriteriaErrorMessage:
+      ANALYSIS_WORKFLOW_MESSAGES.question.getCriteriaError,
     onQuestionCreated: (context: {
       operationKey: string;
       params: QuestionCriteriaParams;
     }) => setPendingCancelTarget(context),
-    questionAnalysisTimeoutMs: QUESTION_ANALYSIS_TIMEOUT_MS,
-    statusPollIntervalMs: STATUS_POLL_INTERVAL_MS,
+    questionAnalysisTimeoutMs: ANALYSIS_JOB_POLICY.questionAnalysisTimeoutMs,
+    statusPollIntervalMs: ANALYSIS_JOB_POLICY.statusPollIntervalMs,
   });
   const { mutate: mutateQuestionAnalysis, isPending } =
     questionAnalysisMutation;
@@ -85,8 +80,8 @@ export function useQuestionAnalysisController({
       if (questionSubmissionLocked) return;
 
       if (conversationId === null || analysisFlowId === null) {
-        showToast(INVALID_ROUTE_MESSAGE);
-        appendNotice(INVALID_ROUTE_MESSAGE, 'error');
+        showToast(ANALYSIS_WORKFLOW_MESSAGES.invalidRoute);
+        appendNotice(ANALYSIS_WORKFLOW_MESSAGES.invalidRoute, 'error');
         return;
       }
 
@@ -125,7 +120,7 @@ export function useQuestionAnalysisController({
             dispatchQuestionSubmissionFinished();
             const message = getAnalysisErrorMessage(
               error,
-              CREATE_QUESTION_ERROR_MESSAGE,
+              ANALYSIS_WORKFLOW_MESSAGES.question.createError,
             );
             showToast(message);
             appendNotice(message, 'error');

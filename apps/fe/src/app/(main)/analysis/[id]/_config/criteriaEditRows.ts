@@ -3,7 +3,7 @@ import type {
   CriteriaViewModel,
 } from '../_models/analysisViewModels';
 import { uniqueStrings as uniqueOptions } from '../_utils/stringList';
-import { CRITERIA_FIELD_LABELS } from './criteriaSchema';
+import { CRITERIA_FIELD_DEFINITIONS } from './criteriaSchema';
 
 export type CriteriaStaticRow = {
   kind: 'static';
@@ -41,6 +41,7 @@ export type CriteriaEditRowSpec =
 
 const DEFAULT_PERIOD_OPTIONS = ['이번 주', '지난 주', '이번 달', '지난 달'];
 const DEFAULT_SORT_DIRECTION_OPTIONS = ['ASC', 'DESC'];
+const FIELD = CRITERIA_FIELD_DEFINITIONS;
 
 export function createCriteriaEditRows({
   baseDateColumnOptions,
@@ -62,17 +63,17 @@ export function createCriteriaEditRows({
   return [
     {
       kind: 'static',
-      label: CRITERIA_FIELD_LABELS.analysisType,
+      label: FIELD.analysisType.label,
       value: criteria.analysisType.label,
     },
     {
       kind: 'static',
-      label: CRITERIA_FIELD_LABELS.metricName,
+      label: FIELD.metricName.label,
       value: criteria.metric.label,
     },
     {
       kind: 'single',
-      label: CRITERIA_FIELD_LABELS.baseDateColumn,
+      label: FIELD.baseDateColumn.label,
       key: 'baseDateColumn',
       options: uniqueOptions([
         values.baseDateColumn,
@@ -81,7 +82,7 @@ export function createCriteriaEditRows({
     },
     {
       kind: 'single',
-      label: CRITERIA_FIELD_LABELS.standardPeriod,
+      label: FIELD.standardPeriod.label,
       key: 'standardPeriod',
       options: uniqueOptions([
         values.standardPeriod,
@@ -90,13 +91,13 @@ export function createCriteriaEditRows({
     },
     {
       kind: 'single',
-      label: CRITERIA_FIELD_LABELS.comparePeriod,
+      label: FIELD.comparePeriod.label,
       key: 'comparePeriod',
       options: uniqueOptions([values.comparePeriod, ...DEFAULT_PERIOD_OPTIONS]),
     },
     {
       kind: 'multi',
-      label: CRITERIA_FIELD_LABELS.groupBy,
+      label: FIELD.groupBy.label,
       key: 'groupBy',
       options: uniqueOptions([...groupBy, ...(groupByOptions ?? [])]),
       maxSelect: 5,
@@ -104,13 +105,13 @@ export function createCriteriaEditRows({
     },
     {
       kind: 'single',
-      label: CRITERIA_FIELD_LABELS.sortBy,
+      label: FIELD.sortBy.label,
       key: 'sortBy',
       options: uniqueOptions([values.sortBy, ...(sortByOptions ?? [])]),
     },
     {
       kind: 'single',
-      label: CRITERIA_FIELD_LABELS.sortDirection,
+      label: FIELD.sortDirection.label,
       key: 'sortDirection',
       options: uniqueOptions([
         values.sortDirection,
@@ -119,12 +120,12 @@ export function createCriteriaEditRows({
     },
     {
       kind: 'static',
-      label: CRITERIA_FIELD_LABELS.limitNum,
+      label: FIELD.limitNum.label,
       value: values.limitNum == null ? '제한 없음' : `${values.limitNum}개`,
     },
     {
       kind: 'static',
-      label: CRITERIA_FIELD_LABELS.filters,
+      label: FIELD.filters.label,
       value:
         values.filters.length === 0
           ? '없음'

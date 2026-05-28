@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useReducer } from 'react';
 import { useToast } from '@/hooks/useToast';
 import { markAnalysisStartPayloadConsumed } from '@/lib/analysisStartPayload';
+import { ANALYSIS_DEFAULT_PROMPT } from '../_config/analysisWorkflowMessages';
 import { uniqueStrings } from '../_utils/stringList';
-import { useAnalysisDataPreview } from './useAnalysisDataPreview';
 import {
   useAnalysisChatMessages,
   type CriteriaInitialMode,
@@ -14,23 +14,13 @@ import {
   analysisChatFlowReducer,
   initialAnalysisChatFlowState,
 } from './useAnalysisChatFlow';
-import { useAnalysisRouteParams } from './useAnalysisRouteParams';
-import { useAnalysisStartPayload } from './useAnalysisStartPayload';
+import { useAnalysisPageData } from './useAnalysisPageData';
 import { useAnalysisWorkflowController } from './useAnalysisWorkflowController';
-import { useSummaryPhase } from './useSummaryPhase';
 
 export type {
   ChatMessage,
   CriteriaInitialMode,
 } from './useAnalysisChatMessages';
-
-const DEFAULT_PROMPT = 'CSV 파일을 분석해 주세요';
-const STATUS_POLL_INTERVAL_MS = 1500;
-const INVALID_ROUTE_MESSAGE = '분석 정보를 찾지 못했어요. 다시 시작해 주세요.';
-const GET_SUMMARY_ERROR_MESSAGE =
-  'CSV 데이터 요약을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
-const GET_DATA_SOURCE_ERROR_MESSAGE =
-  'CSV 미리보기를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
 
 type UseAnalysisChatParams = {
   hasAccessToken: boolean;
@@ -41,18 +31,11 @@ export function useAnalysisChat({
   hasAccessToken,
   routeConversationId,
 }: UseAnalysisChatParams) {
-  const { analysisFlowId, conversationId, dataSourceId, routeReady } =
-    useAnalysisRouteParams(routeConversationId);
   const { toast, showToast } = useToast();
   const [flow, dispatchFlow] = useReducer(
     analysisChatFlowReducer,
     initialAnalysisChatFlowState,
   );
-  const { fileName, initialPrompt } = useAnalysisStartPayload({
-    conversationId,
-    defaultPrompt: DEFAULT_PROMPT,
-    dispatchFlow,
-  });
   const {
     appendCriteriaMessage,
     appendNotice,
@@ -61,7 +44,25 @@ export function useAnalysisChat({
     initialMessage,
     restMessages,
     updateInitialMessage,
-  } = useAnalysisChatMessages(DEFAULT_PROMPT);
+  } = useAnalysisChatMessages(ANALYSIS_DEFAULT_PROMPT);
+  const {
+    analysisFlowId,
+    conversationId,
+    dataSourceErrorMessage,
+    fileName,
+    initialPrompt,
+    isDataSourceEmpty,
+    isDataSourceLoading,
+    previewTable,
+    summary,
+    summaryErrorMessage,
+    summaryPending,
+  } = useAnalysisPageData({
+    defaultPrompt: ANALYSIS_DEFAULT_PROMPT,
+    dispatchFlow,
+    hasAccessToken,
+    routeConversationId,
+  });
   const {
     canAutoStartInitialQuestion,
     criteriaSubmissionLocked,
@@ -84,28 +85,6 @@ export function useAnalysisChat({
   const dispatchQuestionSubmissionStarted = useCallback(() => {
     dispatchFlow({ type: 'question-submission-started' });
   }, []);
-
-  const { summary, summaryErrorMessage, summaryPending } = useSummaryPhase({
-    analysisFlowId,
-    conversationId,
-    failedSummaryMessage:
-      'CSV 데이터 요약에 실패했어요. 파일을 확인하고 다시 시도해 주세요.',
-    getSummaryErrorMessage: GET_SUMMARY_ERROR_MESSAGE,
-    invalidRouteMessage: INVALID_ROUTE_MESSAGE,
-    routeReady: hasAccessToken && routeReady,
-    statusPollIntervalMs: STATUS_POLL_INTERVAL_MS,
-  });
-  const {
-    dataSourceErrorMessage,
-    isDataSourceEmpty,
-    isDataSourceLoading,
-    previewTable,
-  } = useAnalysisDataPreview({
-    dataSourceId,
-    enabled: hasAccessToken,
-    errorMessage: GET_DATA_SOURCE_ERROR_MESSAGE,
-    invalidRouteMessage: INVALID_ROUTE_MESSAGE,
-  });
   const workflow = useAnalysisWorkflowController({
     analysisFlowId,
     appendCriteriaMessage,
