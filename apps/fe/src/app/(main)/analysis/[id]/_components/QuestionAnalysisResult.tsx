@@ -2,12 +2,14 @@
 
 import { useMemo, useState } from 'react';
 import { createCriteriaEditValues } from '../_adapters/normalizeCriteria';
+import {
+  createCriteriaEditRows,
+  type CriteriaEditRowSpec,
+} from '../_config/criteriaEditRows';
 import type {
-  AnalysisFilterViewModel,
   CriteriaEditValues,
   CriteriaViewModel,
 } from '../_models/analysisViewModels';
-import { uniqueStrings as uniqueOptions } from '../_utils/stringList';
 import AnalysisActionButtons from './AnalysisActionButtons';
 import AnalysisCard from './AnalysisCard';
 import {
@@ -33,43 +35,6 @@ export type QuestionAnalysisResultProps = {
   onContinue?: (values: CriteriaEditValues) => void;
 };
 
-type StaticRow = { kind: 'static'; label: string; value: string };
-type SingleRow = {
-  kind: 'single';
-  label: string;
-  key: keyof Pick<
-    CriteriaEditValues,
-    | 'baseDateColumn'
-    | 'standardPeriod'
-    | 'comparePeriod'
-    | 'sortBy'
-    | 'sortDirection'
-  >;
-  options: string[];
-};
-type MultiRow = {
-  kind: 'multi';
-  label: string;
-  key: 'groupBy';
-  options: string[];
-  maxSelect?: number;
-  headerLabel: string;
-};
-
-type RowSpec = StaticRow | SingleRow | MultiRow;
-
-const DEFAULT_PERIOD_OPTIONS = ['이번 주', '지난 주', '이번 달', '지난 달'];
-const DEFAULT_SORT_DIRECTION_OPTIONS = ['ASC', 'DESC'];
-
-function formatFilters(filters: AnalysisFilterViewModel[]) {
-  if (filters.length === 0) return '없음';
-
-  return filters
-    .map((filter) => filter.label)
-    .filter(Boolean)
-    .join(', ');
-}
-
 export default function QuestionAnalysisResult({
   criteria,
   baseDateColumnOptions,
@@ -86,85 +51,18 @@ export default function QuestionAnalysisResult({
     createCriteriaEditValues(criteria),
   );
 
-  const rows = useMemo<RowSpec[]>(() => {
-    const groupBy = values.groupBy.length > 0 ? values.groupBy : [''];
-
-    return [
-      {
-        kind: 'static',
-        label: '분석 방식',
-        value: criteria.analysisType.label,
-      },
-      {
-        kind: 'static',
-        label: '지표',
-        value: criteria.metric.label,
-      },
-      {
-        kind: 'single',
-        label: '날짜 기준',
-        key: 'baseDateColumn',
-        options: uniqueOptions([
-          values.baseDateColumn,
-          ...(baseDateColumnOptions ?? []),
-        ]),
-      },
-      {
-        kind: 'single',
-        label: '분석 기간',
-        key: 'standardPeriod',
-        options: uniqueOptions([
-          values.standardPeriod,
-          ...DEFAULT_PERIOD_OPTIONS,
-        ]),
-      },
-      {
-        kind: 'single',
-        label: '비교 기간',
-        key: 'comparePeriod',
-        options: uniqueOptions([
-          values.comparePeriod,
-          ...DEFAULT_PERIOD_OPTIONS,
-        ]),
-      },
-      {
-        kind: 'multi',
-        label: '비교 기준',
-        key: 'groupBy',
-        options: uniqueOptions([...groupBy, ...(groupByOptions ?? [])]),
-        maxSelect: 5,
-        headerLabel: '여러 값 선택 가능',
-      },
-      {
-        kind: 'single',
-        label: '정렬 기준',
-        key: 'sortBy',
-        options: uniqueOptions([values.sortBy, ...(sortByOptions ?? [])]),
-      },
-      {
-        kind: 'single',
-        label: '정렬 순서',
-        key: 'sortDirection',
-        options: uniqueOptions([
-          values.sortDirection,
-          ...(sortDirectionOptions ?? DEFAULT_SORT_DIRECTION_OPTIONS),
-        ]),
-      },
-      {
-        kind: 'static',
-        label: '조회 개수',
-        value: values.limitNum == null ? '제한 없음' : `${values.limitNum}개`,
-      },
-      {
-        kind: 'static',
-        label: '적용 조건',
-        value: formatFilters(values.filters),
-      },
-    ];
+  const rows = useMemo<CriteriaEditRowSpec[]>(() => {
+    return createCriteriaEditRows({
+      baseDateColumnOptions,
+      criteria,
+      groupByOptions,
+      sortByOptions,
+      sortDirectionOptions,
+      values,
+    });
   }, [
     baseDateColumnOptions,
-    criteria.analysisType.label,
-    criteria.metric.label,
+    criteria,
     groupByOptions,
     sortByOptions,
     sortDirectionOptions,
@@ -185,7 +83,7 @@ export default function QuestionAnalysisResult({
     onContinue?.(values);
   };
 
-  const renderStaticValue = (row: RowSpec) => {
+  const renderStaticValue = (row: CriteriaEditRowSpec) => {
     if (row.kind === 'static') return row.value || '-';
     if (row.kind === 'multi') return values.groupBy.join(', ') || '-';
     return values[row.key] || '-';

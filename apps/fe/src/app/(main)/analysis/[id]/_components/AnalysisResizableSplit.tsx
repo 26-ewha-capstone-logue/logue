@@ -9,7 +9,7 @@ import {
 } from 'react';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg';
 
-export type ResizableSplitProps = {
+export type AnalysisResizableSplitProps = {
   left: ReactNode;
   right: ReactNode;
   /** 우측 영역 최소 width (rem) — 채팅창 최소 크기 보장 */
@@ -29,7 +29,7 @@ export type ResizableSplitProps = {
 // 1rem = 10px (globals.css 의 base font-size 설정과 동일)
 const REM = 10;
 
-export default function ResizableSplit({
+export default function AnalysisResizableSplit({
   left,
   right,
   minRightRem = 41.8,
@@ -38,7 +38,7 @@ export default function ResizableSplit({
   rightCollapsed,
   onRightCollapsedChange,
   collapsedRightRem = 3.9,
-}: ResizableSplitProps) {
+}: AnalysisResizableSplitProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [rightRem, setRightRem] = useState<number | null>(
     initialRightRem ?? null,

@@ -1,17 +1,12 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import {
   analysisQueryKeys,
   getSummary,
   getSummaryStatus,
 } from '@/apis/analysis';
-import {
-  normalizeAnalysisError,
-  normalizeAnalysisStatusError,
-} from '../_adapters/normalizeAnalysisError';
 import { normalizeSummary } from '../_adapters/normalizeSummary';
-import { isFailedJobStatus, shouldPollJobStatus } from './useJobPoller';
+import { useAnalysisQueryJobPhase } from './useAnalysisQueryJobPhase';
 
 type UseSummaryPhaseParams = {
   analysisFlowId: number | null;
@@ -32,73 +27,37 @@ export function useSummaryPhase({
   routeReady,
   statusPollIntervalMs,
 }: UseSummaryPhaseParams) {
-  const summaryStatusQuery = useQuery({
-    queryKey: analysisQueryKeys.summaryStatus(
-      conversationId ?? 0,
-      analysisFlowId ?? 0,
-    ),
-    queryFn: () => {
-      if (conversationId === null || analysisFlowId === null) {
-        throw new Error(invalidRouteMessage);
-      }
-
-      return getSummaryStatus({ conversationId, analysisFlowId });
-    },
+  const statusParams =
+    conversationId === null || analysisFlowId === null
+      ? null
+      : { conversationId, analysisFlowId };
+  const summaryPhase = useAnalysisQueryJobPhase({
     enabled: routeReady,
-    refetchInterval: (query) => {
-      const status = query.state.data?.status;
-
-      if (query.state.error || !status) return false;
-
-      return shouldPollJobStatus(status) ? statusPollIntervalMs : false;
-    },
-  });
-  const summaryStatus = routeReady
-    ? summaryStatusQuery.data?.status
-    : undefined;
-
-  const summaryQuery = useQuery({
-    queryKey: analysisQueryKeys.summary(
+    failedMessage: failedSummaryMessage,
+    fetchResult: getSummary,
+    fetchStatus: getSummaryStatus,
+    getResultErrorMessage: getSummaryErrorMessage,
+    invalidRouteMessage,
+    intervalMs: statusPollIntervalMs,
+    normalizeResult: normalizeSummary,
+    params: statusParams,
+    resultQueryKey: analysisQueryKeys.summary(
       conversationId ?? 0,
       analysisFlowId ?? 0,
     ),
-    queryFn: () => {
-      if (conversationId === null || analysisFlowId === null) {
-        throw new Error(invalidRouteMessage);
-      }
-
-      return getSummary({ conversationId, analysisFlowId });
-    },
-    enabled: routeReady && summaryStatus === 'SUCCESS',
-    select: normalizeSummary,
+    statusQueryKey: analysisQueryKeys.summaryStatus(
+      conversationId ?? 0,
+      analysisFlowId ?? 0,
+    ),
   });
-
-  const summary = routeReady ? summaryQuery.data : undefined;
-  const summaryError = !routeReady
-    ? normalizeAnalysisError(
-        new Error(invalidRouteMessage),
-        invalidRouteMessage,
-      )
-    : summaryStatusQuery.isError
-      ? normalizeAnalysisError(summaryStatusQuery.error, getSummaryErrorMessage)
-      : summaryQuery.isError
-        ? normalizeAnalysisError(summaryQuery.error, getSummaryErrorMessage)
-        : normalizeAnalysisStatusError(summaryStatus, failedSummaryMessage);
-  const summaryPending =
-    routeReady &&
-    !summaryStatusQuery.isError &&
-    !summaryQuery.isError &&
-    !summary &&
-    !isFailedJobStatus(summaryStatus);
-  const summaryErrorMessage = summaryError?.message ?? null;
 
   return {
-    summary,
-    summaryError,
-    summaryErrorMessage,
-    summaryPending,
-    summaryQuery,
-    summaryStatus,
-    summaryStatusQuery,
+    summary: summaryPhase.result,
+    summaryError: summaryPhase.error,
+    summaryErrorMessage: summaryPhase.errorMessage,
+    summaryPending: summaryPhase.pending,
+    summaryQuery: summaryPhase.resultQuery,
+    summaryStatus: summaryPhase.status,
+    summaryStatusQuery: summaryPhase.statusQuery,
   };
 }
