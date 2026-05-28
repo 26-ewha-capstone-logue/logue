@@ -2,7 +2,6 @@
 
 import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getApiErrorMessage, isApiConflictError } from '@/apis/errors';
 import { isMockDataSourceId } from '@/apis/mockDataSource';
 import { ToastPortal } from '@/components';
 import { AUTH_MESSAGES, DATA_SOURCE_MESSAGES } from '@/constants/messages';
@@ -11,6 +10,7 @@ import DataDetailStatus from './_components/DataDetailStatus';
 import DataDetailView from './_components/DataDetailView';
 import { useDataDetail } from './_hooks/useDataDetail';
 import { useDataSourceUserContext } from '../_hooks/useDataSourceUserContext';
+import { getDataSourceDeleteErrorMessage } from '../_utils/dataSourceErrorMessage';
 
 type PageParams = { id: string };
 
@@ -58,9 +58,10 @@ export default function DataDetailPage({
     } catch (error) {
       setDeleteOpen(false);
       showToast(
-        isApiConflictError(error)
-          ? DATA_SOURCE_MESSAGES.deleteConflict
-          : getApiErrorMessage(error, DATA_SOURCE_MESSAGES.detailDeleteError),
+        getDataSourceDeleteErrorMessage(error, {
+          conflict: DATA_SOURCE_MESSAGES.deleteConflict,
+          fallback: DATA_SOURCE_MESSAGES.detailDeleteError,
+        }),
       );
     }
   };

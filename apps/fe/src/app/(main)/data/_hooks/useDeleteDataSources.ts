@@ -4,9 +4,12 @@ import { useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { deleteDataSources } from '@/apis/dataSourceRepository';
 import { dataSourceKeys } from '@/apis/datasource';
-import { getApiErrorMessage, isApiConflictError } from '@/apis/errors';
-import { isMockDataSourceId } from '@/apis/mockDataSource';
+import {
+  getMockDataSourceIds,
+  getServerDataSourceIds,
+} from '@/apis/mockDataSource';
 import { AUTH_MESSAGES } from '@/constants/messages';
+import { getDataSourceDeleteErrorMessage } from '../_utils/dataSourceErrorMessage';
 
 type UseDeleteDataSourcesOptions = {
   conflictErrorMessage: string;
@@ -34,10 +37,8 @@ export function useDeleteDataSources({
     async (dataSourceIds: number[]) => {
       if (dataSourceIds.length === 0) return;
 
-      const mockDataSourceIds = dataSourceIds.filter(isMockDataSourceId);
-      const serverDataSourceIds = dataSourceIds.filter(
-        (dataSourceId) => !isMockDataSourceId(dataSourceId),
-      );
+      const mockDataSourceIds = getMockDataSourceIds(dataSourceIds);
+      const serverDataSourceIds = getServerDataSourceIds(dataSourceIds);
 
       if (mockDataSourceIds.length > 0 && userId == null) {
         onError(AUTH_MESSAGES.userInfoRequired);
@@ -59,9 +60,10 @@ export function useDeleteDataSources({
         onSuccess();
       } catch (error) {
         onError(
-          isApiConflictError(error)
-            ? conflictErrorMessage
-            : getApiErrorMessage(error, fallbackErrorMessage),
+          getDataSourceDeleteErrorMessage(error, {
+            conflict: conflictErrorMessage,
+            fallback: fallbackErrorMessage,
+          }),
         );
       }
     },
