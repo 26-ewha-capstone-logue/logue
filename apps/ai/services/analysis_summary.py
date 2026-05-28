@@ -17,6 +17,7 @@ sibling (`services/analysis_criteria_service.py`) 와 동일한 응답 정책을
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from config.settings import is_mock_mode
@@ -47,7 +48,8 @@ async def summarize_analysis_result(
     `AppError` 는 그대로 통과시켜 의미를 보존한다.
     """
     try:
-        response = _call_llm(request)
+        # 동기 LLM 호출을 threadpool 으로 오프로드 — async 이벤트 루프 블로킹 방지.
+        response = await asyncio.to_thread(_call_llm, request)
     except (AppError, NotImplementedError):
         raise
     except Exception as exc:
