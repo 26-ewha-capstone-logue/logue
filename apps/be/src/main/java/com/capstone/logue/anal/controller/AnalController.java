@@ -76,7 +76,7 @@ public class AnalController {
     @PostMapping("/conversations/{conversationId}/analysisFlows")
     public ResponseEntity<ApiResponse<CreateAnalysisFlowResponse>> createAnalysisFlow(
             @PathVariable Long conversationId,
-            @RequestBody CreateAnalysisFlowRequest request) {
+            @Valid @RequestBody CreateAnalysisFlowRequest request) {
         return ResponseEntity.ok(ApiResponse.success("Analysis Flow 생성 성공", analService.createAnalysisFlow(conversationId, request)));
     }
 
