@@ -1,0 +1,20 @@
+{
+  "id": "AMB-02",
+  "layer": "모호성·경고",
+  "category": "amb",
+  "description": "MEASURE 모호 - signup_complete/signups 둘 다, predefined formula 기준 signup_complete 우선",
+  "spec": {
+    "id": "AMB-02",
+    "dataset": "dataset-c",
+    "question": "이번 주 채널·디바이스별 가입 전환율 top 5"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "RANKING",
+      "metric_name": "signup_conversion_rate",
+      "group_by": ["channel", "device"],
+      "limit_num": 5
+    },
+    "warnings": {"QUESTION_DATA_MISMATCH": true}
+  }
+}

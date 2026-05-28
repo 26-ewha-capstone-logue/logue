@@ -1,0 +1,21 @@
+{
+  "id": "RNK-06",
+  "layer": "표현 다양화",
+  "category": "rnk",
+  "spec": {
+    "id": "RNK-06",
+    "dataset": "dataset-a",
+    "question": "지난 한 달 디바이스별 유료 전환율 하위 3개"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "RANKING",
+      "metric_name": "paid_conversion_rate",
+      "base_date_column": "event_date",
+      "standard_period": "1M",
+      "group_by": ["device"],
+      "sort_direction": "asc",
+      "limit_num": 3
+    }
+  }
+}

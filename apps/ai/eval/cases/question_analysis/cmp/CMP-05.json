@@ -1,0 +1,21 @@
+{
+  "id": "CMP-05",
+  "layer": "표현 다양화",
+  "category": "cmp",
+  "spec": {
+    "id": "CMP-05",
+    "dataset": "dataset-a",
+    "question": "이번 주 가입 전환율이 전주 대비 어디서 제일 빠졌어?"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "COMPARISON",
+      "metric_name": "signup_conversion_rate",
+      "base_date_column": "event_date",
+      "standard_period": "1W",
+      "compare_period": "1W",
+      "group_by": ["channel", "device"],
+      "sort_direction": "asc"
+    }
+  }
+}

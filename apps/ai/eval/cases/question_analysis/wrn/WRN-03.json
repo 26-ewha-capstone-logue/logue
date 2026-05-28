@@ -1,0 +1,23 @@
+{
+  "id": "WRN-03",
+  "layer": "질문-데이터 불일치",
+  "category": "wrn",
+  "description": "질문에 'internal_test 제외' 포함 - account_flag 컬럼 없는 변형",
+  "spec": {
+    "id": "WRN-03",
+    "dataset": "dataset-a",
+    "override_columns": {"account_flag": {"remove": true}},
+    "question": "internal_test 제외하고 이번 주 가입 전환율 하위 5개 채널·디바이스"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "RANKING",
+      "metric_name": "signup_conversion_rate",
+      "base_date_column": "event_date",
+      "standard_period": "1W",
+      "group_by": ["channel", "device"],
+      "limit_num": 5
+    },
+    "warnings": {"QUESTION_DATA_MISMATCH": true}
+  }
+}

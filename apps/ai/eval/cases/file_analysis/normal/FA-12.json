@@ -1,0 +1,31 @@
+{
+  "id": "FA-12",
+  "layer": "정상 케이스 (경계)",
+  "category": "normal",
+  "description": "row_count=1 - low-volume 견고성",
+  "input": {
+    "request_id": "fa_12",
+    "data_source": {
+      "file_name": "single_row.csv",
+      "row_count": 1,
+      "column_count": 3,
+      "columns": [
+        {"column_name": "event_date", "data_type": "date", "null_ratio": 0.0, "unique_ratio": 1.0, "sample_values": ["2026-05-12"]},
+        {"column_name": "channel", "data_type": "string", "null_ratio": 0.0, "unique_ratio": 1.0, "sample_values": ["paid_search"]},
+        {"column_name": "value", "data_type": "integer", "null_ratio": 0.0, "unique_ratio": 1.0, "sample_values": [42]}
+      ]
+    },
+    "catalog": {
+      "semantic_roles": ["DATE_CRITERIA", "MEASURE", "DIMENSION", "STATUS_CONDITION", "FLAG", "ID_CRITERIA"],
+      "source_warning_keys": [{"code": "DATE_FIELD_CONFLICT", "name": "Date field conflict", "comment": "Choose one date field."}]
+    }
+  },
+  "expected": {
+    "column_roles": {
+      "event_date": "DATE_CRITERIA",
+      "channel": "DIMENSION",
+      "value": "MEASURE"
+    },
+    "warnings": {}
+  }
+}

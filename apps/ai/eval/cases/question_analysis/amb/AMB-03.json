@@ -1,0 +1,26 @@
+{
+  "id": "AMB-03",
+  "layer": "모호성·경고",
+  "category": "amb",
+  "description": "STATUS_CONDITION 모호 - payment_status/order_status 둘 다, 질문 키워드 기준 payment_status 선택",
+  "spec": {
+    "id": "AMB-03",
+    "dataset": "dataset-a",
+    "add_columns": [
+      {"name": "payment_status", "data_type": "string", "role": "STATUS_CONDITION", "sample_values": ["paid", "pending"]},
+      {"name": "order_status", "data_type": "string", "role": "STATUS_CONDITION", "sample_values": ["fulfilled", "cancelled"]}
+    ],
+    "question": "이번 주 결제 완료 채널별 가입 전환율 top 5"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "RANKING",
+      "metric_name": "signup_conversion_rate",
+      "base_date_column": "event_date",
+      "standard_period": "1W",
+      "group_by": ["channel"],
+      "limit_num": 5
+    },
+    "warnings": {"QUESTION_DATA_MISMATCH": true}
+  }
+}

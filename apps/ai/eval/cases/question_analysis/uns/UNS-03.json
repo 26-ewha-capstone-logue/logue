@@ -1,0 +1,15 @@
+{
+  "id": "UNS-03",
+  "layer": "모호성·경고",
+  "category": "uns",
+  "description": "supported_periods 밖 (6M 미지원)",
+  "spec": {
+    "id": "UNS-03",
+    "dataset": "dataset-a",
+    "question": "최근 6개월 채널별 가입 전환율 top 5"
+  },
+  "expected": {
+    "analysis_criteria": null,
+    "unsupported_question": {"detected_intent": "unsupported_period"}
+  }
+}

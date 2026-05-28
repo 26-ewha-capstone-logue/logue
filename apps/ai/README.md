@@ -37,6 +37,9 @@ apps/ai/
   llm/                    # OpenAI 호출 공통 모듈 (LLMClient + retry + prompt_loader)
   prompts/                # system prompt 저장 (<name>_<version>.system.md)
   config/                 # 환경변수 접근 + API별 모델/temperature/token 설정
+  eval/                   # LLM 출력 품질 평가 하네스 (loader · runner · scoring · CLI)
+  observability/          # LLM 호출 이벤트 로깅 (stdout JSONL → CloudWatch) + cost · hashing · redaction
+  rules/                  # LLM 응답 비즈니스 검증 (metric/column/warning + facade)
   core/                   # 에러·예외 핸들러·검증 헬퍼
   tests/
 ```
@@ -72,6 +75,7 @@ response = client.complete_structured(
 
 - API 별 모델·temperature·token 한도는 `config/model_config.py` 단일 출처
 - system prompt 는 `prompts/<name>_<version>.system.md` 파일로 분리 — 버전업 시 `_v2.system.md` 추가 후 `load_system_prompt(name, version="v2")` 호출. `prompt_version_id()` 로 로깅용 식별자 획득
+- LLM 호출 메타데이터 로깅은 `observability.LLMEventBuilder` 로 누적해 finalize 시점에 한 줄 JSONL 이벤트로 stdout emit (CloudWatch 자동 수집, 파일 I/O 없음)
 
 | prompt 파일 | 상태 |
 |---|---|
@@ -210,9 +214,21 @@ client.complete_structured(
 
 | HTTP | error_code | 의미 | 트리거 위치 | 재시도 |
 |---|---|---|---|---|
-| 422 | (FastAPI 기본 형식) | 요청 Pydantic 검증 실패 (analysis_type별 필수 필드, rows 길이, `compare_period` 빈 문자열 등) | FastAPI 입력단 | ❌ |
+| 422 | `REQUEST_VALIDATION_FAILED` | 요청 Pydantic 검증 실패 (analysis_type별 필수 필드, rows 길이, `compare_period` 빈 문자열 등) | FastAPI 입력단 | ❌ |
 | 502 | `LLM_OUTPUT_INVALID` | 응답 segments↔plain_text 불일치 (LLM 응답 계약 위반) | `_validate_response` | ❌ (재시도 없이 FAILED) |
-| 500 | (FastAPI 기본 형식) | 서버 내부 오류 (LLM 호출 실패 포함) | `main.py::unhandled_exception_handler` | ✅ (Spring 단에서 재시도) |
+| 502 | `LLM_CALL_FAILED` | LLM 호출 자체 실패 (타임아웃·네트워크·upstream 5xx) | `_call_llm` 예외 → `summarize_analysis_result` 가 자동 래핑 | ✅ (Spring 단에서 재시도) |
+| 500 | (FastAPI 기본 형식) | 예상 외 서버 내부 오류 (LLM 외 경로) | `main.py::unhandled_exception_handler` | ✅ (Spring 단에서 재시도) |
 
-> 502 응답 형태: `{"detail": {"request_id": "...", "error_code": "LLM_OUTPUT_INVALID", "message": "..."}}` — 질문분석 API와 동일 컨벤션.
-  
+응답 페이로드 형태는 sibling (분석 기준 도출 API) 과 동일하게 `core/errors.py::ErrorResponse` 단일 모델입니다 (`request_id`, `error_code`, `message`, `details[]`).
+
+## 파일 분석 API (AI 개발자 인계)
+
+CSV 컬럼 메타데이터를 받아 각 컬럼의 `semantic_role` 과 `primary_candidates`, `DATE_FIELD_CONFLICT` 같은 source warning 을 반환하는 LLM 엔드포인트 `POST /v1/llm/data-sources/analyze` 입니다. 오케스트레이션은 `services/file_analysis_service.py::analyze_file()` 가 담당하고 실제 LLM 호출은 `services/file_analysis/v1_baseline.py::run()` (gpt-4.1-nano · 0.0 · 1600, system prompt `prompts/file_analysis_v1.system.md`) 에 위임됩니다. `analyze_file` 은 LLM 응답을 받은 뒤 `request_id` 를 입력값으로 덮어쓰고 `core.rules.source_warnings()` 로 `primary_candidates.date_fields` 위에서 warning 을 결정론적으로 재계산하므로, LLM 이 warning 을 빠뜨리거나 catalog 밖 코드를 만들어도 항상 안전한 응답이 나갑니다. Spring 통합 테스트는 `ANAL_LLM_MOCK=true` 를 export 한 뒤 호출하면 LLM 비용 없이 rule-based 결정론적 응답 (`_build_mock_response`) 으로 200 경로를 검증할 수 있고, 실제 LLM 호출 동작을 사전 점검할 때는 `smoke/file_analysis/` 의 페이로드 + `run.sh` 를 사용합니다 (자세한 사용법은 해당 디렉토리 README 참조).
+
+### 에러 코드 의미 (Spring 측 분기 기준)
+
+| HTTP | error_code | 의미 | 트리거 위치 |
+|---|---|---|---|
+| 422 | `REQUEST_VALIDATION_FAILED` | 입력 Pydantic 검증 실패 (catalog enum, null/unique_ratio 범위 등) | FastAPI 입력단 |
+| 502 | `LLM_OUTPUT_INVALID` | LLM 응답이 요청에 없는 컬럼명을 반환한 경우 (참조 무결성 위반) | `validate_file_analysis_response` |
+| 502 | `LLM_CALL_FAILED` | LLM 호출 자체 실패 (타임아웃 · 네트워크 · upstream 5xx) | `_call_llm` 예외 → `analyze_file` 가 자동 래핑 |

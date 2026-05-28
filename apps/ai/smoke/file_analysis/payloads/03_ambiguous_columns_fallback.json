@@ -1,0 +1,20 @@
+{
+  "request_id": "smoke_fa_03",
+  "data_source": {
+    "file_name": "metrics.csv",
+    "row_count": 50,
+    "column_count": 4,
+    "columns": [
+      {"column_name": "user_id", "data_type": "string",  "null_ratio": 0.0, "unique_ratio": 1.0, "sample_values": ["u_001", "u_002"]},
+      {"column_name": "value",   "data_type": "double",  "null_ratio": 0.0, "unique_ratio": 0.8, "sample_values": [12.5, 99.1]},
+      {"column_name": "count",   "data_type": "integer", "null_ratio": 0.0, "unique_ratio": 0.5, "sample_values": [1, 3, 5]},
+      {"column_name": "total",   "data_type": "string",  "null_ratio": 0.0, "unique_ratio": 0.1, "sample_values": ["A", "B"]}
+    ]
+  },
+  "catalog": {
+    "semantic_roles": ["DATE_CRITERIA", "MEASURE", "DIMENSION", "STATUS_CONDITION", "FLAG", "ID_CRITERIA"],
+    "source_warning_keys": [
+      {"code": "DATE_FIELD_CONFLICT", "name": "Date field conflict", "comment": "여러 날짜 컬럼이 후보로 잡혔습니다."}
+    ]
+  }
+}

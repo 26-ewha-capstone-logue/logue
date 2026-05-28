@@ -1,0 +1,16 @@
+{
+  "id": "UNS-07",
+  "layer": "표현 다양화",
+  "category": "uns",
+  "description": "후속 질문 - previous_messages 없이 단독 해석 불가",
+  "spec": {
+    "id": "UNS-07",
+    "dataset": "dataset-a",
+    "question": "그러면 디바이스별로는 어때?",
+    "previous_messages": []
+  },
+  "expected": {
+    "analysis_criteria": null,
+    "unsupported_question": {"detected_intent": "context_dependent"}
+  }
+}

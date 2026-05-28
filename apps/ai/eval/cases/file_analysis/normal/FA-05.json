@@ -1,0 +1,33 @@
+{
+  "id": "FA-05",
+  "layer": "정상 케이스",
+  "category": "normal",
+  "description": "landing_sessions null_ratio=0.45 - 01에선 role만 판단 (null warning은 02에서)",
+  "input": {
+    "request_id": "fa_05",
+    "data_source": {
+      "file_name": "high_null_funnel.csv",
+      "row_count": 1000,
+      "column_count": 4,
+      "columns": [
+        {"column_name": "event_date", "data_type": "date", "null_ratio": 0.0, "unique_ratio": 0.5, "sample_values": ["2026-05-12"]},
+        {"column_name": "channel", "data_type": "string", "null_ratio": 0.0, "unique_ratio": 0.01, "sample_values": ["paid_search"]},
+        {"column_name": "landing_sessions", "data_type": "integer", "null_ratio": 0.45, "unique_ratio": 0.7, "sample_values": [1200]},
+        {"column_name": "signup_complete", "data_type": "integer", "null_ratio": 0.0, "unique_ratio": 0.4, "sample_values": [96]}
+      ]
+    },
+    "catalog": {
+      "semantic_roles": ["DATE_CRITERIA", "MEASURE", "DIMENSION", "STATUS_CONDITION", "FLAG", "ID_CRITERIA"],
+      "source_warning_keys": [{"code": "DATE_FIELD_CONFLICT", "name": "Date field conflict", "comment": "Choose one date field."}]
+    }
+  },
+  "expected": {
+    "column_roles": {
+      "event_date": "DATE_CRITERIA",
+      "channel": "DIMENSION",
+      "landing_sessions": "MEASURE",
+      "signup_complete": "MEASURE"
+    },
+    "warnings": {}
+  }
+}

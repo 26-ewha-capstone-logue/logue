@@ -1,0 +1,33 @@
+{
+  "id": "FA-02",
+  "layer": "정상 케이스",
+  "category": "normal",
+  "description": "ID + FLAG + STATUS_CONDITION 분리",
+  "input": {
+    "request_id": "fa_02",
+    "data_source": {
+      "file_name": "subscriptions.csv",
+      "row_count": 500,
+      "column_count": 4,
+      "columns": [
+        {"column_name": "user_id", "data_type": "string", "null_ratio": 0.0, "unique_ratio": 0.99, "sample_values": ["u_001"]},
+        {"column_name": "is_active", "data_type": "boolean", "null_ratio": 0.0, "unique_ratio": 0.004, "sample_values": [true, false]},
+        {"column_name": "payment_status", "data_type": "string", "null_ratio": 0.0, "unique_ratio": 0.006, "sample_values": ["paid", "pending", "failed"]},
+        {"column_name": "created_at", "data_type": "datetime", "null_ratio": 0.0, "unique_ratio": 0.9, "sample_values": ["2026-05-12T00:00:00Z"]}
+      ]
+    },
+    "catalog": {
+      "semantic_roles": ["DATE_CRITERIA", "MEASURE", "DIMENSION", "STATUS_CONDITION", "FLAG", "ID_CRITERIA"],
+      "source_warning_keys": [{"code": "DATE_FIELD_CONFLICT", "name": "Date field conflict", "comment": "Choose one date field."}]
+    }
+  },
+  "expected": {
+    "column_roles": {
+      "user_id": "ID_CRITERIA",
+      "is_active": "FLAG",
+      "payment_status": "STATUS_CONDITION",
+      "created_at": "DATE_CRITERIA"
+    },
+    "warnings": {}
+  }
+}

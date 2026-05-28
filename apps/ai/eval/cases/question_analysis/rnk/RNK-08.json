@@ -1,0 +1,21 @@
+{
+  "id": "RNK-08",
+  "layer": "스키마 변화",
+  "category": "rnk",
+  "spec": {
+    "id": "RNK-08",
+    "dataset": "dataset-b",
+    "question": "이번 주 소스·디바이스별 가입 전환율 하위 5개"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "RANKING",
+      "metric_name": "signup_conversion_rate",
+      "base_date_column": "created_at",
+      "standard_period": "1W",
+      "group_by": ["source", "device_type"],
+      "sort_direction": "asc",
+      "limit_num": 5
+    }
+  }
+}

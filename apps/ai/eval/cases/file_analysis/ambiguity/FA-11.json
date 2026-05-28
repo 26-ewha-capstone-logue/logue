@@ -1,0 +1,35 @@
+{
+  "id": "FA-11",
+  "layer": "모호성·경고",
+  "category": "ambiguity",
+  "description": "모호한 컬럼명 (value/count/total) - 단서 부족 시 data_type 기반 fallback",
+  "input": {
+    "request_id": "fa_11",
+    "data_source": {
+      "file_name": "ambiguous_columns.csv",
+      "row_count": 600,
+      "column_count": 5,
+      "columns": [
+        {"column_name": "event_date", "data_type": "date", "null_ratio": 0.0, "unique_ratio": 0.5, "sample_values": ["2026-05-12"]},
+        {"column_name": "value", "data_type": "integer", "null_ratio": 0.0, "unique_ratio": 0.6, "sample_values": [10]},
+        {"column_name": "count", "data_type": "integer", "null_ratio": 0.0, "unique_ratio": 0.5, "sample_values": [25]},
+        {"column_name": "total", "data_type": "integer", "null_ratio": 0.0, "unique_ratio": 0.7, "sample_values": [100]},
+        {"column_name": "name", "data_type": "string", "null_ratio": 0.0, "unique_ratio": 0.02, "sample_values": ["alpha"]}
+      ]
+    },
+    "catalog": {
+      "semantic_roles": ["DATE_CRITERIA", "MEASURE", "DIMENSION", "STATUS_CONDITION", "FLAG", "ID_CRITERIA"],
+      "source_warning_keys": [{"code": "DATE_FIELD_CONFLICT", "name": "Date field conflict", "comment": "Choose one date field."}]
+    }
+  },
+  "expected": {
+    "column_roles": {
+      "event_date": "DATE_CRITERIA",
+      "value": "MEASURE",
+      "count": "MEASURE",
+      "total": "MEASURE",
+      "name": "DIMENSION"
+    },
+    "warnings": {}
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "UNS-04",
+  "layer": "모호성·경고",
+  "category": "uns",
+  "description": "metric formula 컬럼(signup_complete) 데이터셋에 없음",
+  "spec": {
+    "id": "UNS-04",
+    "dataset": "dataset-a",
+    "override_columns": {"signup_complete": {"remove": true}},
+    "question": "이번 주 채널별 가입 전환율 top 5"
+  },
+  "expected": {
+    "analysis_criteria": null,
+    "unsupported_question": {"detected_intent": "missing_formula_column"}
+  }
+}

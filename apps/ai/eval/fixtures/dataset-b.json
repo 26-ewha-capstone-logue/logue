@@ -1,0 +1,15 @@
+{
+  "id": "dataset-b",
+  "table": "acquisition_daily",
+  "fields": [
+    {"name": "created_at", "data_type": "date", "role": "DATE_CRITERIA"},
+    {"name": "source", "data_type": "string", "role": "DIMENSION", "sample_values": ["paid_search", "organic", "referral", "direct"]},
+    {"name": "device_type", "data_type": "string", "role": "DIMENSION", "sample_values": ["mobile", "desktop", "tablet"]},
+    {"name": "visits", "data_type": "integer", "role": "MEASURE"},
+    {"name": "signups", "data_type": "integer", "role": "MEASURE"},
+    {"name": "activated", "data_type": "integer", "role": "MEASURE"},
+    {"name": "trial_starts", "data_type": "integer", "role": "MEASURE"},
+    {"name": "paid", "data_type": "integer", "role": "MEASURE"},
+    {"name": "is_test", "data_type": "boolean", "role": "FLAG", "sample_values": [true, false]}
+  ]
+}

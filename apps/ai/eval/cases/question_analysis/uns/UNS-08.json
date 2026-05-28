@@ -1,0 +1,15 @@
+{
+  "id": "UNS-08",
+  "layer": "표현 다양화",
+  "category": "uns",
+  "description": "catalog가 RATIO만 포함 - COUNT 지표 요청 불가",
+  "spec": {
+    "id": "UNS-08",
+    "dataset": "dataset-a",
+    "question": "이번 주 채널별 가입한 사용자 수 top 5"
+  },
+  "expected": {
+    "analysis_criteria": null,
+    "unsupported_question": {"detected_intent": "missing_metric_type"}
+  }
+}

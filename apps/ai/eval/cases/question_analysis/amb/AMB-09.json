@@ -1,0 +1,21 @@
+{
+  "id": "AMB-09",
+  "layer": "표현 다양화",
+  "category": "amb",
+  "description": "period 모호 - '최근'만 (1W/1M/3M 다 가능), LLM 기본값 적용",
+  "spec": {
+    "id": "AMB-09",
+    "dataset": "dataset-a",
+    "question": "최근 채널별 가입 전환율 top 5"
+  },
+  "expected": {
+    "analysis_criteria": {
+      "analysis_type": "RANKING",
+      "metric_name": "signup_conversion_rate",
+      "base_date_column": "event_date",
+      "group_by": ["channel"],
+      "limit_num": 5
+    },
+    "warnings": {"QUESTION_DATA_MISMATCH": true}
+  }
+}

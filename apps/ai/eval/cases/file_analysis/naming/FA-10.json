@@ -1,0 +1,33 @@
+{
+  "id": "FA-10",
+  "layer": "표현 다양화",
+  "category": "naming",
+  "description": "snake_case + camelCase 혼합 - 명명규칙 무관 role 추론",
+  "input": {
+    "request_id": "fa_10",
+    "data_source": {
+      "file_name": "mixed_naming.csv",
+      "row_count": 800,
+      "column_count": 4,
+      "columns": [
+        {"column_name": "event_date", "data_type": "date", "null_ratio": 0.0, "unique_ratio": 0.5, "sample_values": ["2026-05-12"]},
+        {"column_name": "channelName", "data_type": "string", "null_ratio": 0.0, "unique_ratio": 0.01, "sample_values": ["paid_search"]},
+        {"column_name": "signupComplete", "data_type": "integer", "null_ratio": 0.0, "unique_ratio": 0.4, "sample_values": [96]},
+        {"column_name": "total_count", "data_type": "integer", "null_ratio": 0.0, "unique_ratio": 0.7, "sample_values": [1200]}
+      ]
+    },
+    "catalog": {
+      "semantic_roles": ["DATE_CRITERIA", "MEASURE", "DIMENSION", "STATUS_CONDITION", "FLAG", "ID_CRITERIA"],
+      "source_warning_keys": [{"code": "DATE_FIELD_CONFLICT", "name": "Date field conflict", "comment": "Choose one date field."}]
+    }
+  },
+  "expected": {
+    "column_roles": {
+      "event_date": "DATE_CRITERIA",
+      "channelName": "DIMENSION",
+      "signupComplete": "MEASURE",
+      "total_count": "MEASURE"
+    },
+    "warnings": {}
+  }
+}
