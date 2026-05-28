@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   emptyChartResultResponse,
   normalResultResponse,
+  rowsEmptyResultResponse,
   rowsNullResultResponse,
 } from '../_fixtures/analysis.fixtures';
 import { normalizeChartData } from '../_adapters/normalizeChartData';
@@ -35,6 +36,15 @@ describe('normalizeResult', () => {
 
   it('normalizes legacy rows:null chartData to an empty chart model', () => {
     const result = normalizeResult(rowsNullResultResponse);
+
+    expect(result.chart).toMatchObject({
+      type: 'empty',
+      reason: 'empty',
+    });
+  });
+
+  it('normalizes legacy rows:[] chartData to an empty chart model', () => {
+    const result = normalizeResult(rowsEmptyResultResponse);
 
     expect(result.chart).toMatchObject({
       type: 'empty',

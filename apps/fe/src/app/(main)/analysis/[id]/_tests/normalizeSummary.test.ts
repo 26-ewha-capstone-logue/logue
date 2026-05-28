@@ -23,6 +23,23 @@ describe('normalizeSummary', () => {
     expect(summary.emptyMessage).toBeNull();
   });
 
+  it('compacts role arrays before creating options and key points', () => {
+    const summary = normalizeSummary({
+      ...normalSummaryResponse,
+      dataCriteria: [' signup_date ', 'signup_date', ''],
+      measure: null,
+      dimension: [' channel ', 'channel'],
+      statusCondition: null,
+      flag: null,
+      idCriteria: null,
+    });
+
+    expect(
+      summary.keyPoints.filter((item) => item.example === 'signup_date'),
+    ).toHaveLength(1);
+    expect(summary.columnOptions).toEqual(['signup_date', 'channel']);
+  });
+
   it('keeps empty/null summary data renderable', () => {
     const summary = normalizeSummary(summaryTextNullResponse);
 

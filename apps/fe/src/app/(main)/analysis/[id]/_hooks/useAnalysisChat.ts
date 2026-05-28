@@ -51,6 +51,9 @@ const UPDATE_CRITERIA_ERROR_MESSAGE =
 const GET_RESULT_ERROR_MESSAGE =
   '최종 분석 결과를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
 
+const GET_DATA_SOURCE_ERROR_MESSAGE =
+  'CSV 미리보기를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
+
 function createPreviewTable(preview?: FilePreview | null) {
   if (!preview || preview.headers.length === 0) return null;
 
@@ -128,6 +131,12 @@ export function useAnalysisChat({
   const dataSourcePreview = hasAccessToken
     ? dataSourceQuery.data?.preview
     : undefined;
+  const previewTable = createPreviewTable(dataSourcePreview);
+  const dataSourceErrorMessage = dataSourceQuery.isError
+    ? getApiErrorMessage(dataSourceQuery.error, GET_DATA_SOURCE_ERROR_MESSAGE)
+    : null;
+  const isDataSourceEmpty =
+    hasAccessToken && dataSourceQuery.isSuccess && !previewTable;
   const { questionAnalysisMutation, updateCriteriaMutation } = useCriteriaPhase(
     {
       getCriteriaErrorMessage: GET_CRITERIA_ERROR_MESSAGE,
@@ -385,8 +394,10 @@ export function useAnalysisChat({
     handleSubmit,
     initialMessage,
     inputDisabled,
+    dataSourceErrorMessage,
     isDataSourceLoading: hasAccessToken && dataSourceQuery.isLoading,
-    previewTable: createPreviewTable(dataSourcePreview),
+    isDataSourceEmpty,
+    previewTable,
     restMessages,
     shouldShowAnalyzing,
     startInitialQuestion,

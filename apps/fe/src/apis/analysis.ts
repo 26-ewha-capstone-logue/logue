@@ -35,12 +35,12 @@ export type StartAnalysisFlowFromDataSourceResponse = {
 export type GetSummaryResponse = {
   rowCount: number;
   columnCount: number;
-  dataCriteria: string[];
-  measure: string[];
-  dimension: string[];
-  statusCondition: string[];
-  flag: string[];
-  idCriteria: string[];
+  dataCriteria: string[] | null;
+  measure: string[] | null;
+  dimension: string[] | null;
+  statusCondition: string[] | null;
+  flag: string[] | null;
+  idCriteria: string[] | null;
   sourceDataWarning: string | null;
   createdAt: string;
 };

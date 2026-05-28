@@ -82,6 +82,18 @@ export const unknownWarningCodeCriteriaResponse = {
   },
 } satisfies GetQuestionCriteriaResponse;
 
+export const rankingMissingLimitCriteriaResponse = {
+  ...normalCriteriaResponse,
+  criteria: {
+    ...normalCriteriaResponse.criteria,
+    analysisType: 'RANKING',
+    comparePeriod: null,
+    sortBy: 'conversion_rate',
+    sortDirection: 'DESC',
+    limitNum: null,
+  },
+} satisfies GetQuestionCriteriaResponse;
+
 export const normalResultResponse = {
   resultId: 21,
   summaryMessage: '검증이 완료되었어요.',
@@ -122,6 +134,14 @@ export const rowsNullResultResponse = {
   } as unknown as ResultChartDataInfo,
 } satisfies GetQuestionResultResponse;
 
+export const rowsEmptyResultResponse = {
+  ...normalResultResponse,
+  chartData: {
+    columns: ['channel', 'conversion_rate'],
+    rows: [],
+  } as unknown as ResultChartDataInfo,
+} satisfies GetQuestionResultResponse;
+
 export const failedStatusResponse = {
   status: 'FAILED',
 } satisfies AnalysisStatusResponse;
@@ -145,5 +165,18 @@ export const llmCallFailedError = {
     success: false,
     code: 'LLM_CALL_FAILED',
     message: null,
+  },
+};
+
+export const requestValidationFailedError = {
+  isAxiosError: true,
+  response: {
+    status: 422,
+    data: {
+      request_id: 'job-1',
+      error_code: 'REQUEST_VALIDATION_FAILED',
+      message: 'Invalid analysis criteria.',
+      details: [{ field: 'sort_direction', reason: 'required' }],
+    },
   },
 };
