@@ -12,7 +12,7 @@ import {
   getMockDataSourceListResponse,
   isMockDataSourceId,
   withMockDataSource,
-} from './mockDataSource';
+} from '@/features/mockDataSource';
 
 type DataSourceDetailReader = (
   dataSourceId: number,

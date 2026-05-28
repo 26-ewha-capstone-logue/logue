@@ -1,117 +1,39 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ArrowLeftIcon from '@/assets/icons/arrow-left.svg';
 import ArrowRightIcon from '@/assets/icons/arrow-right.svg';
 import { Button, Stepper } from '@/components';
 import {
-  CheckboxList,
-  DomainGrid,
-  OnboardingProgressBar,
-  RadioList,
-} from './_components/OnboardingOptionGroup';
-
-/**
- * 완료 버튼용 체크 아이콘.
- * success.svg 는 mask + #7CEF3D 색이 들어가 있어 SVGR `convertColors: currentColor`
- * 와 호환되지 않아(마스크 white/black 까지 currentColor 로 바뀌어 마스크가 무효화)
- * 안전하게 inline 으로 단순 체크 path 만 사용.
- */
-function CheckIcon() {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M4 10 L8.5 14 L16 6" />
-    </svg>
-  );
-}
-
-type StepKey = 1 | 2 | 3;
-
-const STEPS = ['도메인 선택', '업무리스트', '사용 툴 선택'];
-
-const DOMAIN_OPTIONS = [
-  '마케팅',
-  '제품',
-  '운영',
-  '영업',
-  '고객관리',
-  '재무',
-  '인사',
-  '전략 / 기획',
-  '물류',
-  '기타',
-];
-
-const TASK_OPTIONS = [
-  '캠페인 성과 확인',
-  '광고 채널 효율 비교',
-  '유입 경로 분석',
-  '전환율 분석',
-  'ROAS/광고비 효율 확인',
-];
-
-const TOOL_OPTIONS = [
-  'GA4',
-  'Google Ads / Meta Ads Manager',
-  'Amplitude',
-  'Mixpanel',
-  'Firebase Analytics',
-];
-
-const STEP_COPY: Record<StepKey, { title: string; description: string }> = {
-  1: {
-    title: 'Logue는 {사용자}님의\n업무 도메인이 궁금해요!',
-    description:
-      '업무 맥락에 맞는 질문 예시와 분석 기준을 설정하는 데 활용돼요.',
-  },
-  2: {
-    title: '현재 가장 자주 확인하는\n업무를 선택해주세요.',
-    description:
-      '선택한 업무에 맞춰 자주 쓰는 분석 질문과 기준을 맞춰드릴게요.',
-  },
-  3: {
-    title: '현재 사용 중인 데이터 분석\n툴을 전부 선택해주세요.',
-    description:
-      '선택한 업무에 맞춰 자주 쓰는 분석 질문과 기준을 맞춰드릴게요.',
-  },
-};
+  DOMAIN_OPTIONS,
+  ONBOARDING_LAST_STEP,
+  ONBOARDING_STEP_COPY,
+  ONBOARDING_STEPS,
+  TASK_OPTIONS,
+  TOOL_OPTIONS,
+} from './_constants/onboardingOptions';
+import CheckIcon from './_components/CheckIcon';
+import OnboardingProgressBar from './_components/OnboardingProgressBar';
+import Step1Domain from './_components/steps/Step1Domain';
+import Step2Task from './_components/steps/Step2Task';
+import Step3Tools from './_components/steps/Step3Tools';
+import { useOnboardingFlow } from './_hooks/useOnboardingFlow';
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [step, setStep] = useState<StepKey>(1);
-
-  // 1) 도메인 (단일 선택)
-  const [domain, setDomain] = useState<string | null>(null);
-  // 2) 업무 (단일 선택, 시안 라디오 버튼)
-  const [task, setTask] = useState<string | null>(null);
-  // 3) 사용 툴 (다중 선택, 체크박스)
-  const [tools, setTools] = useState<Set<string>>(new Set());
-
-  const canGoNext =
-    (step === 1 && domain !== null) ||
-    (step === 2 && task !== null) ||
-    (step === 3 && tools.size > 0);
+  const onboarding = useOnboardingFlow();
 
   const handlePrev = () => {
-    if (step === 1) {
+    if (onboarding.isFirstStep) {
       router.back();
     } else {
-      setStep((s) => (s - 1) as StepKey);
+      onboarding.goToPreviousStep();
     }
   };
 
   const handleNext = () => {
-    if (step < 3) {
-      setStep((s) => (s + 1) as StepKey);
+    if (!onboarding.isLastStep) {
+      onboarding.goToNextStep();
       return;
     }
     // step 3 → 완료
@@ -119,16 +41,7 @@ export default function OnboardingPage() {
     router.push('/analysis');
   };
 
-  const toggleTool = (value: string) => {
-    setTools((prev) => {
-      const next = new Set(prev);
-      if (next.has(value)) next.delete(value);
-      else next.add(value);
-      return next;
-    });
-  };
-
-  const copy = STEP_COPY[step];
+  const copy = ONBOARDING_STEP_COPY[onboarding.step];
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-200 px-24 py-40">
@@ -143,7 +56,7 @@ export default function OnboardingPage() {
               </h2>
               <p className="text-body4 text-gray-700">{copy.description}</p>
             </div>
-            <Stepper steps={STEPS} currentStep={step} />
+            <Stepper steps={ONBOARDING_STEPS} currentStep={onboarding.step} />
           </aside>
 
           {/* 우측: 동일한 헤더 카피 + 진행 막대 + 선택 영역 */}
@@ -153,29 +66,32 @@ export default function OnboardingPage() {
                 {copy.title}
               </h3>
               <p className="text-body4 text-gray-700">{copy.description}</p>
-              <OnboardingProgressBar current={step} total={3} />
+              <OnboardingProgressBar
+                current={onboarding.step}
+                total={ONBOARDING_LAST_STEP}
+              />
             </div>
 
             <div className="flex-1">
-              {step === 1 && (
-                <DomainGrid
+              {onboarding.step === 1 && (
+                <Step1Domain
                   options={DOMAIN_OPTIONS}
-                  value={domain}
-                  onChange={setDomain}
+                  value={onboarding.domain}
+                  onChange={onboarding.setDomain}
                 />
               )}
-              {step === 2 && (
-                <RadioList
+              {onboarding.step === 2 && (
+                <Step2Task
                   options={TASK_OPTIONS}
-                  value={task}
-                  onChange={setTask}
+                  value={onboarding.task}
+                  onChange={onboarding.setTask}
                 />
               )}
-              {step === 3 && (
-                <CheckboxList
+              {onboarding.step === 3 && (
+                <Step3Tools
                   options={TOOL_OPTIONS}
-                  values={tools}
-                  onToggle={toggleTool}
+                  values={onboarding.tools}
+                  onToggle={onboarding.toggleTool}
                 />
               )}
             </div>
@@ -184,7 +100,7 @@ export default function OnboardingPage() {
 
         {/* 하단 액션 바 */}
         <div className="flex items-center justify-end gap-12 border-t border-gray-200 px-32 py-20">
-          {step > 1 && (
+          {!onboarding.isFirstStep && (
             <Button
               variant="outlined"
               size="md"
@@ -194,12 +110,12 @@ export default function OnboardingPage() {
               이전
             </Button>
           )}
-          {step < 3 ? (
+          {!onboarding.isLastStep ? (
             <Button
               variant="primary"
               size="md"
               icon={<ArrowRightIcon />}
-              disabled={!canGoNext}
+              disabled={!onboarding.canGoNext}
               onClick={handleNext}
             >
               다음
@@ -209,7 +125,7 @@ export default function OnboardingPage() {
               variant="primary"
               size="md"
               icon={<CheckIcon />}
-              disabled={!canGoNext}
+              disabled={!onboarding.canGoNext}
               onClick={handleNext}
             >
               완료

@@ -4,7 +4,7 @@ import type {
   GetDataSourceListParams,
   GetDataSourceListResponse,
   GetFileResponse,
-} from './datasource';
+} from '@/apis/datasource';
 
 export const MOCK_MARKETING_CVR_DATA_SOURCE_ID = 900001;
 

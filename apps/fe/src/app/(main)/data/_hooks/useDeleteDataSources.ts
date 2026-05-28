@@ -4,29 +4,27 @@ import { useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { deleteDataSources } from '@/apis/dataSourceRepository';
 import { dataSourceKeys } from '@/apis/datasource';
-import {
-  getMockDataSourceIds,
-  getServerDataSourceIds,
-} from '@/apis/mockDataSource';
 import { AUTH_MESSAGES } from '@/constants/messages';
+import type { MockDataSourceManager } from '@/features/mockDataSource';
 import { getDataSourceDeleteErrorMessage } from '../_utils/dataSourceErrorMessage';
 
 type UseDeleteDataSourcesOptions = {
   conflictErrorMessage: string;
   fallbackErrorMessage: string;
-  onDeletedMockDataSources: (dataSourceIds: number[]) => void;
+  mockDataSource: Pick<
+    MockDataSourceManager,
+    'getDeletionPlan' | 'markDeletedDataSources'
+  >;
   onError: (message: string) => void;
   onSuccess: () => void;
-  userId?: number | null;
 };
 
 export function useDeleteDataSources({
   conflictErrorMessage,
   fallbackErrorMessage,
-  onDeletedMockDataSources,
+  mockDataSource,
   onError,
   onSuccess,
-  userId,
 }: UseDeleteDataSourcesOptions) {
   const queryClient = useQueryClient();
   const mutation = useMutation({
@@ -37,21 +35,20 @@ export function useDeleteDataSources({
     async (dataSourceIds: number[]) => {
       if (dataSourceIds.length === 0) return;
 
-      const mockDataSourceIds = getMockDataSourceIds(dataSourceIds);
-      const serverDataSourceIds = getServerDataSourceIds(dataSourceIds);
+      const deletionPlan = mockDataSource.getDeletionPlan(dataSourceIds);
 
-      if (mockDataSourceIds.length > 0 && userId == null) {
+      if (deletionPlan.requiresUser) {
         onError(AUTH_MESSAGES.userInfoRequired);
         return;
       }
 
       try {
-        if (serverDataSourceIds.length > 0) {
-          await mutation.mutateAsync(serverDataSourceIds);
+        if (deletionPlan.serverDataSourceIds.length > 0) {
+          await mutation.mutateAsync(deletionPlan.serverDataSourceIds);
         }
 
-        if (mockDataSourceIds.length > 0 && userId != null) {
-          onDeletedMockDataSources(mockDataSourceIds);
+        if (deletionPlan.mockDataSourceIds.length > 0) {
+          mockDataSource.markDeletedDataSources(deletionPlan.mockDataSourceIds);
         }
 
         await queryClient.invalidateQueries({
@@ -70,12 +67,11 @@ export function useDeleteDataSources({
     [
       conflictErrorMessage,
       fallbackErrorMessage,
+      mockDataSource,
       mutation,
-      onDeletedMockDataSources,
       onError,
       onSuccess,
       queryClient,
-      userId,
     ],
   );
 
