@@ -54,6 +54,31 @@ def test_summarize_analysis_result(monkeypatch: pytest.MonkeyPatch) -> None:
     assert joined == body["description"]["plain_text"]
 
 
+def test_summarize_llm_call_failure_returns_502_llm_call_failed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`_call_llm` 이 예외를 raise 하면 502 + `LLM_CALL_FAILED` 로 매핑돼야 한다.
+
+    sibling 정합 후 추가된 보장: 기존엔 500 unhandled 로 빠져 Spring 재시도 분기가
+    `error_code` 를 못 읽었음. 이제 `ErrorResponse` 스키마로 응답된다.
+    """
+    from services import analysis_summary as svc
+
+    def boom(_req):
+        raise RuntimeError("upstream down")
+
+    monkeypatch.setattr(svc, "_call_llm", boom)
+
+    client = TestClient(app)
+    response = client.post("/v1/llm/analysis-results/describe", json=_valid_request_body())
+
+    assert response.status_code == 502
+    body = response.json()
+    assert body["error_code"] == "LLM_CALL_FAILED"
+    assert body["request_id"] == "req_test_001"
+    assert isinstance(body.get("details"), list)
+
+
 def test_summarize_segments_plain_text_mismatch_returns_502() -> None:
     """
     segments[].text를 이어붙인 결과가 plain_text와 다른 경우 502 + LLM_OUTPUT_INVALID를 반환하는지 검증합니다.
@@ -99,10 +124,10 @@ def test_summarize_segments_plain_text_mismatch_returns_502() -> None:
         response = client.post("/v1/llm/analysis-results/describe", json=request_body)
 
     assert response.status_code == 502
-    detail = response.json()["detail"]
-    assert detail["error_code"] == "LLM_OUTPUT_INVALID"
-    assert detail["request_id"] == "req_test_002"
-    assert "plain_text" in detail["message"]
+    body = response.json()
+    assert body["error_code"] == "LLM_OUTPUT_INVALID"
+    assert body["request_id"] == "req_test_002"
+    assert "plain_text" in body["message"]
 
 
 def test_comparison_without_compare_period_returns_422() -> None:

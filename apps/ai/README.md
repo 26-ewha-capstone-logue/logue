@@ -214,11 +214,12 @@ client.complete_structured(
 
 | HTTP | error_code | 의미 | 트리거 위치 | 재시도 |
 |---|---|---|---|---|
-| 422 | (FastAPI 기본 형식) | 요청 Pydantic 검증 실패 (analysis_type별 필수 필드, rows 길이, `compare_period` 빈 문자열 등) | FastAPI 입력단 | ❌ |
+| 422 | `REQUEST_VALIDATION_FAILED` | 요청 Pydantic 검증 실패 (analysis_type별 필수 필드, rows 길이, `compare_period` 빈 문자열 등) | FastAPI 입력단 | ❌ |
 | 502 | `LLM_OUTPUT_INVALID` | 응답 segments↔plain_text 불일치 (LLM 응답 계약 위반) | `_validate_response` | ❌ (재시도 없이 FAILED) |
-| 500 | (FastAPI 기본 형식) | 서버 내부 오류 (LLM 호출 실패 포함) | `main.py::unhandled_exception_handler` | ✅ (Spring 단에서 재시도) |
+| 502 | `LLM_CALL_FAILED` | LLM 호출 자체 실패 (타임아웃·네트워크·upstream 5xx) | `_call_llm` 예외 → `summarize_analysis_result` 가 자동 래핑 | ✅ (Spring 단에서 재시도) |
+| 500 | (FastAPI 기본 형식) | 예상 외 서버 내부 오류 (LLM 외 경로) | `main.py::unhandled_exception_handler` | ✅ (Spring 단에서 재시도) |
 
-> 502 응답 형태: `{"detail": {"request_id": "...", "error_code": "LLM_OUTPUT_INVALID", "message": "..."}}` — 질문분석 API와 동일 컨벤션.
+응답 페이로드 형태는 sibling (분석 기준 도출 API) 과 동일하게 `core/errors.py::ErrorResponse` 단일 모델입니다 (`request_id`, `error_code`, `message`, `details[]`).
 
 ## 파일 분석 API (AI 개발자 인계)
 

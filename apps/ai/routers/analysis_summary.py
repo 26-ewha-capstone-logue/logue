@@ -13,9 +13,15 @@ router = APIRouter(prefix="/v1/llm")
     ),
     responses={
         200: {"description": "요약 생성 성공"},
-        422: {"description": "요청 Pydantic 검증 실패 (analysis_type별 필수 필드, rows 길이 등) — 재시도 없이 FAILED 처리됨"},
-        502: {"description": "LLM 응답 계약 위반 (LLM_OUTPUT_INVALID) — 재시도 없이 FAILED 처리됨"},
-        500: {"description": "서버 내부 오류 — Spring 단에서 재시도"},
+        422: {"description": "요청 Pydantic 검증 실패 (REQUEST_VALIDATION_FAILED) — 재시도 없이 FAILED 처리됨"},
+        502: {
+            "description": (
+                "LLM 응답 계약 위반 (LLM_OUTPUT_INVALID — segments↔plain_text 불일치) "
+                "또는 LLM 호출 실패 (LLM_CALL_FAILED — 타임아웃·네트워크·upstream 5xx). "
+                "error_code 로 Spring 측 재시도 분기"
+            )
+        },
+        500: {"description": "예상 외 서버 내부 오류 (LLM 외 경로)"},
     },
 )
 async def describe_analysis_result(request: AnalysisSummaryRequest) -> AnalysisSummaryResponse:
