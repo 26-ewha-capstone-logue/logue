@@ -86,25 +86,33 @@ export function useAnalysisChat({
     dispatchFlow({ type: 'question-submission-started' });
   }, []);
   const workflow = useAnalysisWorkflowController({
-    analysisFlowId,
-    appendCriteriaMessage,
-    appendNotice,
-    appendResultMessage,
-    appendUserQuestion,
-    canAutoStartInitialQuestion,
-    conversationId,
-    criteriaSubmissionLocked,
-    dispatchCriteriaSubmissionFinished,
-    dispatchCriteriaSubmissionStarted,
-    dispatchInitialQuestionStarted,
-    dispatchQuestionSubmissionFinished,
-    dispatchQuestionSubmissionStarted,
-    hasResolvedStartPayload,
-    hasStartedInitialQuestion,
-    questionSubmissionLocked,
+    flow: {
+      canAutoStartInitialQuestion,
+      criteriaSubmissionLocked,
+      hasResolvedStartPayload,
+      hasStartedInitialQuestion,
+      onCriteriaSubmissionFinished: dispatchCriteriaSubmissionFinished,
+      onCriteriaSubmissionStarted: dispatchCriteriaSubmissionStarted,
+      onInitialQuestionStarted: dispatchInitialQuestionStarted,
+      onQuestionSubmissionFinished: dispatchQuestionSubmissionFinished,
+      onQuestionSubmissionStarted: dispatchQuestionSubmissionStarted,
+      questionSubmissionLocked,
+    },
+    messages: {
+      appendCriteriaMessage,
+      appendNotice,
+      appendResultMessage,
+      appendUserQuestion,
+    },
+    route: {
+      analysisFlowId,
+      conversationId,
+    },
     showToast,
-    summary,
-    summaryPending,
+    summaryState: {
+      summary,
+      summaryPending,
+    },
   });
   const { startQuestion } = workflow;
 
