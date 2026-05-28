@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -206,7 +207,9 @@ class AnalServiceTest {
         assertThat(response.analysisFlowId()).isEqualTo(ANALYSIS_FLOW_ID);
         assertThat(response.dataSourceId()).isEqualTo(DATASOURCE_ID);
         verify(analysisFlowRepository).save(any(AnalysisFlow.class));
-        verify(aiTaggingJobRepository).save(any(AiTaggingJob.class));
+        // AnalService.createAnalysisFlow 는 INSERT 직후 생성된 jobId 로 requestPayload 를
+        // 채워 한 번 더 save 하므로 총 2회 호출된다.
+        verify(aiTaggingJobRepository, times(2)).save(any(AiTaggingJob.class));
         verify(fileAnalysisAsyncService).analyzeFileAsync(eq(1L), eq(DATASOURCE_ID));
     }
 

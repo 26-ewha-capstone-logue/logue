@@ -130,17 +130,17 @@ class UserControllerTest {
 
 
     /**
-     * 토큰 없이 요청 시 OAuth2 로그인 페이지로 리다이렉트(302)되는지 검증합니다.
+     * 토큰 없이 요청 시 401 Unauthorized 가 반환되는지 검증합니다.
      *
-     * <p>미인증 요청에 대해 Spring Security가 OAuth2 인증 흐름으로
-     * 리다이렉트하는 기본 동작을 검증합니다.</p>
+     * <p>{@code SecurityConfig.authenticationEntryPoint} 가 미인증 API 요청에 대해
+     * OAuth2 리다이렉트 대신 401 JSON 응답을 직접 작성하므로, 그 동작을 그대로 검증합니다.</p>
      */
     @Test
-    @DisplayName("토큰 없이 요청 시 OAuth2 로그인 페이지로 리다이렉트된다")
+    @DisplayName("토큰 없이 요청 시 401 Unauthorized 를 반환한다")
     @WithAnonymousUser
-    void getMyInfo_noToken_returns302() throws Exception {
+    void getMyInfo_noToken_returns401() throws Exception {
         mockMvc.perform(get("/api/user/me"))
-                .andExpect(status().is3xxRedirection());
+                .andExpect(status().isUnauthorized());
     }
 
 
