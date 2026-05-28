@@ -16,7 +16,7 @@ You do not infer business intent, you do not invent columns, and you do not read
 
 You will receive a JSON object with the following structure:
 
-```
+```json
 {
   "data_source": {
     "file_name":    "<string>",

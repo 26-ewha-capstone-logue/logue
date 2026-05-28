@@ -20,6 +20,15 @@ fi
 
 mkdir -p "${RESULTS_DIR}"
 
+# 중간 실패 (set -e / curl 오류 등) 시에도 raw *.request.json 이 잔존하지 않도록 EXIT 트랩 등록.
+# summarize.py 는 이미 마스킹된 디렉토리에선 no-op 이므로 정상 종료 경로의 명시 호출과도 충돌 없음.
+cleanup() {
+  if command -v python3 >/dev/null 2>&1 && [ -d "${RESULTS_DIR}" ]; then
+    python3 "${SCRIPT_DIR}/summarize.py" "${RESULTS_DIR}" >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup EXIT
+
 for payload in "${PAYLOAD_DIR}"/*.json; do
   name="$(basename "${payload}" .json)"
   echo "============================================================"

@@ -14,6 +14,7 @@ Spring 연동/통합 테스트가 LLM 없이도 가능하다.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from config.settings import is_mock_mode
@@ -47,7 +48,8 @@ async def analyze_file(request: FileAnalysisRequest) -> FileAnalysisResponse:
     """
 
     try:
-        response = _call_llm(request)
+        # 동기 LLM 호출을 threadpool 으로 오프로드 — async 이벤트 루프 블로킹 방지.
+        response = await asyncio.to_thread(_call_llm, request)
     except (AppError, NotImplementedError):
         raise
     except Exception as exc:
