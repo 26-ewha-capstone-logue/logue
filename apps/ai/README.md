@@ -219,4 +219,15 @@ client.complete_structured(
 | 500 | (FastAPI 기본 형식) | 서버 내부 오류 (LLM 호출 실패 포함) | `main.py::unhandled_exception_handler` | ✅ (Spring 단에서 재시도) |
 
 > 502 응답 형태: `{"detail": {"request_id": "...", "error_code": "LLM_OUTPUT_INVALID", "message": "..."}}` — 질문분석 API와 동일 컨벤션.
-  
+
+## 파일 분석 API (AI 개발자 인계)
+
+CSV 컬럼 메타데이터를 받아 각 컬럼의 `semantic_role` 과 `primary_candidates`, `DATE_FIELD_CONFLICT` 같은 source warning 을 반환하는 LLM 엔드포인트 `POST /v1/llm/data-sources/analyze` 입니다. 오케스트레이션은 `services/file_analysis_service.py::analyze_file()` 가 담당하고 실제 LLM 호출은 `services/file_analysis/v1_baseline.py::run()` (gpt-4.1-nano · 0.0 · 1600, system prompt `prompts/file_analysis_v1.system.md`) 에 위임됩니다. `analyze_file` 은 LLM 응답을 받은 뒤 `request_id` 를 입력값으로 덮어쓰고 `core.rules.source_warnings()` 로 `primary_candidates.date_fields` 위에서 warning 을 결정론적으로 재계산하므로, LLM 이 warning 을 빠뜨리거나 catalog 밖 코드를 만들어도 항상 안전한 응답이 나갑니다. Spring 통합 테스트는 `ANAL_LLM_MOCK=true` 를 export 한 뒤 호출하면 LLM 비용 없이 rule-based 결정론적 응답 (`_build_mock_response`) 으로 200 경로를 검증할 수 있습니다.
+
+### 에러 코드 의미 (Spring 측 분기 기준)
+
+| HTTP | error_code | 의미 | 트리거 위치 |
+|---|---|---|---|
+| 422 | `REQUEST_VALIDATION_FAILED` | 입력 Pydantic 검증 실패 (catalog enum, null/unique_ratio 범위 등) | FastAPI 입력단 |
+| 502 | `LLM_OUTPUT_INVALID` | LLM 응답이 요청에 없는 컬럼명을 반환한 경우 (참조 무결성 위반) | `validate_file_analysis_response` |
+| 502 | `LLM_CALL_FAILED` | LLM 호출 자체 실패 (타임아웃 · 네트워크 · upstream 5xx) | `_call_llm` 예외 → `analyze_file` 가 자동 래핑 |
