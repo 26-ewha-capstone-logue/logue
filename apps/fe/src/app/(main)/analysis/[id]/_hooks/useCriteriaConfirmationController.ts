@@ -100,6 +100,10 @@ export function useCriteriaConfirmationController({
               {
                 onSuccess: (result) => {
                   clearPendingResultCancelParams(resultParams);
+                  if (consumeCanceledResult(resultParams)) {
+                    return;
+                  }
+
                   dispatchCriteriaSubmissionFinished();
                   appendResultMessage(result);
                 },

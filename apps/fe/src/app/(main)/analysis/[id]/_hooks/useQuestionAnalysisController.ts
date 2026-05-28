@@ -108,6 +108,10 @@ export function useQuestionAnalysisController({
         {
           onSuccess: (criteria, variables) => {
             clearPendingOperation(variables.operationKey);
+            if (consumeCanceledCriteriaOperation(variables.operationKey)) {
+              return;
+            }
+
             dispatchQuestionSubmissionFinished();
             appendCriteriaMessage(criteria, variables.initialMode);
           },
