@@ -1,5 +1,6 @@
 package com.capstone.logue.global.config;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -32,12 +33,16 @@ public class AppConfig {
      *   <li>4xx/5xx 응답을 throw 하지 않고 {@code ResponseEntity} 로 그대로 반환한다.
      *       호출부({@code *AsyncService}) 가 status code 기반 분기 + retry 정책을 직접 제어하므로
      *       기본 {@code DefaultResponseErrorHandler} 가 throw 하면 inline 분기가 dead code 가 된다 (#278).</li>
+     *   <li>모르는 필드를 만나도 역직렬화에 실패하지 않는다. FastAPI 에러 응답은 성공 DTO 와
+     *       다른 envelope({@code error_code} 등)를 내려보내므로, 기본 {@code FAIL_ON_UNKNOWN_PROPERTIES}
+     *       가 켜져 있으면 body 파싱이 status code 분기보다 먼저 throw 되어 위 #278 분기가 무력화된다 (#316).</li>
      * </ul>
      */
     @Bean
     public RestTemplate fastApiRestTemplate(RestTemplateBuilder builder) {
         ObjectMapper snakeCaseMapper = new ObjectMapper()
-                .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+                .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         RestTemplate restTemplate = builder
                 .messageConverters(new MappingJackson2HttpMessageConverter(snakeCaseMapper))

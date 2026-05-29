@@ -7,8 +7,6 @@
 - `services/llm_output_validator.py` — LLM 응답의 참조 무결성(catalog/data_source 참조 존재 여부)
 """
 
-from typing import Any
-
 from pydantic import BaseModel, Field, model_validator
 
 from schemas.enums import (
@@ -41,7 +39,7 @@ class DataSourceColumn(BaseModel):
     data_type: DataType
     semantic_role: SemanticRoleType
     null_ratio: float = Field(ge=0.0, le=1.0)
-    sample_values: list[Any] = Field(max_length=10)
+    sample_values: list[str | int | float | bool | None] = Field(max_length=10)
 
 
 class DataSource(BaseModel):
@@ -91,10 +89,15 @@ class QuestionAnalysisRequest(BaseModel):
 # ---------- Response 하위 모델 ----------
 
 
+# OpenAI Structured Outputs 는 모든 property 에 `type` 키를 요구하므로
+# bare `Any` 대신 구체 union 타입을 사용한다 (IN/NOT_IN 은 list, 그 외는 스칼라).
+FilterValue = str | int | float | bool | list[str | int | float | bool]
+
+
 class Filter(BaseModel):
     field: str
     operator: Operator
-    value: Any
+    value: FilterValue
 
     @model_validator(mode="after")
     def _check_value_shape_for_operator(self) -> "Filter":
