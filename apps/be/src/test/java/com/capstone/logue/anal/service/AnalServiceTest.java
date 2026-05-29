@@ -68,6 +68,7 @@ class AnalServiceTest {
     @Mock private AnalysisFlowRepository analysisFlowRepository;
     @Mock private DataSourceRepository dataSourceRepository;
     @Mock private DataSourceColumnRepository dataSourceColumnRepository;
+    @Mock private AnalysisFlowColumnRepository analysisFlowColumnRepository;
     @Mock private SourceDataWarningRepository sourceDataWarningRepository;
     @Mock private AiTaggingJobRepository aiTaggingJobRepository;
     @Mock private UserRepository userRepository;
@@ -88,6 +89,7 @@ class AnalServiceTest {
                 analysisFlowRepository,
                 dataSourceRepository,
                 dataSourceColumnRepository,
+                analysisFlowColumnRepository,
                 sourceDataWarningRepository,
                 aiTaggingJobRepository,
                 userRepository,
