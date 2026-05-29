@@ -361,7 +361,13 @@ public class JobStateService {
                 .findTopByAnalysisFlowIdOrderByCreatedAtDescIdDesc(flow.getId())
                 .orElseThrow(() -> new LogueException(ErrorCode.CRITERIA_NOT_FOUND));
 
-        return new ResultJobContext(criteria, flow.getDataSource());
+        // flow.getDataSource() 는 LAZY proxy 라 트랜잭션 종료 후 async 스레드에서 접근 시
+        // LazyInitializationException 이 난다. 분리된 id 로 재조회해 detached 가 아닌
+        // 완전 로딩된 엔티티를 컨텍스트에 담는다.
+        DataSource dataSource = dataSourceRepository.findById(flow.getDataSource().getId())
+                .orElseThrow(() -> new LogueException(ErrorCode.DATASOURCE_NOT_FOUND));
+
+        return new ResultJobContext(criteria, dataSource);
     }
 
     /**
