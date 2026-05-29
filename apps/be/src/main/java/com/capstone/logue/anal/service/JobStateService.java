@@ -140,6 +140,32 @@ public class JobStateService {
 
         dataSourceColumnRepository.saveAll(columns);
 
+        // 같은 플로우의 column → semantic_role 매핑을 analysis_flow_columns 로 영속화
+        // (질문 분석 단계에서 QuestionAnalysisRequestBuilder 가 이 매핑으로 catalog 보냄)
+        AnalysisFlow analysisFlow = job.getAnalysisFlow();
+        Map<String, DataSourceColumn> columnByName = columns.stream()
+                .collect(Collectors.toMap(DataSourceColumn::getColumnName, c -> c));
+        List<AnalysisFlowColumn> flowColumns = columnRoles.stream()
+                .map(role -> {
+                    DataSourceColumn col = columnByName.get(role.columnName());
+                    if (col == null) {
+                        throw new LogueException(ErrorCode.COLUMN_NOT_FOUND);
+                    }
+                    SemanticRoleType semanticRole;
+                    try {
+                        semanticRole = SemanticRoleType.valueOf(role.semanticRole());
+                    } catch (IllegalArgumentException e) {
+                        throw new LogueException(ErrorCode.COLUMN_NOT_FOUND);
+                    }
+                    return AnalysisFlowColumn.builder()
+                            .analysisFlow(analysisFlow)
+                            .dataSourceColumn(col)
+                            .semanticRole(semanticRole)
+                            .build();
+                })
+                .collect(Collectors.toList());
+        analysisFlowColumnRepository.saveAll(flowColumns);
+
         List<SourceDataWarning> warnings = responseWarnings.stream()
                 .map(w -> {
                     SourceWarningKey key = SourceWarningKey.valueOf(w.code());
