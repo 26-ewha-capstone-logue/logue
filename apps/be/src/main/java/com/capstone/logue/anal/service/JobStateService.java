@@ -317,25 +317,9 @@ public class JobStateService {
 
         AnalysisCriteria savedCriteria = analysisCriteriaRepository.save(criteria);
 
-        List<FlowColumnInfo> flowColumns = response.flowColumns() == null ? List.of() : response.flowColumns();
-        if (!flowColumns.isEmpty()) {
-            Map<String, DataSourceColumn> columnByName = new HashMap<>();
-            for (DataSourceColumn col : dataSourceColumnRepository.findByDataSourceId(flow.getDataSource().getId())) {
-                columnByName.put(col.getColumnName(), col);
-            }
-            for (FlowColumnInfo fc : flowColumns) {
-                DataSourceColumn dsColumn = columnByName.get(fc.columnName());
-                if (dsColumn == null) {
-                    throw new LogueException(ErrorCode.COLUMN_NOT_FOUND);
-                }
-                AnalysisFlowColumn afc = AnalysisFlowColumn.builder()
-                        .analysisFlow(flow)
-                        .dataSourceColumn(dsColumn)
-                        .semanticRole(SemanticRoleType.valueOf(fc.semanticRole()))
-                        .build();
-                analysisFlowColumnRepository.save(afc);
-            }
-        }
+        // analysis_flow_columns 의 base 매핑은 파일 분석 SUCCESS 시점에 이미 영속화되므로
+        // 질문 분석 응답의 flowColumns 는 동일 row 를 중복 INSERT 만 유발해 무시한다.
+        // (FlowColumnInfo 는 "이 질문에 사용된 컬럼 subset" 의미라 base 매핑을 덮어쓰면 안 됨)
 
         List<FlowWarningInfo> warnings = response.warnings() == null ? List.of() : response.warnings();
         for (FlowWarningInfo w : warnings) {
