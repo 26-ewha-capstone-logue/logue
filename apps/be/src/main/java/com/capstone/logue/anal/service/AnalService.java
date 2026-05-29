@@ -9,6 +9,7 @@ import com.capstone.logue.auth.provider.SecurityContextProvider;
 import com.capstone.logue.global.entity.*;
 import com.capstone.logue.global.entity.enums.JobStage;
 import com.capstone.logue.global.entity.enums.JobStatus;
+import com.capstone.logue.global.entity.enums.SemanticRoleType;
 import com.capstone.logue.global.exception.ErrorCode;
 import com.capstone.logue.global.exception.LogueException;
 import com.capstone.logue.user.repository.UserRepository;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 
 /**
@@ -47,6 +49,7 @@ public class AnalService {
     private final AnalysisFlowRepository analysisFlowRepository;
     private final DataSourceRepository dataSourceRepository;
     private final DataSourceColumnRepository dataSourceColumnRepository;
+    private final AnalysisFlowColumnRepository analysisFlowColumnRepository;
     private final SourceDataWarningRepository sourceDataWarningRepository;
     private final AiTaggingJobRepository aiTaggingJobRepository;
     private final UserRepository userRepository;
@@ -190,30 +193,35 @@ public class AnalService {
 
         DataSource dataSource = analysisFlow.getDataSource();
 
-        List<DataSourceColumn> columns =
-                dataSourceColumnRepository.findByDataSourceId(dataSource.getId());
-
         List<SourceDataWarning> warnings =
                 sourceDataWarningRepository.findByDataSourceId(dataSource.getId());
 
-        List<String> columnNames = columns.stream()
-                .map(DataSourceColumn::getColumnName)
-                .toList();
+        // analysis_flow_columns 의 SemanticRoleType 별로 컬럼명을 분류
+        // (PR #322 이후 파일 분석 SUCCESS 시점에 매핑이 영속화되어 있음)
+        Map<SemanticRoleType, List<String>> namesByRole = analysisFlowColumnRepository
+                .findByAnalysisFlowIdOrderByIdAsc(analysisFlowId)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        AnalysisFlowColumn::getSemanticRole,
+                        Collectors.mapping(
+                                afc -> afc.getDataSourceColumn().getColumnName(),
+                                Collectors.toList()
+                        )
+                ));
 
         String warningMessage = warnings.isEmpty()
                 ? null
                 : warnings.get(0).getComment(); // TODO: 경고 메시지가 여러 개일 경우 처리 정책 필요 (현재 첫 번째만 반환)
 
-        // TODO: ⚠️ 임시 매핑 (나중에 AI 결과 구조 반영 필요)
         return new GetSummaryResponse(
                 dataSource.getRowCount(),
                 dataSource.getColumnCount(),
-                columnNames,
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of(),
-                List.of(),
+                namesByRole.getOrDefault(SemanticRoleType.DATE_CRITERIA, List.of()),
+                namesByRole.getOrDefault(SemanticRoleType.MEASURE, List.of()),
+                namesByRole.getOrDefault(SemanticRoleType.DIMENSION, List.of()),
+                namesByRole.getOrDefault(SemanticRoleType.STATUS_CONDITION, List.of()),
+                namesByRole.getOrDefault(SemanticRoleType.FLAG, List.of()),
+                namesByRole.getOrDefault(SemanticRoleType.ID_CRITERIA, List.of()),
                 warningMessage,
                 dataSource.getCreatedAt().toLocalDateTime()
         );
