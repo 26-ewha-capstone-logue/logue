@@ -32,6 +32,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -224,7 +226,21 @@ public class QuestionCriteriaService {
                 .status(JobStatus.QUEUED)
                 .build();
         AiTaggingJob savedJob = aiTaggingJobRepository.save(resultJob);
-        analysisResultAsyncService.resolveResultAsync(savedJob.getId());
+
+        // outer 트랜잭션 commit 전에 @Async 스레드가 findById 하면 INSERT 가 아직 안 보여
+        // JOB_NOT_FOUND 가 나므로, afterCommit 시점으로 미뤄 async 호출을 트리거한다.
+        // 트랜잭션 경계가 없는 호출 (단위 테스트 등) 에서는 즉시 호출로 폴백한다.
+        Long jobId = savedJob.getId();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    analysisResultAsyncService.resolveResultAsync(jobId);
+                }
+            });
+        } else {
+            analysisResultAsyncService.resolveResultAsync(jobId);
+        }
     }
 
     /**
