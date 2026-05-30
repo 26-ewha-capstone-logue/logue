@@ -13,15 +13,21 @@ import {
   TOOL_OPTIONS,
 } from './_constants/onboardingOptions';
 import CheckIcon from './_components/CheckIcon';
+import {
+  CheckboxList,
+  DomainGrid,
+  RadioList,
+} from './_components/OnboardingOptionGroup';
 import OnboardingProgressBar from './_components/OnboardingProgressBar';
-import Step1Domain from './_components/steps/Step1Domain';
-import Step2Task from './_components/steps/Step2Task';
-import Step3Tools from './_components/steps/Step3Tools';
 import { useOnboardingFlow } from './_hooks/useOnboardingFlow';
+import { useOnboardingSubmit } from './_hooks/useOnboardingSubmit';
 
 export default function OnboardingPage() {
   const router = useRouter();
   const onboarding = useOnboardingFlow();
+  const onboardingSubmit = useOnboardingSubmit({
+    onComplete: () => router.push('/analysis'),
+  });
 
   const handlePrev = () => {
     if (onboarding.isFirstStep) {
@@ -36,9 +42,8 @@ export default function OnboardingPage() {
       onboarding.goToNextStep();
       return;
     }
-    // step 3 → 완료
-    // TODO: 온보딩 결과 저장 API 호출
-    router.push('/analysis');
+    if (!onboarding.submission) return;
+    void onboardingSubmit.submit(onboarding.submission);
   };
 
   const copy = ONBOARDING_STEP_COPY[onboarding.step];
@@ -74,21 +79,21 @@ export default function OnboardingPage() {
 
             <div className="flex-1">
               {onboarding.step === 1 && (
-                <Step1Domain
+                <DomainGrid
                   options={DOMAIN_OPTIONS}
                   value={onboarding.domain}
                   onChange={onboarding.setDomain}
                 />
               )}
               {onboarding.step === 2 && (
-                <Step2Task
+                <RadioList
                   options={TASK_OPTIONS}
                   value={onboarding.task}
                   onChange={onboarding.setTask}
                 />
               )}
               {onboarding.step === 3 && (
-                <Step3Tools
+                <CheckboxList
                   options={TOOL_OPTIONS}
                   values={onboarding.tools}
                   onToggle={onboarding.toggleTool}
@@ -125,10 +130,10 @@ export default function OnboardingPage() {
               variant="primary"
               size="md"
               icon={<CheckIcon />}
-              disabled={!onboarding.canGoNext}
+              disabled={!onboarding.canGoNext || onboardingSubmit.isPending}
               onClick={handleNext}
             >
-              완료
+              {onboardingSubmit.isPending ? '완료 중' : '완료'}
             </Button>
           )}
         </div>

@@ -1,15 +1,11 @@
 'use client';
 
-import { useReducer } from 'react';
 import { useToast } from '@/hooks/useToast';
 import { ANALYSIS_DEFAULT_PROMPT } from '../_config/analysisWorkflowMessages';
 import { uniqueStrings } from '../_utils/stringList';
 import { useAnalysisChatMessages } from './useAnalysisChatMessages';
 import { useAnalysisChatViewModel } from './useAnalysisChatViewModel';
-import {
-  analysisChatFlowReducer,
-  initialAnalysisChatFlowState,
-} from './useAnalysisChatFlow';
+import { useAnalysisChatFlow } from './useAnalysisChatFlow';
 import { useAnalysisChatSideEffects } from './useAnalysisChatSideEffects';
 import { useAnalysisPageData } from './useAnalysisPageData';
 import { useAnalysisWorkflowController } from './useAnalysisWorkflowController';
@@ -30,10 +26,7 @@ export function useAnalysisChat({
   routeConversationId,
 }: UseAnalysisChatParams) {
   const { toast, showToast } = useToast();
-  const [flow, dispatchFlow] = useReducer(
-    analysisChatFlowReducer,
-    initialAnalysisChatFlowState,
-  );
+  const { actions: flowActions, flow } = useAnalysisChatFlow();
   const {
     appendCriteriaMessage,
     appendNotice,
@@ -57,7 +50,7 @@ export function useAnalysisChat({
     summaryPending,
   } = useAnalysisPageData({
     defaultPrompt: ANALYSIS_DEFAULT_PROMPT,
-    dispatchFlow,
+    flowActions,
     hasAccessToken,
     routeConversationId,
   });
@@ -73,7 +66,7 @@ export function useAnalysisChat({
     appendNotice,
     appendResultMessage,
     appendUserQuestion,
-    dispatchFlow,
+    flowActions,
     showToast,
   });
   const workflow = useAnalysisWorkflowController({

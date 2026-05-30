@@ -1,12 +1,21 @@
 'use client';
 
-import { useCallback, useMemo, type Dispatch } from 'react';
+import { useMemo } from 'react';
 import type {
   CriteriaViewModel,
   QuestionResultViewModel,
 } from '../_models/analysisViewModels';
-import type { AnalysisChatFlowAction } from './useAnalysisChatFlow';
+import type { AnalysisChatFlowActions } from './useAnalysisChatFlow';
 import type { CriteriaInitialMode } from './useAnalysisChatMessages';
+
+type AnalysisWorkflowDispatchActions = Pick<
+  AnalysisChatFlowActions,
+  | 'criteriaSubmissionFinished'
+  | 'criteriaSubmissionStarted'
+  | 'initialQuestionStarted'
+  | 'questionSubmissionFinished'
+  | 'questionSubmissionStarted'
+>;
 
 type UseAnalysisWorkflowEffectsParams = {
   appendCriteriaMessage: (
@@ -16,7 +25,7 @@ type UseAnalysisWorkflowEffectsParams = {
   appendNotice: (content: string, tone?: 'default' | 'error') => void;
   appendResultMessage: (result: QuestionResultViewModel) => void;
   appendUserQuestion: (content: string) => void;
-  dispatchFlow: Dispatch<AnalysisChatFlowAction>;
+  flowActions: AnalysisWorkflowDispatchActions;
   showToast: (message: string) => void;
 };
 
@@ -25,34 +34,12 @@ export function useAnalysisWorkflowEffects({
   appendNotice,
   appendResultMessage,
   appendUserQuestion,
-  dispatchFlow,
+  flowActions,
   showToast,
 }: UseAnalysisWorkflowEffectsParams) {
-  const dispatchCriteriaSubmissionFinished = useCallback(() => {
-    dispatchFlow({ type: 'criteria-submission-finished' });
-  }, [dispatchFlow]);
-  const dispatchCriteriaSubmissionStarted = useCallback(() => {
-    dispatchFlow({ type: 'criteria-submission-started' });
-  }, [dispatchFlow]);
-  const dispatchInitialQuestionStarted = useCallback(() => {
-    dispatchFlow({ type: 'initial-question-started' });
-  }, [dispatchFlow]);
-  const dispatchQuestionSubmissionFinished = useCallback(() => {
-    dispatchFlow({ type: 'question-submission-finished' });
-  }, [dispatchFlow]);
-  const dispatchQuestionSubmissionStarted = useCallback(() => {
-    dispatchFlow({ type: 'question-submission-started' });
-  }, [dispatchFlow]);
-
   return useMemo(
     () => ({
-      dispatch: {
-        criteriaSubmissionFinished: dispatchCriteriaSubmissionFinished,
-        criteriaSubmissionStarted: dispatchCriteriaSubmissionStarted,
-        initialQuestionStarted: dispatchInitialQuestionStarted,
-        questionSubmissionFinished: dispatchQuestionSubmissionFinished,
-        questionSubmissionStarted: dispatchQuestionSubmissionStarted,
-      },
+      dispatch: flowActions,
       messages: {
         appendCriteriaMessage,
         appendNotice,
@@ -68,11 +55,7 @@ export function useAnalysisWorkflowEffects({
       appendNotice,
       appendResultMessage,
       appendUserQuestion,
-      dispatchCriteriaSubmissionFinished,
-      dispatchCriteriaSubmissionStarted,
-      dispatchInitialQuestionStarted,
-      dispatchQuestionSubmissionFinished,
-      dispatchQuestionSubmissionStarted,
+      flowActions,
       showToast,
     ],
   );
