@@ -2,7 +2,6 @@
 
 import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { isMockDataSourceId } from '@/apis/mockDataSource';
 import { ToastPortal } from '@/components';
 import { AUTH_MESSAGES, DATA_SOURCE_MESSAGES } from '@/constants/messages';
 import { useToast } from '@/hooks/useToast';
@@ -21,14 +20,8 @@ export default function DataDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
-  const {
-    deletedMockDataSourceIds,
-    hasAccessToken,
-    isAuthenticated,
-    markDeletedMockDataSources,
-    myInfo,
-    status,
-  } = useDataSourceUserContext();
+  const { hasAccessToken, isAuthenticated, mockDataSource, status } =
+    useDataSourceUserContext();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const { toast, showToast } = useToast();
 
@@ -36,8 +29,7 @@ export default function DataDetailPage({
   const isValidDataSourceId =
     Number.isSafeInteger(dataSourceId) && dataSourceId > 0;
   const isDeletedMockDataSource =
-    isMockDataSourceId(dataSourceId) &&
-    deletedMockDataSourceIds.has(dataSourceId);
+    mockDataSource.isDeletedDataSource(dataSourceId);
   const dataDetail = useDataDetail({
     dataSourceId: isValidDataSourceId ? dataSourceId : 0,
     enabled: isAuthenticated && isValidDataSourceId && !isDeletedMockDataSource,
@@ -45,12 +37,18 @@ export default function DataDetailPage({
 
   const handleDeleteConfirm = async () => {
     try {
-      if (isMockDataSourceId(dataSourceId)) {
-        if (!myInfo?.id) throw new Error(AUTH_MESSAGES.userInfoRequired);
+      const deletionPlan = mockDataSource.getDeletionPlan([dataSourceId]);
 
-        markDeletedMockDataSources([dataSourceId]);
-      } else {
+      if (deletionPlan.requiresUser) {
+        throw new Error(AUTH_MESSAGES.userInfoRequired);
+      }
+
+      if (deletionPlan.serverDataSourceIds.length > 0) {
         await dataDetail.deleteDataSource();
+      }
+
+      if (deletionPlan.mockDataSourceIds.length > 0) {
+        mockDataSource.markDeletedDataSources(deletionPlan.mockDataSourceIds);
       }
 
       setDeleteOpen(false);

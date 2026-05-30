@@ -26,14 +26,8 @@ const SORT_OPTIONS = [
 
 export default function DataPage() {
   const router = useRouter();
-  const {
-    deletedMockDataSourceIds,
-    hasAccessToken,
-    isAuthenticated,
-    markDeletedMockDataSources,
-    myInfo,
-    status,
-  } = useDataSourceUserContext();
+  const { hasAccessToken, isAuthenticated, mockDataSource, status } =
+    useDataSourceUserContext();
   const { toast, showToast } = useToast();
   const [sortKey, setSortKey] = useState<DataSourceSort>('LATEST');
   const [page, setPage] = useState(0);
@@ -46,9 +40,9 @@ export default function DataPage() {
   });
 
   const dataSourcesQuery = useDataSourceList({
-    deletedMockDataSourceIds,
     enabled: isAuthenticated,
     fallbackErrorMessage: DATA_SOURCE_MESSAGES.listError,
+    mockDataSource,
     page,
     sort: sortKey,
   });
@@ -75,7 +69,7 @@ export default function DataPage() {
   const deleteDataSourcesMutation = useDeleteDataSources({
     conflictErrorMessage: DATA_SOURCE_MESSAGES.deleteConflict,
     fallbackErrorMessage: DATA_SOURCE_MESSAGES.deleteError,
-    onDeletedMockDataSources: markDeletedMockDataSources,
+    mockDataSource,
     onError: (message) => {
       setDeleteOpen(false);
       showToast(message, 'error');
@@ -85,7 +79,6 @@ export default function DataPage() {
       setDeleteOpen(false);
       showToast(DATA_SOURCE_MESSAGES.deleteSuccess, 'success');
     },
-    userId: myInfo?.id,
   });
 
   const chatPendingDataSourceId = startAnalysis.pendingDataSourceId;
