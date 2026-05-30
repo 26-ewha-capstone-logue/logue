@@ -3,13 +3,13 @@
 import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ToastPortal } from '@/components';
-import { AUTH_MESSAGES, DATA_SOURCE_MESSAGES } from '@/constants/messages';
+import { DATA_SOURCE_MESSAGES } from '@/constants/messages';
 import { useToast } from '@/hooks/useToast';
 import DataDetailStatus from './_components/DataDetailStatus';
 import DataDetailView from './_components/DataDetailView';
 import { useDataDetail } from './_hooks/useDataDetail';
 import { useDataSourceUserContext } from '../_hooks/useDataSourceUserContext';
-import { getDataSourceDeleteErrorMessage } from '../_utils/dataSourceErrorMessage';
+import { useDeleteDataSources } from '../_hooks/useDeleteDataSources';
 
 type PageParams = { id: string };
 
@@ -34,34 +34,22 @@ export default function DataDetailPage({
     dataSourceId: isValidDataSourceId ? dataSourceId : 0,
     enabled: isAuthenticated && isValidDataSourceId && !isDeletedMockDataSource,
   });
-
-  const handleDeleteConfirm = async () => {
-    try {
-      const deletionPlan = mockDataSource.getDeletionPlan([dataSourceId]);
-
-      if (deletionPlan.requiresUser) {
-        throw new Error(AUTH_MESSAGES.userInfoRequired);
-      }
-
-      if (deletionPlan.serverDataSourceIds.length > 0) {
-        await dataDetail.deleteDataSource();
-      }
-
-      if (deletionPlan.mockDataSourceIds.length > 0) {
-        mockDataSource.markDeletedDataSources(deletionPlan.mockDataSourceIds);
-      }
-
+  const deleteDataSourcesMutation = useDeleteDataSources({
+    conflictErrorMessage: DATA_SOURCE_MESSAGES.deleteConflict,
+    fallbackErrorMessage: DATA_SOURCE_MESSAGES.detailDeleteError,
+    mockDataSource,
+    onError: (message) => {
+      setDeleteOpen(false);
+      showToast(message, 'error');
+    },
+    onSuccess: () => {
       setDeleteOpen(false);
       router.push('/data');
-    } catch (error) {
-      setDeleteOpen(false);
-      showToast(
-        getDataSourceDeleteErrorMessage(error, {
-          conflict: DATA_SOURCE_MESSAGES.deleteConflict,
-          fallback: DATA_SOURCE_MESSAGES.detailDeleteError,
-        }),
-      );
-    }
+    },
+  });
+
+  const handleDeleteConfirm = async () => {
+    await deleteDataSourcesMutation.remove([dataSourceId]);
   };
 
   if (!isValidDataSourceId) {
@@ -90,7 +78,7 @@ export default function DataDetailPage({
     <>
       <DataDetailView
         deleteOpen={deleteOpen}
-        deletePending={dataDetail.deletePending}
+        deletePending={deleteDataSourcesMutation.isPending}
         detail={dataDetail.detail}
         onChat={() => router.push(`/analysis/${id}`)}
         onDelete={() => setDeleteOpen(true)}
