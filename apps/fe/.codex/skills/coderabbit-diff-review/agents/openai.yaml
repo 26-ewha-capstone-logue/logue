@@ -1,0 +1,4 @@
+interface:
+  display_name: "CodeRabbit Diff Review"
+  short_description: "CodeRabbit식 한국어 diff 리뷰 워크플로"
+  default_prompt: "Use $coderabbit-diff-review to review the current branch diff in Korean using CodeRabbit-style findings."
