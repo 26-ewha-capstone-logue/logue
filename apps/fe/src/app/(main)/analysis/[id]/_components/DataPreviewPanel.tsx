@@ -1,18 +1,16 @@
 'use client';
 
-import DataTablePreview, { type DataTableColumn } from './DataTablePreview';
+import {
+  DataSourcePreviewTable,
+  type DataSourcePreviewTableModel,
+} from '@/features/dataSource';
 import LoadingDataPreview from './LoadingDataPreview';
-
-type PreviewTable = {
-  columns: DataTableColumn[];
-  rows: Record<string, string>[];
-};
 
 type DataPreviewPanelProps = {
   errorMessage: string | null;
   isEmpty: boolean;
   isLoading: boolean;
-  table: PreviewTable | null;
+  table: DataSourcePreviewTableModel | null;
 };
 
 export default function DataPreviewPanel({
@@ -22,7 +20,7 @@ export default function DataPreviewPanel({
   table,
 }: DataPreviewPanelProps) {
   if (table) {
-    return <DataTablePreview columns={table.columns} rows={table.rows} />;
+    return <DataSourcePreviewTable table={table} variant="analysis" />;
   }
 
   if (isLoading) {

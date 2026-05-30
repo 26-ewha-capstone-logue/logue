@@ -1,24 +1,28 @@
 'use client';
 
-import { useEffect, useRef, useState, type Dispatch } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   hasAnalysisStartPayloadConsumed,
   readAnalysisStartPayload,
   type AnalysisStartPayload,
 } from '@/lib/analysisStartPayload';
-import type { AnalysisChatFlowAction } from './useAnalysisChatFlow';
+import type { AnalysisChatFlowActions } from './useAnalysisChatFlow';
 
 type UseAnalysisStartPayloadParams = {
   conversationId: number | null;
   defaultPrompt: string;
-  dispatchFlow: Dispatch<AnalysisChatFlowAction>;
+  flowActions: Pick<
+    AnalysisChatFlowActions,
+    'startPayloadLoading' | 'startPayloadResolved'
+  >;
 };
 
 export function useAnalysisStartPayload({
   conversationId,
   defaultPrompt,
-  dispatchFlow,
+  flowActions,
 }: UseAnalysisStartPayloadParams) {
+  const { startPayloadLoading, startPayloadResolved } = flowActions;
   const readStartPayloadConversationIdRef = useRef<number | null>(null);
   const [startPayload, setStartPayload] = useState<AnalysisStartPayload>(
     () => ({
@@ -35,15 +39,12 @@ export function useAnalysisStartPayload({
       return;
     }
 
-    dispatchFlow({ type: 'start-payload-loading' });
+    startPayloadLoading();
 
     const timer = window.setTimeout(() => {
       if (conversationId === null) {
         setStartPayload({ prompt: defaultPrompt, fileName: null });
-        dispatchFlow({
-          type: 'start-payload-resolved',
-          canAutoStartInitialQuestion: false,
-        });
+        startPayloadResolved(false);
         return;
       }
 
@@ -58,14 +59,16 @@ export function useAnalysisStartPayload({
         prompt: storedPayload?.prompt || defaultPrompt,
         fileName: storedPayload?.fileName ?? null,
       });
-      dispatchFlow({
-        type: 'start-payload-resolved',
-        canAutoStartInitialQuestion: canAutoStart,
-      });
+      startPayloadResolved(canAutoStart);
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [conversationId, defaultPrompt, dispatchFlow]);
+  }, [
+    conversationId,
+    defaultPrompt,
+    startPayloadLoading,
+    startPayloadResolved,
+  ]);
 
   return {
     fileName: startPayload.fileName ?? null,

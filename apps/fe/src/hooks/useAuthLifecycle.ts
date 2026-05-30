@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef, type MutableRefObject } from 'react';
 import type { QueryClient } from '@tanstack/react-query';
 import { reissueAuthTokens } from '@/apis/auth';
 import {
@@ -48,6 +48,49 @@ function removeTokenParamsFromCurrentUrl(url: URL) {
 
 function replaceLocation(pathname: string) {
   window.location.replace(pathname);
+}
+
+function useAuthStatusApplier({
+  pathname,
+  queryClient,
+  setStatus,
+}: {
+  pathname: string;
+  queryClient: QueryClient;
+  setStatus: SetAuthStatus;
+}) {
+  return useCallback(
+    (nextStatus: AuthStatus, shouldCheckAuthEntryRedirect: boolean) => {
+      setStatus(nextStatus);
+
+      if (nextStatus === 'anonymous') {
+        queryClient.clear();
+
+        if (
+          shouldRedirectPrivatePath(nextStatus, pathname) &&
+          !consumePrivatePathRedirectBypass()
+        ) {
+          replaceLocation(getLoginRedirectPath(new URL(window.location.href)));
+        }
+
+        return;
+      }
+
+      const shouldBypassAuthEntryRedirect =
+        shouldCheckAuthEntryRedirect &&
+        shouldRedirectAuthenticatedUser(pathname) &&
+        consumeAuthEntryRedirectBypass();
+
+      if (
+        shouldCheckAuthEntryRedirect &&
+        shouldRedirectAuthenticatedUser(pathname) &&
+        !shouldBypassAuthEntryRedirect
+      ) {
+        replaceLocation(AUTH_REDIRECT_PATH);
+      }
+    },
+    [pathname, queryClient, setStatus],
+  );
 }
 
 function useOAuthCallbackHandler({
@@ -106,81 +149,83 @@ function useOAuthPopupMessageHandler({
   );
 }
 
-export function useAuthLifecycle({
-  pathname,
-  queryClient,
-  setStatus,
-}: {
-  pathname: string;
-  queryClient: QueryClient;
-  setStatus: SetAuthStatus;
-}) {
-  const handleOAuthCallback = useOAuthCallbackHandler({
-    pathname,
-    queryClient,
-  });
-  const handleMessage = useOAuthPopupMessageHandler({
-    queryClient,
-    setStatus,
-  });
+function useAuthSessionRestoreHandler(
+  applyStatus: (
+    nextStatus: AuthStatus,
+    shouldCheckAuthEntryRedirect: boolean,
+  ) => void,
+) {
+  const isActiveRef = useRef(false);
+  const isRestoringRef = useRef(false);
 
   useEffect(() => {
-    if (handleOAuthCallback()) return;
+    isActiveRef.current = true;
 
-    let isActive = true;
-    let isRestoring = false;
-
-    const applyStatus = (
-      nextStatus: AuthStatus,
-      shouldCheckAuthEntryRedirect: boolean,
-    ) => {
-      setStatus(nextStatus);
-
-      if (nextStatus === 'anonymous') {
-        queryClient.clear();
-
-        if (
-          shouldRedirectPrivatePath(nextStatus, pathname) &&
-          !consumePrivatePathRedirectBypass()
-        ) {
-          replaceLocation(getLoginRedirectPath(new URL(window.location.href)));
-        }
-
-        return;
-      }
-
-      const shouldBypassAuthEntryRedirect =
-        shouldCheckAuthEntryRedirect &&
-        shouldRedirectAuthenticatedUser(pathname) &&
-        consumeAuthEntryRedirectBypass();
-
-      if (
-        shouldCheckAuthEntryRedirect &&
-        shouldRedirectAuthenticatedUser(pathname) &&
-        !shouldBypassAuthEntryRedirect
-      ) {
-        replaceLocation(AUTH_REDIRECT_PATH);
-      }
+    return () => {
+      isActiveRef.current = false;
     };
+  }, []);
 
-    const restoreAndApply = async (shouldCheckAuthEntryRedirect: boolean) => {
-      if (isRestoring) return;
+  return useCallback(
+    async (shouldCheckAuthEntryRedirect: boolean) => {
+      if (isRestoringRef.current) return;
 
-      isRestoring = true;
+      isRestoringRef.current = true;
 
       try {
         const nextStatus = await restoreAuthSession(reissueAuthTokens);
 
-        if (!isActive) return;
+        if (!isActiveRef.current) return;
 
         applyStatus(nextStatus, shouldCheckAuthEntryRedirect);
       } finally {
-        isRestoring = false;
+        isRestoringRef.current = false;
       }
-    };
+    },
+    [applyStatus],
+  );
+}
+
+function useOAuthCallbackEffect({
+  handleOAuthCallback,
+  handledOAuthCallbackRef,
+}: {
+  handleOAuthCallback: () => boolean;
+  handledOAuthCallbackRef: MutableRefObject<boolean>;
+}) {
+  useEffect(() => {
+    handledOAuthCallbackRef.current = handleOAuthCallback();
+  }, [handleOAuthCallback, handledOAuthCallbackRef]);
+}
+
+function useInitialAuthRestoreEffect({
+  handledOAuthCallbackRef,
+  restoreAndApply,
+}: {
+  handledOAuthCallbackRef: MutableRefObject<boolean>;
+  restoreAndApply: (shouldCheckAuthEntryRedirect: boolean) => Promise<void>;
+}) {
+  useEffect(() => {
+    if (handledOAuthCallbackRef.current) return;
 
     void restoreAndApply(true);
+  }, [handledOAuthCallbackRef, restoreAndApply]);
+}
 
+function useOAuthPopupMessageEffect(
+  handleMessage: (event: MessageEvent) => void,
+) {
+  useEffect(() => {
+    window.addEventListener('message', handleMessage);
+
+    return () => window.removeEventListener('message', handleMessage);
+  }, [handleMessage]);
+}
+
+function useAuthStorageSyncEffect(
+  restoreAndApply: (shouldCheckAuthEntryRedirect: boolean) => Promise<void>,
+) {
+  useEffect(() => {
     const handleStorage = (event: StorageEvent) => {
       if (
         event.key === ACCESS_TOKEN_STORAGE_KEY ||
@@ -196,17 +241,51 @@ export function useAuthLifecycle({
     };
 
     window.addEventListener(AUTH_TOKENS_CHANGED_EVENT, handleAuthTokensChanged);
-    window.addEventListener('message', handleMessage);
     window.addEventListener('storage', handleStorage);
 
     return () => {
-      isActive = false;
       window.removeEventListener(
         AUTH_TOKENS_CHANGED_EVENT,
         handleAuthTokensChanged,
       );
-      window.removeEventListener('message', handleMessage);
       window.removeEventListener('storage', handleStorage);
     };
-  }, [handleMessage, handleOAuthCallback, pathname, queryClient, setStatus]);
+  }, [restoreAndApply]);
+}
+
+export function useAuthLifecycle({
+  pathname,
+  queryClient,
+  setStatus,
+}: {
+  pathname: string;
+  queryClient: QueryClient;
+  setStatus: SetAuthStatus;
+}) {
+  const handledOAuthCallbackRef = useRef(false);
+  const applyStatus = useAuthStatusApplier({
+    pathname,
+    queryClient,
+    setStatus,
+  });
+  const handleOAuthCallback = useOAuthCallbackHandler({
+    pathname,
+    queryClient,
+  });
+  const handleMessage = useOAuthPopupMessageHandler({
+    queryClient,
+    setStatus,
+  });
+  const restoreAndApply = useAuthSessionRestoreHandler(applyStatus);
+
+  useOAuthCallbackEffect({
+    handleOAuthCallback,
+    handledOAuthCallbackRef,
+  });
+  useInitialAuthRestoreEffect({
+    handledOAuthCallbackRef,
+    restoreAndApply,
+  });
+  useOAuthPopupMessageEffect(handleMessage);
+  useAuthStorageSyncEffect(restoreAndApply);
 }

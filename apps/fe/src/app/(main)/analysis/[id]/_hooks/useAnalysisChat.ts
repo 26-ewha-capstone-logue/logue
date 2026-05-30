@@ -1,18 +1,15 @@
 'use client';
 
-import { useCallback, useReducer } from 'react';
 import { useToast } from '@/hooks/useToast';
 import { ANALYSIS_DEFAULT_PROMPT } from '../_config/analysisWorkflowMessages';
 import { uniqueStrings } from '../_utils/stringList';
 import { useAnalysisChatMessages } from './useAnalysisChatMessages';
 import { useAnalysisChatViewModel } from './useAnalysisChatViewModel';
-import {
-  analysisChatFlowReducer,
-  initialAnalysisChatFlowState,
-} from './useAnalysisChatFlow';
+import { useAnalysisChatFlow } from './useAnalysisChatFlow';
 import { useAnalysisChatSideEffects } from './useAnalysisChatSideEffects';
 import { useAnalysisPageData } from './useAnalysisPageData';
 import { useAnalysisWorkflowController } from './useAnalysisWorkflowController';
+import { useAnalysisWorkflowEffects } from './useAnalysisWorkflowEffects';
 
 export type {
   ChatMessage,
@@ -29,10 +26,7 @@ export function useAnalysisChat({
   routeConversationId,
 }: UseAnalysisChatParams) {
   const { toast, showToast } = useToast();
-  const [flow, dispatchFlow] = useReducer(
-    analysisChatFlowReducer,
-    initialAnalysisChatFlowState,
-  );
+  const { actions: flowActions, flow } = useAnalysisChatFlow();
   const {
     appendCriteriaMessage,
     appendNotice,
@@ -56,7 +50,7 @@ export function useAnalysisChat({
     summaryPending,
   } = useAnalysisPageData({
     defaultPrompt: ANALYSIS_DEFAULT_PROMPT,
-    dispatchFlow,
+    flowActions,
     hasAccessToken,
     routeConversationId,
   });
@@ -67,39 +61,23 @@ export function useAnalysisChat({
     hasStartedInitialQuestion,
     questionSubmissionLocked,
   } = flow;
-  const dispatchCriteriaSubmissionFinished = useCallback(() => {
-    dispatchFlow({ type: 'criteria-submission-finished' });
-  }, []);
-  const dispatchCriteriaSubmissionStarted = useCallback(() => {
-    dispatchFlow({ type: 'criteria-submission-started' });
-  }, []);
-  const dispatchInitialQuestionStarted = useCallback(() => {
-    dispatchFlow({ type: 'initial-question-started' });
-  }, []);
-  const dispatchQuestionSubmissionFinished = useCallback(() => {
-    dispatchFlow({ type: 'question-submission-finished' });
-  }, []);
-  const dispatchQuestionSubmissionStarted = useCallback(() => {
-    dispatchFlow({ type: 'question-submission-started' });
-  }, []);
-  const workflow = useAnalysisWorkflowController({
-    analysisFlowId,
+  const workflowEffects = useAnalysisWorkflowEffects({
     appendCriteriaMessage,
     appendNotice,
     appendResultMessage,
     appendUserQuestion,
+    flowActions,
+    showToast,
+  });
+  const workflow = useAnalysisWorkflowController({
+    analysisFlowId,
     canAutoStartInitialQuestion,
     conversationId,
     criteriaSubmissionLocked,
-    dispatchCriteriaSubmissionFinished,
-    dispatchCriteriaSubmissionStarted,
-    dispatchInitialQuestionStarted,
-    dispatchQuestionSubmissionFinished,
-    dispatchQuestionSubmissionStarted,
+    effects: workflowEffects,
     hasResolvedStartPayload,
     hasStartedInitialQuestion,
     questionSubmissionLocked,
-    showToast,
     summary,
     summaryPending,
   });
@@ -107,7 +85,8 @@ export function useAnalysisChat({
   const { startInitialQuestion } = useAnalysisChatSideEffects({
     canAutoStartInitialQuestion,
     conversationId,
-    dispatchInitialQuestionStarted,
+    dispatchInitialQuestionStarted:
+      workflowEffects.dispatch.initialQuestionStarted,
     fileName,
     hasAccessToken,
     hasResolvedStartPayload,

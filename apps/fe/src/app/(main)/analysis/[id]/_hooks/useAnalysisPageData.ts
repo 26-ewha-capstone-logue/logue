@@ -1,9 +1,8 @@
 'use client';
 
-import type { Dispatch } from 'react';
 import { ANALYSIS_WORKFLOW_MESSAGES } from '../_config/analysisWorkflowMessages';
 import { ANALYSIS_JOB_POLICY } from '../_config/analysisWorkflowPolicy';
-import type { AnalysisChatFlowAction } from './useAnalysisChatFlow';
+import type { AnalysisChatFlowActions } from './useAnalysisChatFlow';
 import { useAnalysisDataPreview } from './useAnalysisDataPreview';
 import { useAnalysisRouteParams } from './useAnalysisRouteParams';
 import { useAnalysisStartPayload } from './useAnalysisStartPayload';
@@ -11,14 +10,14 @@ import { useSummaryPhase } from './useSummaryPhase';
 
 type UseAnalysisPageDataParams = {
   defaultPrompt: string;
-  dispatchFlow: Dispatch<AnalysisChatFlowAction>;
+  flowActions: AnalysisChatFlowActions;
   hasAccessToken: boolean;
   routeConversationId: string;
 };
 
 export function useAnalysisPageData({
   defaultPrompt,
-  dispatchFlow,
+  flowActions,
   hasAccessToken,
   routeConversationId,
 }: UseAnalysisPageDataParams) {
@@ -27,7 +26,7 @@ export function useAnalysisPageData({
   const { fileName, initialPrompt } = useAnalysisStartPayload({
     conversationId,
     defaultPrompt,
-    dispatchFlow,
+    flowActions,
   });
   const { summary, summaryErrorMessage, summaryPending } = useSummaryPhase({
     analysisFlowId,

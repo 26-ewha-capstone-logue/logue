@@ -1,3 +1,7 @@
+'use client';
+
+import { useMemo, useReducer } from 'react';
+
 export type AnalysisChatFlowState = {
   canAutoStartInitialQuestion: boolean;
   criteriaSubmissionLocked: boolean;
@@ -15,6 +19,17 @@ export type AnalysisChatFlowAction =
   | { type: 'question-submission-finished' }
   | { type: 'criteria-submission-started' }
   | { type: 'criteria-submission-finished' };
+
+export type AnalysisChatFlowActions = {
+  autoStartDisabled: () => void;
+  criteriaSubmissionFinished: () => void;
+  criteriaSubmissionStarted: () => void;
+  initialQuestionStarted: () => void;
+  questionSubmissionFinished: () => void;
+  questionSubmissionStarted: () => void;
+  startPayloadLoading: () => void;
+  startPayloadResolved: (canAutoStartInitialQuestion: boolean) => void;
+};
 
 export const initialAnalysisChatFlowState: AnalysisChatFlowState = {
   canAutoStartInitialQuestion: false,
@@ -73,4 +88,48 @@ export function analysisChatFlowReducer(
         criteriaSubmissionLocked: false,
       };
   }
+}
+
+export function useAnalysisChatFlow() {
+  const [flow, dispatchFlow] = useReducer(
+    analysisChatFlowReducer,
+    initialAnalysisChatFlowState,
+  );
+  const actions = useMemo<AnalysisChatFlowActions>(
+    () => ({
+      autoStartDisabled: () => {
+        dispatchFlow({ type: 'auto-start-disabled' });
+      },
+      criteriaSubmissionFinished: () => {
+        dispatchFlow({ type: 'criteria-submission-finished' });
+      },
+      criteriaSubmissionStarted: () => {
+        dispatchFlow({ type: 'criteria-submission-started' });
+      },
+      initialQuestionStarted: () => {
+        dispatchFlow({ type: 'initial-question-started' });
+      },
+      questionSubmissionFinished: () => {
+        dispatchFlow({ type: 'question-submission-finished' });
+      },
+      questionSubmissionStarted: () => {
+        dispatchFlow({ type: 'question-submission-started' });
+      },
+      startPayloadLoading: () => {
+        dispatchFlow({ type: 'start-payload-loading' });
+      },
+      startPayloadResolved: (canAutoStartInitialQuestion) => {
+        dispatchFlow({
+          type: 'start-payload-resolved',
+          canAutoStartInitialQuestion,
+        });
+      },
+    }),
+    [dispatchFlow],
+  );
+
+  return {
+    actions,
+    flow,
+  };
 }
