@@ -27,12 +27,13 @@ export function useOnboardingFlow() {
     );
   }, []);
   const goToNextStep = useCallback(() => {
+    if (!canGoNext) return;
     setStep((currentStep) =>
       currentStep === ONBOARDING_LAST_STEP
         ? currentStep
         : ((currentStep + 1) as OnboardingStepKey),
     );
-  }, []);
+  }, [canGoNext]);
   const toggleTool = useCallback((value: string) => {
     setTools((prev) => {
       const next = new Set(prev);

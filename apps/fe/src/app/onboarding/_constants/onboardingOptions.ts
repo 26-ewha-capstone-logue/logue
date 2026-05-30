@@ -2,7 +2,7 @@ export type OnboardingStepKey = 1 | 2 | 3;
 
 export const ONBOARDING_LAST_STEP = 3;
 
-export const ONBOARDING_STEPS = ['도메인 선택', '업무리스트', '사용 툴 선택'];
+export const ONBOARDING_STEPS = ['도메인 선택', '업무 리스트', '사용 툴 선택'];
 
 export const DOMAIN_OPTIONS = [
   '마케팅',
@@ -38,7 +38,7 @@ export const ONBOARDING_STEP_COPY: Record<
   { title: string; description: string }
 > = {
   1: {
-    title: 'Logue는 {사용자}님의\n업무 도메인이 궁금해요!',
+    title: 'Logue는 어떤 업무 도메인을\n다루는지 궁금해요!',
     description:
       '업무 맥락에 맞는 질문 예시와 분석 기준을 설정하는 데 활용돼요.',
   },
