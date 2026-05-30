@@ -1,57 +1,29 @@
 'use client';
 
-import {
-  useCallback,
-  useRef,
-  useState,
-  type DragEvent,
-  type HTMLAttributes,
-  type ReactNode,
-} from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
+import UploadProgressPanel from './UploadProgressPanel';
+import { useFileDropzone } from './useFileDropzone';
 
 type FileUploadState = 'default' | 'drag' | 'upload';
 
 export type FileUploadZoneProps = {
   accept?: string;
-  validateFile?: (file: File) => string | null;
-  onFileSelect?: (file: File) => void;
-  onError?: (message: string) => void;
   disabled?: boolean;
+  fileName?: string;
+  onClose?: () => void;
+  onError?: (message: string) => void;
+  onFileSelect?: (file: File) => void;
+  onRemove?: () => void;
+  progress?: number;
   state?: FileUploadState;
   title?: string;
-  fileName?: string;
-  progress?: number;
-  onClose?: () => void;
-  onRemove?: () => void;
   uploadIcon?: ReactNode;
+  validateFile?: (file: File) => string | null;
 } & Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'onDrop' | 'onError'>;
 
-const CSV_GRAPHIC_SRC = '/illusts/csv-graphic.svg';
-const MULTIPLE_FILES_MESSAGE = '파일은 하나만 업로드할 수 있습니다.';
-
-function getAcceptTokens(accept: string) {
-  return accept
-    .split(',')
-    .map((token) => token.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-function matchesAcceptedFile(file: File, accept: string) {
-  const tokens = getAcceptTokens(accept);
-  if (tokens.length === 0) return true;
-
-  const lowerFileName = file.name.toLowerCase();
-  const lowerMimeType = file.type.toLowerCase();
-
-  return tokens.some((token) => {
-    if (token.startsWith('.')) return lowerFileName.endsWith(token);
-    if (token.endsWith('/*')) {
-      return lowerMimeType.startsWith(token.slice(0, -1));
-    }
-
-    return lowerMimeType === token;
-  });
-}
+const DEFAULT_TITLE = 'CSV \uD30C\uC77C \uC5C5\uB85C\uB4DC';
+const DEFAULT_FILE_NAME =
+  '\uC720\uB2C8\uCEE4\uB128\uC2A4_\uC0AC\uC5C5\uC790\uB4F1\uB85D\uC99D.csv';
 
 function UploadIcon() {
   return (
@@ -88,8 +60,8 @@ export default function FileUploadZone({
   onError,
   disabled = false,
   state,
-  title = 'CSV 파일 업로드',
-  fileName = '유니커넥트_사업자등록증.csv',
+  title = DEFAULT_TITLE,
+  fileName = DEFAULT_FILE_NAME,
   progress = 36,
   onClose,
   onRemove,
@@ -97,71 +69,21 @@ export default function FileUploadZone({
   className = '',
   ...rest
 }: FileUploadZoneProps) {
-  const [isDragOver, setIsDragOver] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const validateAndEmit = useCallback(
-    (file: File) => {
-      const validationError = validateFile?.(file);
-      if (validationError) {
-        onError?.(validationError);
-        return;
-      }
-
-      if (!matchesAcceptedFile(file, accept)) {
-        onError?.(
-          `${getAcceptTokens(accept).join(', ')} 파일만 업로드할 수 있습니다.`,
-        );
-        return;
-      }
-
-      onFileSelect?.(file);
-    },
-    [accept, onFileSelect, onError, validateFile],
-  );
-
-  const handleDragOver = useCallback(
-    (e: DragEvent<HTMLButtonElement>) => {
-      e.preventDefault();
-      if (!disabled) setIsDragOver(true);
-    },
-    [disabled],
-  );
-
-  const handleDragLeave = useCallback((e: DragEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  }, []);
-
-  const handleDrop = useCallback(
-    (e: DragEvent<HTMLButtonElement>) => {
-      e.preventDefault();
-      setIsDragOver(false);
-      if (disabled) return;
-
-      if (e.dataTransfer.files.length > 1) {
-        onError?.(MULTIPLE_FILES_MESSAGE);
-        return;
-      }
-
-      const file = e.dataTransfer.files[0];
-      if (file) validateAndEmit(file);
-    },
-    [disabled, onError, validateAndEmit],
-  );
-
-  const handleClick = useCallback(() => {
-    if (!disabled) inputRef.current?.click();
-  }, [disabled]);
-
-  const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) validateAndEmit(file);
-      e.target.value = '';
-    },
-    [validateAndEmit],
-  );
+  const {
+    handleClick,
+    handleDragLeave,
+    handleDragOver,
+    handleDrop,
+    handleInputChange,
+    inputRef,
+    isDragOver,
+  } = useFileDropzone({
+    accept,
+    disabled,
+    onError,
+    onFileSelect,
+    validateFile,
+  });
 
   const visualState = state ?? (isDragOver ? 'drag' : 'default');
   const isUpload = visualState === 'upload';
@@ -188,52 +110,19 @@ export default function FileUploadZone({
           type="button"
           onClick={onClose}
           className="absolute top-[1.4rem] right-[1.5rem] flex h-28 w-28 items-center justify-center text-gray-800 hover:text-gray-900"
-          aria-label="닫기"
+          aria-label={'\uB2EB\uAE30'}
         >
           <CloseIcon />
         </button>
       )}
 
       {isUpload ? (
-        <div className="relative h-[9.1rem] rounded-8 border-[1.5px] border-gray-400">
-          <div className="absolute left-[0.95rem] top-[0.85rem]">
-            {uploadIcon ?? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={CSV_GRAPHIC_SRC}
-                alt=""
-                aria-hidden
-                className="h-[5.6rem] w-[4.8rem]"
-              />
-            )}
-          </div>
-          <p className="absolute left-[6.3rem] top-[1.15rem] max-w-[42rem] truncate text-body3 text-gray-900 opacity-80">
-            {fileName}
-          </p>
-          <p className="absolute left-[6.4rem] top-[3.25rem] text-body4 text-gray-800 opacity-80">
-            uploading...
-          </p>
-          <button
-            type="button"
-            onClick={onRemove}
-            className="absolute right-[1.3rem] top-[3.25rem] text-gray-800 hover:text-error-500"
-            aria-label="파일 제거"
-          >
-            <CloseIcon />
-          </button>
-          <div
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.max(0, Math.min(progress, 100))}
-            className="absolute bottom-[1.8rem] left-20 h-[0.6rem] w-[54rem] max-w-[calc(100%-6.8rem)] rounded-222 bg-gray-300"
-          >
-            <div
-              className="h-full rounded-222 bg-orange-500"
-              style={{ width: `${Math.max(0, Math.min(progress, 100))}%` }}
-            />
-          </div>
-        </div>
+        <UploadProgressPanel
+          fileName={fileName}
+          onRemove={onRemove}
+          progress={progress}
+          uploadIcon={uploadIcon}
+        />
       ) : (
         <button
           type="button"
@@ -248,11 +137,11 @@ export default function FileUploadZone({
         >
           <UploadIcon />
           <p className="mt-8 text-body2 text-gray-900 opacity-70">
-            파일 드롭하기
+            {'\uD30C\uC77C \uB4DC\uB798\uADF8\uD558\uAE30'}
           </p>
           <p className="text-body4 text-gray-800 opacity-70">or</p>
           <span className="mt-4 rounded-222 bg-orange-500 px-12 py-8 text-body2 text-white">
-            파일 업로드
+            {'\uD30C\uC77C \uC5C5\uB85C\uB4DC'}
           </span>
         </button>
       )}
@@ -263,7 +152,7 @@ export default function FileUploadZone({
         disabled={disabled}
         onChange={handleInputChange}
         className="hidden"
-        aria-label="파일 업로드"
+        aria-label={'\uD30C\uC77C \uC5C5\uB85C\uB4DC'}
       />
     </div>
   );

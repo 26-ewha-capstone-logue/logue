@@ -5,11 +5,11 @@ import {
   getDataSources as getDataSourcesRequest,
   type GetDataSourceListParams,
   type GetFileResponse,
-} from './datasource';
+} from '@/apis/datasource';
 import {
-  getServerDataSourceIds,
   getMockDataSource,
   getMockDataSourceListResponse,
+  getServerDataSourceIds,
   isMockDataSourceId,
   withMockDataSource,
 } from '@/features/mockDataSource';

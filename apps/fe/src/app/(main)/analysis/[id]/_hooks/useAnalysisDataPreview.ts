@@ -1,30 +1,9 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import {
-  dataSourceKeys,
-  getDataSource,
-  type FilePreview,
-} from '@/apis/datasource';
+import { dataSourceKeys, getDataSource } from '@/apis/datasource';
 import { getApiErrorMessage } from '@/apis/errors';
-import type { DataTableColumn } from '../_components/DataTablePreview';
-
-function createPreviewTable(preview?: FilePreview | null) {
-  if (!preview || preview.headers.length === 0) return null;
-
-  const columns: DataTableColumn[] = preview.headers.map((header, index) => ({
-    key: `col-${index}`,
-    label: header || `컬럼 ${index + 1}`,
-  }));
-  const rows = preview.rows.map((row) =>
-    columns.reduce<Record<string, string>>((acc, column, index) => {
-      acc[column.key] = row[index] ?? '';
-      return acc;
-    }, {}),
-  );
-
-  return { columns, rows };
-}
+import { createDataSourcePreviewTableModel } from '@/features/dataSource';
 
 type UseAnalysisDataPreviewParams = {
   dataSourceId: number | null;
@@ -47,7 +26,9 @@ export function useAnalysisDataPreview({
     },
     enabled: enabled && dataSourceId !== null,
   });
-  const previewTable = createPreviewTable(dataSourceQuery.data?.preview);
+  const previewTable = createDataSourcePreviewTableModel(
+    dataSourceQuery.data?.preview,
+  );
 
   return {
     dataSourceErrorMessage: dataSourceQuery.isError

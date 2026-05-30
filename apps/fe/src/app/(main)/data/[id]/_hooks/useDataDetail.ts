@@ -1,8 +1,8 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getDataSource, deleteDataSource } from '@/apis/dataSourceRepository';
 import { dataSourceKeys } from '@/apis/datasource';
+import { getDataSource, deleteDataSource } from '@/features/dataSource';
 
 type UseDataDetailParams = {
   dataSourceId: number;

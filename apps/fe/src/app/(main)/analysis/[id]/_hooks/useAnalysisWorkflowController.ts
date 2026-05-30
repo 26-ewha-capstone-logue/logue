@@ -3,92 +3,68 @@
 import { useCallback } from 'react';
 import { markAnalysisStartPayloadConsumed } from '@/lib/analysisStartPayload';
 import type { PromptInputValue } from '../../_components/PromptInput';
-import type {
-  CriteriaViewModel,
-  QuestionResultViewModel,
-  SummaryViewModel,
-} from '../_models/analysisViewModels';
+import type { SummaryViewModel } from '../_models/analysisViewModels';
 import { ANALYSIS_WORKFLOW_MESSAGES } from '../_config/analysisWorkflowMessages';
-import type { CriteriaInitialMode } from './useAnalysisChatMessages';
 import { useAnalysisCancelController } from './useAnalysisCancelController';
 import { useAnalysisCancellationRegistry } from './useAnalysisCancellationRegistry';
 import { useCriteriaConfirmationController } from './useCriteriaConfirmationController';
 import { useQuestionAnalysisController } from './useQuestionAnalysisController';
+import type { AnalysisWorkflowEffects } from './useAnalysisWorkflowEffects';
 
 type UseAnalysisWorkflowControllerParams = {
   analysisFlowId: number | null;
-  appendCriteriaMessage: (
-    criteria: CriteriaViewModel,
-    initialMode?: CriteriaInitialMode,
-  ) => void;
-  appendNotice: (content: string, tone?: 'default' | 'error') => void;
-  appendResultMessage: (result: QuestionResultViewModel) => void;
-  appendUserQuestion: (content: string) => void;
   canAutoStartInitialQuestion: boolean;
   conversationId: number | null;
   criteriaSubmissionLocked: boolean;
-  dispatchCriteriaSubmissionFinished: () => void;
-  dispatchCriteriaSubmissionStarted: () => void;
-  dispatchInitialQuestionStarted: () => void;
-  dispatchQuestionSubmissionFinished: () => void;
-  dispatchQuestionSubmissionStarted: () => void;
+  effects: AnalysisWorkflowEffects;
   hasResolvedStartPayload: boolean;
   hasStartedInitialQuestion: boolean;
   questionSubmissionLocked: boolean;
-  showToast: (message: string) => void;
   summary: SummaryViewModel | undefined;
   summaryPending: boolean;
 };
 
 export function useAnalysisWorkflowController({
   analysisFlowId,
-  appendCriteriaMessage,
-  appendNotice,
-  appendResultMessage,
-  appendUserQuestion,
   canAutoStartInitialQuestion,
   conversationId,
   criteriaSubmissionLocked,
-  dispatchCriteriaSubmissionFinished,
-  dispatchCriteriaSubmissionStarted,
-  dispatchInitialQuestionStarted,
-  dispatchQuestionSubmissionFinished,
-  dispatchQuestionSubmissionStarted,
+  effects,
   hasResolvedStartPayload,
   hasStartedInitialQuestion,
   questionSubmissionLocked,
-  showToast,
   summary,
   summaryPending,
 }: UseAnalysisWorkflowControllerParams) {
+  const { dispatch, messages, notify } = effects;
   const cancellationRegistry = useAnalysisCancellationRegistry();
   const questionController = useQuestionAnalysisController({
     analysisFlowId,
-    appendCriteriaMessage,
-    appendNotice,
-    appendUserQuestion,
+    appendCriteriaMessage: messages.appendCriteriaMessage,
+    appendNotice: messages.appendNotice,
+    appendUserQuestion: messages.appendUserQuestion,
     consumeCanceledCriteriaOperation:
       cancellationRegistry.consumeCanceledCriteriaOperation,
     conversationId,
-    dispatchQuestionSubmissionFinished,
-    dispatchQuestionSubmissionStarted,
+    dispatchQuestionSubmissionFinished: dispatch.questionSubmissionFinished,
+    dispatchQuestionSubmissionStarted: dispatch.questionSubmissionStarted,
     questionSubmissionLocked,
-    showToast,
+    showToast: notify.showToast,
   });
   const criteriaConfirmationController = useCriteriaConfirmationController({
     analysisFlowId,
-    appendNotice,
-    appendResultMessage,
+    appendNotice: messages.appendNotice,
+    appendResultMessage: messages.appendResultMessage,
     consumeCanceledResult: cancellationRegistry.consumeCanceledResult,
     conversationId,
     criteriaSubmissionLocked,
-    dispatchCriteriaSubmissionFinished,
-    dispatchCriteriaSubmissionStarted,
-    showToast,
+    dispatchCriteriaSubmissionFinished: dispatch.criteriaSubmissionFinished,
+    dispatchCriteriaSubmissionStarted: dispatch.criteriaSubmissionStarted,
+    showToast: notify.showToast,
   });
   const cancelController = useAnalysisCancelController({
     analysisFlowId,
-    appendNotice,
+    appendNotice: messages.appendNotice,
     clearPendingCriteriaOperation:
       questionController.clearPendingCriteriaOperation,
     clearPendingResultCancelParams:
@@ -96,14 +72,14 @@ export function useAnalysisWorkflowController({
     conversationId,
     markCriteriaCanceled: cancellationRegistry.markCriteriaCanceled,
     markResultCanceled: cancellationRegistry.markResultCanceled,
-    onCriteriaCanceled: dispatchQuestionSubmissionFinished,
-    onResultCanceled: dispatchCriteriaSubmissionFinished,
+    onCriteriaCanceled: dispatch.questionSubmissionFinished,
+    onResultCanceled: dispatch.criteriaSubmissionFinished,
     pendingCriteriaCancelTarget: questionController.pendingCriteriaCancelTarget,
     pendingResultCancelParams:
       criteriaConfirmationController.pendingResultCancelParams,
     questionAnalysisActive: questionController.questionAnalysisActive,
     resultAnalysisActive: criteriaConfirmationController.resultAnalysisActive,
-    showToast,
+    showToast: notify.showToast,
     summaryPending,
   });
   const { startQuestion } = questionController;
@@ -111,23 +87,17 @@ export function useAnalysisWorkflowController({
   const handleSubmit = useCallback(
     (value: PromptInputValue) => {
       if (!summary) {
-        showToast(ANALYSIS_WORKFLOW_MESSAGES.summary.notReady);
+        notify.showToast(ANALYSIS_WORKFLOW_MESSAGES.summary.notReady);
         return;
       }
 
       if (conversationId !== null) {
         markAnalysisStartPayloadConsumed(conversationId);
       }
-      dispatchInitialQuestionStarted();
+      dispatch.initialQuestionStarted();
       startQuestion(value.prompt);
     },
-    [
-      conversationId,
-      dispatchInitialQuestionStarted,
-      showToast,
-      startQuestion,
-      summary,
-    ],
+    [conversationId, dispatch, notify, startQuestion, summary],
   );
 
   const shouldShowAnalyzing =
