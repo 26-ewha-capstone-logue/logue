@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { installWindowStorage } from '../test-utils/storage';
+import { installWindowStorage } from '../../test-utils/storage';
 import {
   MOCK_MARKETING_CVR_DATA_SOURCE_ID,
   filterVisibleMockDataSources,

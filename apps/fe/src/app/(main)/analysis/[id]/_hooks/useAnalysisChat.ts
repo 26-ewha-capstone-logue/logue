@@ -1,19 +1,16 @@
 'use client';
 
-import { useCallback, useEffect, useReducer } from 'react';
+import { useCallback, useReducer } from 'react';
 import { useToast } from '@/hooks/useToast';
-import { markAnalysisStartPayloadConsumed } from '@/lib/analysisStartPayload';
 import { ANALYSIS_DEFAULT_PROMPT } from '../_config/analysisWorkflowMessages';
 import { uniqueStrings } from '../_utils/stringList';
-import {
-  useAnalysisChatMessages,
-  type CriteriaInitialMode,
-} from './useAnalysisChatMessages';
+import { useAnalysisChatMessages } from './useAnalysisChatMessages';
 import { useAnalysisChatViewModel } from './useAnalysisChatViewModel';
 import {
   analysisChatFlowReducer,
   initialAnalysisChatFlowState,
 } from './useAnalysisChatFlow';
+import { useAnalysisChatSideEffects } from './useAnalysisChatSideEffects';
 import { useAnalysisPageData } from './useAnalysisPageData';
 import { useAnalysisWorkflowController } from './useAnalysisWorkflowController';
 
@@ -107,70 +104,19 @@ export function useAnalysisChat({
     summaryPending,
   });
   const { startQuestion } = workflow;
-
-  const startInitialQuestion = useCallback(
-    (initialMode: CriteriaInitialMode = 'normal') => {
-      if (
-        !hasAccessToken ||
-        hasStartedInitialQuestion ||
-        !hasResolvedStartPayload ||
-        !canAutoStartInitialQuestion ||
-        conversationId === null
-      ) {
-        return;
-      }
-
-      markAnalysisStartPayloadConsumed(conversationId);
-      dispatchInitialQuestionStarted();
-      startQuestion(initialPrompt, false, initialMode);
-    },
-    [
-      canAutoStartInitialQuestion,
-      conversationId,
-      hasAccessToken,
-      hasResolvedStartPayload,
-      hasStartedInitialQuestion,
-      initialPrompt,
-      dispatchInitialQuestionStarted,
-      startQuestion,
-    ],
-  );
-
-  useEffect(() => {
-    if (!hasResolvedStartPayload) return;
-
-    const timer = window.setTimeout(() => {
-      updateInitialMessage(initialPrompt, fileName);
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, [fileName, hasResolvedStartPayload, initialPrompt, updateInitialMessage]);
-
-  useEffect(() => {
-    if (
-      !hasAccessToken ||
-      !summary ||
-      hasStartedInitialQuestion ||
-      !hasResolvedStartPayload ||
-      !canAutoStartInitialQuestion
-    ) {
-      return;
-    }
-    if (summary.warnings.length > 0) return;
-
-    const timer = window.setTimeout(() => {
-      startInitialQuestion();
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, [
+  const { startInitialQuestion } = useAnalysisChatSideEffects({
     canAutoStartInitialQuestion,
+    conversationId,
+    dispatchInitialQuestionStarted,
+    fileName,
     hasAccessToken,
     hasResolvedStartPayload,
     hasStartedInitialQuestion,
-    startInitialQuestion,
+    initialPrompt,
+    startQuestion,
     summary,
-  ]);
+    updateInitialMessage,
+  });
 
   const summaryColumnOptions = summary?.columnOptions ?? [];
   const summarySortOptions = uniqueStrings([
@@ -199,13 +145,17 @@ export function useAnalysisChat({
   });
 
   return {
-    handleSubmit: workflow.handleSubmit,
-    inputDisabled: workflow.inputDisabled,
-    dataSourceErrorMessage,
-    isDataSourceLoading,
-    isDataSourceEmpty,
+    dataPreview: {
+      errorMessage: dataSourceErrorMessage,
+      isEmpty: isDataSourceEmpty,
+      isLoading: isDataSourceLoading,
+      table: previewTable,
+    },
+    input: {
+      disabled: workflow.inputDisabled,
+      onSubmit: workflow.handleSubmit,
+    },
     messageList,
-    previewTable,
     toast,
   };
 }

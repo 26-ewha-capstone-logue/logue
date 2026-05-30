@@ -4,26 +4,26 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { dataSourceKeys, type DataSourceSort } from '@/apis/datasource';
 import { getDataSources } from '@/apis/dataSourceRepository';
-import {
-  filterVisibleMockDataSources,
-  getMockDataSourceListResponse,
-} from '@/apis/mockDataSource';
+import type { MockDataSourceManager } from '@/features/mockDataSource';
 import { getDataSourceErrorMessage } from '../_utils/dataSourceErrorMessage';
 
 const DATA_SOURCE_PAGE_SIZE = 20;
 
 type UseDataSourceListParams = {
-  deletedMockDataSourceIds: ReadonlySet<number>;
   enabled: boolean;
   fallbackErrorMessage: string;
+  mockDataSource: Pick<
+    MockDataSourceManager,
+    'getFallbackListResponse' | 'getVisibleDataSources'
+  >;
   page: number;
   sort: DataSourceSort;
 };
 
 export function useDataSourceList({
-  deletedMockDataSourceIds,
   enabled,
   fallbackErrorMessage,
+  mockDataSource,
   page,
   sort,
 }: UseDataSourceListParams) {
@@ -40,13 +40,10 @@ export function useDataSourceList({
   const dataSources = useMemo(() => {
     const rawDataSources =
       query.data?.dataSources ??
-      getMockDataSourceListResponse(listParams).dataSources;
+      mockDataSource.getFallbackListResponse(listParams).dataSources;
 
-    return filterVisibleMockDataSources(
-      rawDataSources,
-      deletedMockDataSourceIds,
-    );
-  }, [deletedMockDataSourceIds, listParams, query.data?.dataSources]);
+    return mockDataSource.getVisibleDataSources(rawDataSources);
+  }, [listParams, mockDataSource, query.data?.dataSources]);
   const hasDataSources = dataSources.length > 0;
 
   return {

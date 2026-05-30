@@ -1,0 +1,4 @@
+interface:
+  display_name: "FE Structural Refactor Backlog"
+  short_description: "apps/fe 구조적 리팩토링 백로그 스캔 워크플로"
+  default_prompt: "Use $fe-structural-refactor-backlog to scan apps/fe for structural refactoring backlog items."
