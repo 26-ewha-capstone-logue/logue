@@ -1,6 +1,7 @@
 package com.capstone.logue.auth.handler;
 
 import com.capstone.logue.auth.provider.JWTProvider;
+import com.capstone.logue.auth.repository.GoogleTokenRepository;
 import com.capstone.logue.auth.service.AuthService;
 import com.capstone.logue.auth.service.RefreshTokenService;
 import com.capstone.logue.global.entity.User;
@@ -15,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -68,6 +71,8 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     private final UserRepository userRepository;
 
     private final RefreshTokenService refreshTokenService;
+    private final OAuth2AuthorizedClientService authorizedClientService;
+    private final GoogleTokenRepository googleTokenRepository;
 
 
     /**
@@ -120,6 +125,19 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         });
 
         log.info("OAuth 로그인 성공. providerUserId = {}, isNewUser = {}", providerUserId, isNewUser);
+
+        // Google access token을 Redis에 저장 (로그아웃 시 revoke에 사용)
+        OAuth2AuthorizedClient authorizedClient = authorizedClientService.loadAuthorizedClient(provider, token.getName());
+        if (authorizedClient != null && authorizedClient.getAccessToken() != null) {
+            googleTokenRepository.save(
+                    user.getId(),
+                    authorizedClient.getAccessToken().getTokenValue(),
+                    authorizedClient.getAccessToken().getExpiresAt()
+            );
+        } else {
+            log.warn("Google access token을 가져오지 못했습니다. userId={}", user.getId());
+        }
+
         String accessToken = jwtProvider.generateToken(user.getId(), user.getEmail(), ACCESS_TOKEN_EXPIRATION_TIME);
         String refreshToken = jwtProvider.generateToken(user.getId(), user.getEmail(), REFRESH_TOKEN_EXPIRATION_TIME);
 

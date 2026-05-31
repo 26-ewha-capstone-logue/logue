@@ -2,6 +2,7 @@ package com.capstone.logue.auth.service;
 
 import com.capstone.logue.auth.dto.ReIssueTokenResponse;
 import com.capstone.logue.auth.provider.JWTProvider;
+import com.capstone.logue.auth.repository.GoogleTokenRepository;
 import com.capstone.logue.auth.repository.RefreshTokenRepository;
 import com.capstone.logue.global.entity.RefreshToken;
 import com.capstone.logue.global.exception.ErrorCode;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 
 import java.time.LocalDateTime;
 
@@ -21,6 +23,8 @@ import java.time.LocalDateTime;
 public class AuthService {
     private final JWTProvider jwtProvider;
     private final RefreshTokenService refreshTokenService;
+    private final GoogleTokenRepository googleTokenRepository;
+    private final RestClient restClient = RestClient.create();
 
     @Value("${spring.jwt.access-token.expiration-time}")
     private long ACCESS_TOKEN_EXPIRATION_TIME;
@@ -51,6 +55,22 @@ public class AuthService {
     public void logout(String refreshToken) {
         Claims claims = jwtProvider.validateToken(refreshToken);
         Long userId = jwtProvider.getUserIdFromToken(claims);
+
+        // Google access token revoke (실패해도 로그아웃 계속 진행)
+        googleTokenRepository.findByUserId(userId).ifPresent(googleToken -> {
+            try {
+                restClient.post()
+                        .uri("https://oauth2.googleapis.com/revoke?token=" + googleToken)
+                        .retrieve()
+                        .toBodilessEntity();
+                log.info("Google token revoke 성공. userId={}", userId);
+            } catch (Exception e) {
+                log.warn("Google token revoke 실패 (로그아웃은 계속 진행). userId={}, reason={}", userId, e.getMessage());
+            } finally {
+                googleTokenRepository.deleteByUserId(userId);
+            }
+        });
+
         refreshTokenService.deleteByUserId(userId);
     }
 }
