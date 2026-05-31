@@ -324,6 +324,8 @@ class QuestionCriteriaServiceTest {
         when(analysisCriteriaRepository.findTopByAnalysisFlowIdOrderByCreatedAtDescIdDesc(ANALYSIS_FLOW_ID))
                 .thenReturn(Optional.of(criteria));
         when(analysisCriteriaRepository.save(any(AnalysisCriteria.class))).thenReturn(criteria);
+        when(flowDataWarningRepository.findByAnalysisCriteriaId(CRITERIA_ID))
+                .thenReturn(List.of());
 
         AiTaggingJob resultJob = AiTaggingJob.builder()
                 .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
@@ -344,6 +346,83 @@ class QuestionCriteriaServiceTest {
         assertThat(criteria.getConfirmedAt()).isNotNull();
         verify(analysisCriteriaRepository).save(criteria);
         verify(analysisResultAsyncService).resolveResultAsync(JOB_ID);
+    }
+
+    @Test
+    @DisplayName("updateCriteria: confirmed=true 인데 차단성 경고(QUESTION_DATA_MISMATCH)가 있으면 CRITERIA_BLOCKED_BY_WARNING 이고 결과 비동기 미호출")
+    void updateCriteria_confirmBlockedByWarning() {
+        stubAccess();
+        Message message = Message.builder().id(MESSAGE_ID).analysisFlow(flow).role(MessageRole.USER).content("Q?").build();
+        when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(message));
+
+        AnalysisCriteria criteria = AnalysisCriteria.builder()
+                .id(CRITERIA_ID).analysisFlow(flow)
+                .analysisType(AnalysisType.COMPARISON).metricName("conversion_rate")
+                .metricType(MetricType.RATIO)
+                .baseDateColumn("signed_at").standardPeriod("this_week").comparePeriod("last_week")
+                .sortBy("delta").sortDirection("asc")
+                .groupBy(objectMapper.valueToTree(List.of("channel")))
+                .isConfirmed(false)
+                .build();
+        when(analysisCriteriaRepository.findTopByAnalysisFlowIdOrderByCreatedAtDescIdDesc(ANALYSIS_FLOW_ID))
+                .thenReturn(Optional.of(criteria));
+
+        FlowDataWarning warning = FlowDataWarning.builder()
+                .id(1L).analysisCriteria(criteria)
+                .code(FlowWarningKey.QUESTION_DATA_MISMATCH)
+                .name(FlowWarningKey.QUESTION_DATA_MISMATCH.getName())
+                .comment(FlowWarningKey.QUESTION_DATA_MISMATCH.getComment())
+                .build();
+        when(flowDataWarningRepository.findByAnalysisCriteriaId(CRITERIA_ID))
+                .thenReturn(List.of(warning));
+
+        UpdateQuestionCriteriaRequest request = new UpdateQuestionCriteriaRequest(
+                "signed_at", "this_week", "last_week",
+                List.of("channel"),
+                "delta", "asc", null, List.of(), true);
+
+        assertThatThrownBy(() -> service.updateCriteria(
+                CONVERSATION_ID, ANALYSIS_FLOW_ID, MESSAGE_ID, request))
+                .isInstanceOf(LogueException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.CRITERIA_BLOCKED_BY_WARNING);
+
+        assertThat(criteria.getIsConfirmed()).isFalse();
+        verify(analysisCriteriaRepository, never()).save(any());
+        verify(analysisResultAsyncService, never()).resolveResultAsync(any());
+    }
+
+    @Test
+    @DisplayName("updateCriteria: confirmed=false(단순 수정) 면 차단성 경고가 있어도 통과")
+    void updateCriteria_pureEditWithWarningAllowed() {
+        stubAccess();
+        Message message = Message.builder().id(MESSAGE_ID).analysisFlow(flow).role(MessageRole.USER).content("Q?").build();
+        when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(message));
+
+        AnalysisCriteria criteria = AnalysisCriteria.builder()
+                .id(CRITERIA_ID).analysisFlow(flow)
+                .analysisType(AnalysisType.COMPARISON).metricName("conversion_rate")
+                .metricType(MetricType.RATIO)
+                .baseDateColumn("signed_at").standardPeriod("this_week").comparePeriod("last_week")
+                .sortBy("delta").sortDirection("asc")
+                .groupBy(objectMapper.valueToTree(List.of("channel")))
+                .isConfirmed(false)
+                .build();
+        when(analysisCriteriaRepository.findTopByAnalysisFlowIdOrderByCreatedAtDescIdDesc(ANALYSIS_FLOW_ID))
+                .thenReturn(Optional.of(criteria));
+        when(analysisCriteriaRepository.save(any(AnalysisCriteria.class))).thenReturn(criteria);
+
+        UpdateQuestionCriteriaRequest request = new UpdateQuestionCriteriaRequest(
+                "signed_at", "this_week", "last_week",
+                List.of("channel", "device"),
+                "delta", "asc", null, List.of(), false);
+
+        UpdateQuestionCriteriaResponse response = service.updateCriteria(
+                CONVERSATION_ID, ANALYSIS_FLOW_ID, MESSAGE_ID, request);
+
+        assertThat(response.analysisCriteriaId()).isEqualTo(CRITERIA_ID);
+        assertThat(criteria.getIsConfirmed()).isFalse();
+        verify(analysisCriteriaRepository).save(criteria);
+        verify(analysisResultAsyncService, never()).resolveResultAsync(any());
     }
 
     @Test
@@ -442,7 +521,7 @@ class QuestionCriteriaServiceTest {
     }
 
     @Test
-    @DisplayName("getCriteriaStatus: Job 상태 문자열 반환")
+    @DisplayName("getCriteriaStatus: Job 상태 문자열 반환 (RUNNING 이면 failureCode 는 null)")
     void getCriteriaStatus_returnsStatus() {
         stubAccess();
         Message message = Message.builder().id(MESSAGE_ID).analysisFlow(flow).role(MessageRole.USER).content("Q?").build();
@@ -460,5 +539,74 @@ class QuestionCriteriaServiceTest {
                 CONVERSATION_ID, ANALYSIS_FLOW_ID, MESSAGE_ID);
 
         assertThat(response.status()).isEqualTo("RUNNING");
+        assertThat(response.failureCode()).isNull();
+    }
+
+    @Test
+    @DisplayName("getCriteriaStatus: SUCCESS Job 은 failureCode 가 null")
+    void getCriteriaStatus_successHasNullFailureCode() {
+        stubAccess();
+        Message message = Message.builder().id(MESSAGE_ID).analysisFlow(flow).role(MessageRole.USER).content("Q?").build();
+        when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(message));
+
+        AiTaggingJob job = AiTaggingJob.builder()
+                .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
+                .stage(JobStage.ANALYSIS_CRITERIA).status(JobStatus.SUCCESS)
+                .build();
+        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(
+                MESSAGE_ID, JobStage.ANALYSIS_CRITERIA))
+                .thenReturn(Optional.of(job));
+
+        GetQuestionCriteriaStatusResponse response = service.getCriteriaStatus(
+                CONVERSATION_ID, ANALYSIS_FLOW_ID, MESSAGE_ID);
+
+        assertThat(response.status()).isEqualTo("SUCCESS");
+        assertThat(response.failureCode()).isNull();
+    }
+
+    @Test
+    @DisplayName("getCriteriaStatus: FAILED + UNSUPPORTED_QUESTION 메시지면 failureCode 가 UNSUPPORTED_QUESTION")
+    void getCriteriaStatus_failedUnsupportedQuestion() {
+        stubAccess();
+        Message message = Message.builder().id(MESSAGE_ID).analysisFlow(flow).role(MessageRole.USER).content("Q?").build();
+        when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(message));
+
+        AiTaggingJob job = AiTaggingJob.builder()
+                .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
+                .stage(JobStage.ANALYSIS_CRITERIA).status(JobStatus.QUEUED)
+                .build();
+        job.markFailed("UNSUPPORTED_QUESTION: 분석할 수 없는 질문입니다.");
+        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(
+                MESSAGE_ID, JobStage.ANALYSIS_CRITERIA))
+                .thenReturn(Optional.of(job));
+
+        GetQuestionCriteriaStatusResponse response = service.getCriteriaStatus(
+                CONVERSATION_ID, ANALYSIS_FLOW_ID, MESSAGE_ID);
+
+        assertThat(response.status()).isEqualTo("FAILED");
+        assertThat(response.failureCode()).isEqualTo("UNSUPPORTED_QUESTION");
+    }
+
+    @Test
+    @DisplayName("getCriteriaStatus: FAILED + 일반 에러 메시지면 failureCode 가 ANALYSIS_FAILED")
+    void getCriteriaStatus_failedGenericError() {
+        stubAccess();
+        Message message = Message.builder().id(MESSAGE_ID).analysisFlow(flow).role(MessageRole.USER).content("Q?").build();
+        when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(message));
+
+        AiTaggingJob job = AiTaggingJob.builder()
+                .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
+                .stage(JobStage.ANALYSIS_CRITERIA).status(JobStatus.QUEUED)
+                .build();
+        job.markFailed("FastAPI 호출 실패: connection reset");
+        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(
+                MESSAGE_ID, JobStage.ANALYSIS_CRITERIA))
+                .thenReturn(Optional.of(job));
+
+        GetQuestionCriteriaStatusResponse response = service.getCriteriaStatus(
+                CONVERSATION_ID, ANALYSIS_FLOW_ID, MESSAGE_ID);
+
+        assertThat(response.status()).isEqualTo("FAILED");
+        assertThat(response.failureCode()).isEqualTo("ANALYSIS_FAILED");
     }
 }
