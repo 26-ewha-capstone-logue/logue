@@ -46,6 +46,20 @@ def _request() -> QuestionAnalysisRequest:
                     null_ratio=0.0,
                     sample_values=[],
                 ),
+                DataSourceColumn(
+                    column_name="a",
+                    data_type="integer",
+                    semantic_role="MEASURE",
+                    null_ratio=0.0,
+                    sample_values=[],
+                ),
+                DataSourceColumn(
+                    column_name="b",
+                    data_type="integer",
+                    semantic_role="MEASURE",
+                    null_ratio=0.0,
+                    sample_values=[],
+                ),
             ],
         ),
         catalog=Catalog(
@@ -125,6 +139,27 @@ def test_unknown_compare_period_returns_unsupported() -> None:
     )
     assert isinstance(result, UnsupportedQuestion)
     assert "this_year" in result.reason
+
+
+def test_metric_formula_column_absent_returns_unsupported() -> None:
+    """metric_name 은 catalog 에 있으나 그 카탈로그 지표의 formula 컬럼이
+    data_source.columns 에 없으면 unsupported."""
+    req = _request()
+    req.catalog.predefined_metrics[0].formula_numerator = "ghost_col"
+    result = detect_unsupported(_response(_criteria()), req)
+    assert isinstance(result, UnsupportedQuestion)
+    assert "ghost_col" in result.reason
+
+
+def test_no_date_criteria_column_returns_unsupported() -> None:
+    """data_source 에 DATE_CRITERIA 컬럼이 하나도 없으면 unsupported."""
+    req = _request()
+    for col in req.data_source.columns:
+        if col.semantic_role == "DATE_CRITERIA":
+            col.semantic_role = "DIMENSION"
+    result = detect_unsupported(_response(_criteria()), req)
+    assert isinstance(result, UnsupportedQuestion)
+    assert "DATE_CRITERIA" in result.reason
 
 
 def test_fully_valid_criteria_returns_none() -> None:
