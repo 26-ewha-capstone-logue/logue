@@ -72,12 +72,26 @@ def score_case(
     actual: dict[str, Any] | None,
     error: str | None,
     latency_ms: int,
+    error_code: str | None = None,
+    accept_error_codes: list[str] | None = None,
 ) -> CaseScore:
     """case 의 expected vs actual 을 비교해 CaseScore 반환.
 
     actual=None (error 발생) 인 경우 hard-fail FAIL.
+    단, accept_error_codes 에 error_code 가 포함된 경우 PASS 로 처리 (듀얼-브랜치 수용).
     """
     if error is not None or actual is None:
+        # accept_error_codes 에 해당하는 에러 코드면 PASS 로 허용 (LLM_REFERENCE_VIOLATION 등 듀얼-브랜치)
+        if error_code is not None and accept_error_codes and error_code in accept_error_codes:
+            return CaseScore(
+                case_id=case_id,
+                suite=suite,
+                passed=True,
+                hard_fail=False,
+                field_comparisons=[],
+                error=error,
+                latency_ms=latency_ms,
+            )
         return CaseScore(
             case_id=case_id,
             suite=suite,

@@ -191,6 +191,63 @@ def test_score_case_error_marks_hard_fail() -> None:
     assert "TimeoutError" in (score.error or "")
 
 
+def test_score_case_accepts_listed_error_code_as_pass() -> None:
+    score = score_case(
+        case_id="UNS-X", suite="question_analysis",
+        expected={"analysis_criteria": None, "unsupported_question": {"detected_intent": "unsupported_period"}},
+        actual=None,
+        error="LLMReferenceViolationError: ref",
+        error_code="LLM_REFERENCE_VIOLATION",
+        accept_error_codes=["LLM_REFERENCE_VIOLATION"],
+        latency_ms=100,
+    )
+    assert score.passed is True
+    assert score.hard_fail is False
+
+
+def test_score_case_unlisted_error_code_still_hard_fails() -> None:
+    score = score_case(
+        case_id="UNS-X", suite="question_analysis",
+        expected={"analysis_criteria": None, "unsupported_question": {"detected_intent": "unsupported_period"}},
+        actual=None,
+        error="LLMCallFailedError: upstream",
+        error_code="LLM_CALL_FAILED",
+        accept_error_codes=["LLM_REFERENCE_VIOLATION"],
+        latency_ms=100,
+    )
+    assert score.passed is False
+    assert score.hard_fail is True
+
+
+def test_score_case_error_without_accept_list_hard_fails() -> None:
+    score = score_case(
+        case_id="UNS-X", suite="question_analysis",
+        expected={"analysis_criteria": None, "unsupported_question": {"detected_intent": "unsupported_period"}},
+        actual=None,
+        error="LLMReferenceViolationError: ref",
+        error_code="LLM_REFERENCE_VIOLATION",
+        accept_error_codes=None,
+        latency_ms=100,
+    )
+    assert score.passed is False
+    assert score.hard_fail is True
+
+
+def test_score_case_empty_accept_list_hard_fails() -> None:
+    # 빈 accept 리스트는 '수용 코드 없음' 이므로 None 과 동일하게 hard-fail.
+    score = score_case(
+        case_id="UNS-X", suite="question_analysis",
+        expected={"analysis_criteria": None, "unsupported_question": {"detected_intent": "unsupported_period"}},
+        actual=None,
+        error="LLMReferenceViolationError: ref",
+        error_code="LLM_REFERENCE_VIOLATION",
+        accept_error_codes=[],
+        latency_ms=100,
+    )
+    assert score.passed is False
+    assert score.hard_fail is True
+
+
 def test_score_case_list_compared_as_set() -> None:
     score = score_case(
         case_id="C1", suite="question_analysis",

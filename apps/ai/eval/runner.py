@@ -11,6 +11,8 @@ import time
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from core.errors import AppError
+
 
 SuiteName = Literal["question_analysis", "file_analysis", "result_summary"]
 
@@ -21,6 +23,7 @@ class RunResult:
     suite: SuiteName
     response: dict[str, Any] | None
     error: str | None
+    error_code: str | None
     latency_ms: int
 
 
@@ -35,11 +38,13 @@ def run_case(suite: SuiteName, case: dict[str, Any]) -> RunResult:
         payload = _resolve_payload(suite, case)
         response = _dispatch(suite, payload)
     except Exception as exc:
+        error_code = exc.error_code.value if isinstance(exc, AppError) else None
         return RunResult(
             case_id=case_id,
             suite=suite,
             response=None,
             error=f"{type(exc).__name__}: {exc}",
+            error_code=error_code,
             latency_ms=int((time.monotonic() - start) * 1000),
         )
     return RunResult(
@@ -47,6 +52,7 @@ def run_case(suite: SuiteName, case: dict[str, Any]) -> RunResult:
         suite=suite,
         response=response,
         error=None,
+        error_code=None,
         latency_ms=int((time.monotonic() - start) * 1000),
     )
 
