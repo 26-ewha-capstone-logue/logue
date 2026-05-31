@@ -16,6 +16,7 @@
       "compare_period": "1W",
       "group_by": ["channel", "device"],
       "sort_direction": "asc"
-    }
+    },
+    "warnings": {"DATE_FIELD_CONFLICT": true}
   }
 }

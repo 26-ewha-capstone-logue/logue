@@ -8,7 +8,7 @@ from schemas.api.question_analysis import (
     QuestionAnalysisRequest,
     QuestionAnalysisResponse,
 )
-from schemas.enums import FlowWarningKey
+from schemas.enums import FlowWarningKey, SemanticRoleType
 
 
 # 분석에 사용된 컬럼의 null 비율이 이 값 이상이면 CRITICAL_NULL_DETECTED 추론.
@@ -84,6 +84,41 @@ def infer_data_warnings(
     ]
 
 
+def infer_date_conflict_warning(
+    response: QuestionAnalysisResponse,
+    request: QuestionAnalysisRequest,
+) -> list[FlowWarning]:
+    """데이터 기반으로 DATE_FIELD_CONFLICT warning 을 결정론적으로 추론한다.
+
+    `semantic_role == DATE_CRITERIA` 인 컬럼이 2개 이상이면 기준 날짜가 모호하므로
+    충돌로 간주한다. 파일 플로우(`core.rules.date_conflict_warnings`)와 동일한 기준이며,
+    여기서는 graded column_roles 대신 요청 data_source 의 semantic_role 을 truth source 로 쓴다.
+    catalog.flow_warning_keys 에 DATE_FIELD_CONFLICT 가 정의돼 있지 않으면 추론하지 않는다.
+    """
+    if response.analysis_criteria is None:
+        return []
+
+    catalog_codes = {w.code for w in request.catalog.flow_warning_keys}
+    if FlowWarningKey.DATE_FIELD_CONFLICT not in catalog_codes:
+        return []
+
+    date_columns = [
+        c.column_name
+        for c in request.data_source.columns
+        if c.semantic_role == SemanticRoleType.DATE_CRITERIA
+    ]
+    if len(date_columns) <= 1:
+        return []
+
+    return [
+        FlowWarning(
+            code=FlowWarningKey.DATE_FIELD_CONFLICT,
+            related_fields=date_columns,
+            detail="DATE_CRITERIA 역할 컬럼이 둘 이상이라 기준 날짜가 결정되지 않습니다.",
+        )
+    ]
+
+
 def apply_inferred_warnings(
     response: QuestionAnalysisResponse,
     request: QuestionAnalysisRequest,
@@ -93,7 +128,10 @@ def apply_inferred_warnings(
     동일 code 가 이미 LLM 응답에 존재하면 기존 것을 유지하고 추가하지 않는다.
     """
     existing_codes = {w.code for w in response.warnings}
-    for warning in infer_data_warnings(response, request):
+    inferred = infer_data_warnings(response, request) + infer_date_conflict_warning(
+        response, request
+    )
+    for warning in inferred:
         if warning.code not in existing_codes:
             response.warnings.append(warning)
             existing_codes.add(warning.code)
