@@ -17,6 +17,7 @@ import logging
 from config.settings import is_mock_mode
 from core.errors import AppError, ErrorDetail, LLMCallFailedError
 from rules.business_validation import validate as validate_business_rules
+from rules.warning_rules import apply_inferred_warnings
 from schemas.api.question_analysis import (
     QuestionAnalysisRequest,
     QuestionAnalysisResponse,
@@ -49,6 +50,9 @@ def resolve(req: QuestionAnalysisRequest) -> QuestionAnalysisResponse:
         ) from exc
 
     validate_business_rules(response, req)
+    # 검증 통과 후 데이터 기반 warning 을 추론한다. 추론 코드는 catalog 정의를
+    # 보장하므로 post-validation 단계에서 추가해도 참조 무결성을 깨지 않는다.
+    apply_inferred_warnings(response, req)
     return response
 
 
