@@ -18,6 +18,19 @@ from schemas.api.question_analysis import (
 )
 from schemas.enums import SemanticRoleType
 
+# detected_intent 통제 어휘(controlled vocabulary). 프롬프트 PR 과 공유하며
+# 임의로 늘리지 않는다. backstop 이 결정론적으로 채우는 값은 아래 일부뿐이다.
+DETECTED_INTENT_CODES = (
+    "unknown_metric",
+    "unsupported_period",
+    "missing_formula_column",
+    "missing_date_criteria",
+    "mixed_intent",
+    "context_dependent",
+    "missing_metric_type",
+    "trend_request",
+)
+
 
 def detect_unsupported(
     response: QuestionAnalysisResponse,
@@ -37,37 +50,33 @@ def detect_unsupported(
     metrics_by_name = {m.metric_name: m for m in catalog.predefined_metrics}
     periods = set(catalog.supported_periods)
     analysis_types = set(catalog.analysis_types)
-    column_names = {col.column_name for col in request.data_source.columns}
 
     reasons: list[str] = []
+    # detected_intent 는 우선순위에 따라 첫 매칭 사유 1개만 채운다.
+    # (predefined-metric 의 formula 컬럼명은 카탈로그-전역 의미명이지 특정
+    # 데이터셋의 실제 컬럼명이 아니므로, formula 컬럼 존재 여부는 검사하지 않는다.)
+    detected_intent: str | None = None
 
     if c.metric_name not in metrics_by_name:
         reasons.append(
             f"metric_name '{c.metric_name}' 은 catalog.predefined_metrics 에 없습니다."
         )
-    else:
-        # 멤버십은 통과하지만 카탈로그 지표의 formula 컬럼이 data_source 에
-        # 존재하지 않으면 답변 불가. (criteria 가 아닌 카탈로그 지표의 formula 를
-        # 사용해 LLM 이 되돌려준 formula 를 신뢰하지 않는다.)
-        metric = metrics_by_name[c.metric_name]
-        for formula_column in (metric.formula_numerator, metric.formula_denominator):
-            if formula_column is not None and formula_column not in column_names:
-                reasons.append(
-                    f"metric '{c.metric_name}' 의 formula 컬럼 '{formula_column}' "
-                    "은 data_source.columns 에 없습니다."
-                )
+        detected_intent = detected_intent or "unknown_metric"
     if c.standard_period not in periods:
         reasons.append(
             f"standard_period '{c.standard_period}' 은 catalog.supported_periods 에 없습니다."
         )
+        detected_intent = detected_intent or "unsupported_period"
     if c.compare_period is not None and c.compare_period not in periods:
         reasons.append(
             f"compare_period '{c.compare_period}' 은 catalog.supported_periods 에 없습니다."
         )
+        detected_intent = detected_intent or "unsupported_period"
     if c.analysis_type not in analysis_types:
         reasons.append(
             f"analysis_type '{c.analysis_type}' 은 catalog.analysis_types 에 없습니다."
         )
+        # analysis_type 단독 위반은 통제 어휘에 대응되는 detected_intent 가 없다.
 
     has_date_criteria = any(
         col.semantic_role == SemanticRoleType.DATE_CRITERIA
@@ -78,8 +87,11 @@ def detect_unsupported(
             "data_source.columns 에 DATE_CRITERIA 컬럼이 없어 base_date_column 을 "
             "정할 수 없습니다."
         )
+        detected_intent = detected_intent or "missing_date_criteria"
 
     if not reasons:
         return None
 
-    return UnsupportedQuestion(reason="; ".join(reasons), detected_intent=None)
+    return UnsupportedQuestion(
+        reason="; ".join(reasons), detected_intent=detected_intent
+    )

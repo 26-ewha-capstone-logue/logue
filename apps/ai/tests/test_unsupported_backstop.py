@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from rules.unsupported_backstop import detect_unsupported
+from rules.unsupported_backstop import DETECTED_INTENT_CODES, detect_unsupported
 from schemas.api.question_analysis import (
     AnalysisCriteria,
     Catalog,
@@ -105,7 +105,7 @@ def test_unknown_metric_name_returns_unsupported() -> None:
     result = detect_unsupported(_response(_criteria(metric_name="ghost")), _request())
     assert isinstance(result, UnsupportedQuestion)
     assert "ghost" in result.reason
-    assert result.detected_intent is None
+    assert result.detected_intent == "unknown_metric"
 
 
 def test_unknown_standard_period_returns_unsupported() -> None:
@@ -114,6 +114,7 @@ def test_unknown_standard_period_returns_unsupported() -> None:
     )
     assert isinstance(result, UnsupportedQuestion)
     assert "this_year" in result.reason
+    assert result.detected_intent == "unsupported_period"
 
 
 def test_unknown_analysis_type_returns_unsupported() -> None:
@@ -141,14 +142,62 @@ def test_unknown_compare_period_returns_unsupported() -> None:
     assert "this_year" in result.reason
 
 
-def test_metric_formula_column_absent_returns_unsupported() -> None:
-    """metric_name 은 catalog 에 있으나 그 카탈로그 지표의 formula 컬럼이
-    data_source.columns 에 없으면 unsupported."""
-    req = _request()
-    req.catalog.predefined_metrics[0].formula_numerator = "ghost_col"
+def test_metric_formula_column_absent_returns_none() -> None:
+    """카탈로그 지표의 formula 컬럼은 카탈로그-전역 의미명이지 특정 데이터셋의
+    실제 컬럼명이 아니다. data_source.columns 에 그 의미명이 없더라도(컬럼명이
+    rename 된 데이터셋) 동일 지표를 계산할 수 있으므로 unsupported 가 아니다.
+
+    회귀 방지: formula = signup_complete/landing_sessions 인데 data_source 는
+    source/device_type/visits/signups + DATE_CRITERIA 만 가진 경우."""
+    req = QuestionAnalysisRequest(
+        request_id="req_X",
+        conversation_id=1,
+        question=Question(content="?"),
+        data_source=DataSource(
+            id=1,
+            columns=[
+                DataSourceColumn(
+                    column_name="signed_at", data_type="datetime",
+                    semantic_role="DATE_CRITERIA", null_ratio=0.0, sample_values=[],
+                ),
+                DataSourceColumn(
+                    column_name="source", data_type="string",
+                    semantic_role="DIMENSION", null_ratio=0.0, sample_values=[],
+                ),
+                DataSourceColumn(
+                    column_name="device_type", data_type="string",
+                    semantic_role="DIMENSION", null_ratio=0.0, sample_values=[],
+                ),
+                DataSourceColumn(
+                    column_name="visits", data_type="integer",
+                    semantic_role="MEASURE", null_ratio=0.0, sample_values=[],
+                ),
+                DataSourceColumn(
+                    column_name="signups", data_type="integer",
+                    semantic_role="MEASURE", null_ratio=0.0, sample_values=[],
+                ),
+            ],
+        ),
+        catalog=Catalog(
+            analysis_types=["COMPARISON", "RANKING"],
+            metric_types=["RATIO"],
+            predefined_metrics=[
+                PredefinedMetric(
+                    metric_name="cr", display_name="전환율", metric_type="RATIO",
+                    formula_numerator="signup_complete",
+                    formula_denominator="landing_sessions",
+                ),
+            ],
+            supported_periods=["this_week", "last_week"],
+            flow_warning_keys=[
+                FlowWarningKeyCatalog(
+                    code="QUESTION_DATA_MISMATCH", name="...", comment="...",
+                ),
+            ],
+        ),
+    )
     result = detect_unsupported(_response(_criteria()), req)
-    assert isinstance(result, UnsupportedQuestion)
-    assert "ghost_col" in result.reason
+    assert result is None
 
 
 def test_no_date_criteria_column_returns_unsupported() -> None:
@@ -160,6 +209,7 @@ def test_no_date_criteria_column_returns_unsupported() -> None:
     result = detect_unsupported(_response(_criteria()), req)
     assert isinstance(result, UnsupportedQuestion)
     assert "DATE_CRITERIA" in result.reason
+    assert result.detected_intent == "missing_date_criteria"
 
 
 def test_fully_valid_criteria_returns_none() -> None:
@@ -194,3 +244,20 @@ def test_resolve_out_of_catalog_metric_yields_unsupported(
     assert result.unsupported_question is not None
     assert "ghost_metric" in result.unsupported_question.reason
     assert result.request_id == "req_X"
+
+
+def test_detected_intent_codes_vocabulary_locked() -> None:
+    # 통제 어휘는 프롬프트(Shape B)와 공유되므로 drift 를 막는다.
+    assert set(DETECTED_INTENT_CODES) == {
+        "unknown_metric",
+        "unsupported_period",
+        "missing_formula_column",
+        "missing_date_criteria",
+        "mixed_intent",
+        "context_dependent",
+        "missing_metric_type",
+        "trend_request",
+    }
+    # 백스톱이 결정적으로 emit 하는 코드는 통제 어휘의 부분집합이어야 한다.
+    for code in ("unknown_metric", "unsupported_period", "missing_date_criteria"):
+        assert code in DETECTED_INTENT_CODES
