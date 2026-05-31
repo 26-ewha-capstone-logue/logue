@@ -16,6 +16,7 @@
       "group_by": ["channel"],
       "sort_direction": "desc",
       "limit_num": 5
-    }
+    },
+    "warnings": {"DATE_FIELD_CONFLICT": true}
   }
 }
