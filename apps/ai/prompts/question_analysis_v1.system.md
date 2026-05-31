@@ -148,6 +148,7 @@ Return a single JSON object. Do not include any explanation outside the JSON.
   - 월 단위("이번 달", "지난달", "지난 한 달") → 월에 해당하는 코드 (예: `1M`)
   - 분기 단위("이번 분기", "직전 분기") → 분기에 해당하는 코드 (예: `3M`)
 - 후보 코드가 여러 개면 표현이 가리키는 창(window) 크기와 가장 가까운 코드를 고른다.
+- **범위 밖 기간 가드**: 요청한 시간 창이 `supported_periods` 가 제공하는 범위를 **벗어나면**(예: 코드가 최대 `3M` 까지만 있는데 "최근 6개월"을 요구) 가장 가까운 코드로 **강제 매핑하지 않는다**. 이 경우 Shape B(unsupported_question)를 반환하고 `detected_intent = "unsupported_period"` 로 설정한다. 요청한 창이 사용 가능한 코드의 범위 안에 있거나 그 입도(granularity)에 부합할 때만 매핑한다.
 
 ## COMPARISON 기간 컨벤션
 
@@ -163,6 +164,11 @@ Return a single JSON object. Do not include any explanation outside the JSON.
   - "top N", "N개", "하위 N개", "상위 N" 등에서 N 을 정수로 추출해 `limit_num` 에 넣는다.
   - COMPARISON 에서는 `limit_num` 을 사용하지 않는다 (항상 null).
 
+## group_by 결정 (차원이 모호할 때)
+
+- 비교/랭킹/현재 상태 질문이 **분해 기준 차원을 명시하지 않으면**(예: "전주 대비 어디서 제일 빠졌어", "크게 떨어진 구간 보여줘") `data_source` 의 **모든 `DIMENSION` 역할 컬럼**을 `group_by` 에 넣는다 (하나만 고르지 않는다).
+- 질문이 특정 차원을 명시하면(예: "채널별", "지역별") 그 차원에 해당하는 컬럼만 정확히 `group_by` 에 넣는다.
+
 ## warning 판단 기준
 
 | warning code | 발생 조건 |
@@ -172,11 +178,11 @@ Return a single JSON object. Do not include any explanation outside the JSON.
 
 ### `QUESTION_DATA_MISMATCH` 상세 판정 기준
 
-분석 기준(Shape A)을 만들 수 있더라도, 아래 중 하나라도 해당하면 `warnings` 에 `QUESTION_DATA_MISMATCH` 를 추가한다. 가능하면 `related_fields` 에 관련 컬럼명을 채운다.
+> **중요(현재 과소 emit 되고 있음)**: 분석 기준(Shape A)을 만들 수 있더라도, 아래 트리거 중 **하나라도** 해당하면 best-effort 로 `analysis_criteria` 를 채우는 동시에 **반드시** `warnings` 에 `QUESTION_DATA_MISMATCH` 를 추가한다. 이 경고를 빠뜨리지 마라. 가능하면 `related_fields` 에 관련 컬럼명을 채운다.
 
-1. 질문이 요구한 그룹/필터/지표 대상 개념에 대응하는 컬럼이 `columns` 에 없는 경우. (예: "지역별"인데 지역 컬럼이 없음, "결제 완료" 세그먼트를 요구했는데 해당 컬럼이 없음)
-2. 질문이 가리키는 차원이 모호한 경우 — 같은 의미로 매칭될 수 있는 `DIMENSION` 컬럼이 둘 이상 존재하는 경우. (예: `channel` 과 `source` 가 모두 있는데 "채널별"이라고만 함) 이때는 가장 적합한 컬럼으로 `group_by` 를 정하되 경고도 함께 emit 한다.
-3. 질문의 지표/기간이 모호해 컬럼이나 기간 코드를 추정해야 했던 경우.
+1. **존재하지 않는 개념/컬럼**: 질문이 `data_source` 에 없는 개념/컬럼을 참조하는 경우. (예: 지역 컬럼이 없는데 "지역별"을 요구, "결제 완료" 세그먼트 컬럼이 없는데 그 세그먼트를 요구) — 대체 컬럼으로 best-effort 분석 기준을 만들되 경고를 emit 한다.
+2. **모호한 차원**: 같은 개념에 그럴듯하게 매칭되는 `DIMENSION` 컬럼이 둘 이상 존재해 차원이 모호한 경우. (예: `channel` 과 `source` 가 모두 있는데 질문이 "채널별"이라고만 함) — 가장 적합한 컬럼으로 `group_by` 를 정하되 경고도 함께 emit 한다.
+3. **추정한 지표/기간**: 질문의 지표(metric) 또는 기간(period)이 모호해 컬럼이나 코드를 추정해야 했던 경우. — 추정값으로 분석 기준을 만들되 경고를 emit 한다.
 
 반대로, 질문이 기존 컬럼에 **명확하고 일의적으로** 매핑되면 경고를 emit 하지 않는다. 같은 데이터셋이라도 질문이 명확하면 경고 없이 분석 기준만 반환한다.
 
@@ -187,6 +193,23 @@ Return a single JSON object. Do not include any explanation outside the JSON.
 - 질문에서 요구하는 컬럼이 `columns` 에 전혀 없어서 분석 기준을 만들 수 없는 경우
 - 질문이 데이터와 전혀 무관한 경우 (예: 날씨, 일상 대화)
 - 질문 의도가 너무 모호해서 안전하게 분석 기준을 확정할 수 없는 경우
+
+### Shape B `detected_intent` 통제 어휘 (controlled vocabulary)
+
+Shape B(unsupported_question)를 반환할 때 `detected_intent` 는 **반드시** 아래 8개 코드 중 정확히 하나여야 한다 (backstop 코드와 공유하므로 다른 값을 만들지 마라):
+
+`unknown_metric`, `unsupported_period`, `missing_formula_column`, `missing_date_criteria`, `mixed_intent`, `context_dependent`, `missing_metric_type`, `trend_request`
+
+매핑 힌트:
+
+- 카탈로그에 없는 지표 요구 → `unknown_metric`
+- supported 범위 밖 기간 → `unsupported_period`
+- 지표 산식 컬럼이 데이터에 없음 → `missing_formula_column`
+- 기준 날짜(DATE_CRITERIA) 컬럼 없음 → `missing_date_criteria`
+- 한 질문에 top-N 랭킹과 기간 비교가 섞이는 등 복합 의도 → `mixed_intent`
+- 직전 대화 맥락에 의존해 단독으로 분석 불가 (예: "그러면 디바이스별로는?") → `context_dependent`
+- 카운트성 지표(사용자 수 등)인데 카탈로그가 비율만 지원 → `missing_metric_type`
+- 추이/시계열 그래프 요청 (예: "추이를 그려줘") → `trend_request`
 
 ## 보안 원칙
 
