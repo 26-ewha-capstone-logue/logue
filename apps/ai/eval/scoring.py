@@ -20,6 +20,8 @@ _HARD_FAIL_FIELDS: dict[str, list[str]] = {
         "analysis_criteria.analysis_type",
         "analysis_criteria.metric_name",
         "analysis_criteria.base_date_column",
+        # compare_period 는 COMPARISON 분석에서만 hard-fail (아래 _is_hard_fail 참고).
+        "analysis_criteria.compare_period",
     ],
     "file_analysis": [
         # 01 FA 케이스는 column_roles 가 핵심. expected.column_roles 가 dict 형태라 별도 처리.
@@ -209,9 +211,25 @@ def _field_match(expected: Any, actual: Any) -> bool:
     return expected == actual
 
 
+_COMPARE_PERIOD_PATH = "analysis_criteria.compare_period"
+
+
 def _is_hard_fail(suite: str, comparisons: list[FieldComparison]) -> bool:
     hard_paths = set(_HARD_FAIL_FIELDS.get(suite, []))
     if not hard_paths:
         return False
+    # compare_period 는 COMPARISON 분석에서만 hard-fail 이다. expected 의 analysis_type 이
+    # COMPARISON 이 아니면 hard 셋에서 제외한다 (RANKING expected 에 compare_period 비교가
+    # 생기더라도 오탐으로 케이스를 죽이지 않도록).
+    if _COMPARE_PERIOD_PATH in hard_paths and not _expected_is_comparison(comparisons):
+        hard_paths.discard(_COMPARE_PERIOD_PATH)
     failed_hard_paths = {c.path for c in comparisons if not c.match} & hard_paths
     return bool(failed_hard_paths)
+
+
+def _expected_is_comparison(comparisons: list[FieldComparison]) -> bool:
+    """expected 의 analysis_type 이 COMPARISON 인지 (없으면 False)."""
+    for c in comparisons:
+        if c.path == "analysis_criteria.analysis_type":
+            return c.expected == "COMPARISON"
+    return False

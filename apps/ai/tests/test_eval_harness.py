@@ -136,6 +136,51 @@ def test_score_case_non_hard_fail_field_mismatch_fails_but_not_hard() -> None:
     assert score.hard_fail is False  # sort_direction 은 hard-fail 아님
 
 
+def test_score_case_hard_fail_on_compare_period_mismatch_for_comparison() -> None:
+    score = score_case(
+        case_id="CMP-X", suite="question_analysis",
+        expected={"analysis_criteria": {"analysis_type": "COMPARISON", "compare_period": "1W"}},
+        actual={"analysis_criteria": {"analysis_type": "COMPARISON", "compare_period": "1M"}},
+        error=None, latency_ms=100,
+    )
+    assert score.passed is False
+    assert score.hard_fail is True  # COMPARISON 의 compare_period 는 hard-fail
+
+
+def test_score_case_compare_period_mismatch_not_hard_for_ranking() -> None:
+    score = score_case(
+        case_id="RNK-X", suite="question_analysis",
+        expected={"analysis_criteria": {"analysis_type": "RANKING", "compare_period": None}},
+        actual={"analysis_criteria": {"analysis_type": "RANKING", "compare_period": "1W"}},
+        error=None, latency_ms=100,
+    )
+    assert score.passed is False
+    assert score.hard_fail is False  # RANKING 에서는 compare_period 가 hard-fail 아님
+
+
+def test_score_case_compare_period_match_for_comparison_passes() -> None:
+    score = score_case(
+        case_id="CMP-Y", suite="question_analysis",
+        expected={"analysis_criteria": {"analysis_type": "COMPARISON", "compare_period": "1W"}},
+        actual={"analysis_criteria": {"analysis_type": "COMPARISON", "compare_period": "1W"}},
+        error=None, latency_ms=100,
+    )
+    assert score.passed is True
+    assert score.hard_fail is False
+
+
+def test_score_case_compare_period_mismatch_without_analysis_type_not_hard() -> None:
+    # analysis_type 부재 시 COMPARISON 확신 불가 -> compare_period 를 hard-fail 로 안 본다(방어적 기본값).
+    score = score_case(
+        case_id="EDGE-1", suite="question_analysis",
+        expected={"analysis_criteria": {"compare_period": "1W", "metric_name": "cr"}},
+        actual={"analysis_criteria": {"compare_period": "1M", "metric_name": "cr"}},
+        error=None, latency_ms=100,
+    )
+    assert score.passed is False
+    assert score.hard_fail is False
+
+
 def test_score_case_error_marks_hard_fail() -> None:
     score = score_case(
         case_id="C1", suite="question_analysis",
