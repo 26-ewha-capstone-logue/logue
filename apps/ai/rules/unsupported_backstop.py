@@ -16,6 +16,7 @@ from schemas.api.question_analysis import (
     QuestionAnalysisResponse,
     UnsupportedQuestion,
 )
+from schemas.enums import SemanticRoleType
 
 
 def detect_unsupported(
@@ -33,16 +34,28 @@ def detect_unsupported(
     c = response.analysis_criteria
     catalog = request.catalog
 
-    metric_names = {m.metric_name for m in catalog.predefined_metrics}
+    metrics_by_name = {m.metric_name: m for m in catalog.predefined_metrics}
     periods = set(catalog.supported_periods)
     analysis_types = set(catalog.analysis_types)
+    column_names = {col.column_name for col in request.data_source.columns}
 
     reasons: list[str] = []
 
-    if c.metric_name not in metric_names:
+    if c.metric_name not in metrics_by_name:
         reasons.append(
             f"metric_name '{c.metric_name}' 은 catalog.predefined_metrics 에 없습니다."
         )
+    else:
+        # 멤버십은 통과하지만 카탈로그 지표의 formula 컬럼이 data_source 에
+        # 존재하지 않으면 답변 불가. (criteria 가 아닌 카탈로그 지표의 formula 를
+        # 사용해 LLM 이 되돌려준 formula 를 신뢰하지 않는다.)
+        metric = metrics_by_name[c.metric_name]
+        for formula_column in (metric.formula_numerator, metric.formula_denominator):
+            if formula_column is not None and formula_column not in column_names:
+                reasons.append(
+                    f"metric '{c.metric_name}' 의 formula 컬럼 '{formula_column}' "
+                    "은 data_source.columns 에 없습니다."
+                )
     if c.standard_period not in periods:
         reasons.append(
             f"standard_period '{c.standard_period}' 은 catalog.supported_periods 에 없습니다."
@@ -54,6 +67,16 @@ def detect_unsupported(
     if c.analysis_type not in analysis_types:
         reasons.append(
             f"analysis_type '{c.analysis_type}' 은 catalog.analysis_types 에 없습니다."
+        )
+
+    has_date_criteria = any(
+        col.semantic_role == SemanticRoleType.DATE_CRITERIA
+        for col in request.data_source.columns
+    )
+    if not has_date_criteria:
+        reasons.append(
+            "data_source.columns 에 DATE_CRITERIA 컬럼이 없어 base_date_column 을 "
+            "정할 수 없습니다."
         )
 
     if not reasons:

@@ -40,6 +40,16 @@ def _valid_request_payload() -> dict:
                     "semantic_role": "DIMENSION",
                     "null_ratio": 0.0, "sample_values": [],
                 },
+                {
+                    "column_name": "a", "data_type": "integer",
+                    "semantic_role": "MEASURE",
+                    "null_ratio": 0.0, "sample_values": [],
+                },
+                {
+                    "column_name": "b", "data_type": "integer",
+                    "semantic_role": "MEASURE",
+                    "null_ratio": 0.0, "sample_values": [],
+                },
             ],
         },
         "catalog": {
