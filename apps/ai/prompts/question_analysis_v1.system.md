@@ -141,12 +141,44 @@ Return a single JSON object. Do not include any explanation outside the JSON.
 | "가장 높은", "상위 N개", "순위" | RANKING |
 | 두 의도가 섞인 경우 | 명확한 top-N 제한이 없으면 COMPARISON 우선 |
 
+## 기간(period) 매핑
+
+- 질문의 한국어 상대 시간 표현을 `catalog.supported_periods` 중 의미가 가장 가까운 코드로 매핑한다. 코드 문자열을 하드코딩하지 말고 항상 주어진 `supported_periods` 안에서 고른다.
+  - 주 단위("이번 주", "지난주", "전주", "최근 한 주") → 주에 해당하는 코드 (예: `1W`)
+  - 월 단위("이번 달", "지난달", "지난 한 달") → 월에 해당하는 코드 (예: `1M`)
+  - 분기 단위("이번 분기", "직전 분기") → 분기에 해당하는 코드 (예: `3M`)
+- 후보 코드가 여러 개면 표현이 가리키는 창(window) 크기와 가장 가까운 코드를 고른다.
+
+## COMPARISON 기간 컨벤션
+
+- COMPARISON 분석에서 `standard_period` 와 `compare_period` 는 **같은 창 크기 코드**를 사용한다. "전주 대비", "전월 대비" 는 같은 길이의 직전 구간을 비교하는 것이므로 두 값이 같아야 한다.
+  - 예: `1W` vs `1W`, `1M` vs `1M` (서로 다른 코드를 쓰지 않는다)
+
+## RANKING 정렬 방향 + limit
+
+- `sort_direction` 결정:
+  - "낮은 / 하위 / bottom / 적은" → `asc`
+  - "높은 / 상위 / top / 많은" → `desc`
+- `limit_num` 추출 (RANKING 전용):
+  - "top N", "N개", "하위 N개", "상위 N" 등에서 N 을 정수로 추출해 `limit_num` 에 넣는다.
+  - COMPARISON 에서는 `limit_num` 을 사용하지 않는다 (항상 null).
+
 ## warning 판단 기준
 
 | warning code | 발생 조건 |
 |---|---|
-| `QUESTION_DATA_MISMATCH` | 질문에서 요구한 metric, column, group-by, filter가 `columns` 에 없는 경우 |
+| `QUESTION_DATA_MISMATCH` | 질문에서 요구한 metric, column, group-by, filter가 `columns` 에 없거나 모호한 경우 (아래 상세 기준 참고) |
 | `CRITICAL_NULL_DETECTED` | 분석에 필요한 date/measure 컬럼의 `null_ratio` 가 0.3 초과인 경우 |
+
+### `QUESTION_DATA_MISMATCH` 상세 판정 기준
+
+분석 기준(Shape A)을 만들 수 있더라도, 아래 중 하나라도 해당하면 `warnings` 에 `QUESTION_DATA_MISMATCH` 를 추가한다. 가능하면 `related_fields` 에 관련 컬럼명을 채운다.
+
+1. 질문이 요구한 그룹/필터/지표 대상 개념에 대응하는 컬럼이 `columns` 에 없는 경우. (예: "지역별"인데 지역 컬럼이 없음, "결제 완료" 세그먼트를 요구했는데 해당 컬럼이 없음)
+2. 질문이 가리키는 차원이 모호한 경우 — 같은 의미로 매칭될 수 있는 `DIMENSION` 컬럼이 둘 이상 존재하는 경우. (예: `channel` 과 `source` 가 모두 있는데 "채널별"이라고만 함) 이때는 가장 적합한 컬럼으로 `group_by` 를 정하되 경고도 함께 emit 한다.
+3. 질문의 지표/기간이 모호해 컬럼이나 기간 코드를 추정해야 했던 경우.
+
+반대로, 질문이 기존 컬럼에 **명확하고 일의적으로** 매핑되면 경고를 emit 하지 않는다. 같은 데이터셋이라도 질문이 명확하면 경고 없이 분석 기준만 반환한다.
 
 ## Shape B 사용 조건
 
@@ -181,7 +213,7 @@ Return a single JSON object. Do not include any explanation outside the JSON.
     "analysis_types": ["COMPARISON", "RANKING"],
     "metric_types": ["RATIO"],
     "predefined_metrics": [{"metric_name": "conversion_rate", "display_name": "가입 전환율", "metric_type": "RATIO", "formula_numerator": "signup_complete", "formula_denominator": "landing_session"}],
-    "supported_periods": ["this_week", "last_week"],
+    "supported_periods": ["1W", "1M", "3M"],
     "flow_warning_keys": [{"code": "QUESTION_DATA_MISMATCH"}, {"code": "CRITICAL_NULL_DETECTED"}]
   }
 }
@@ -197,8 +229,8 @@ Return a single JSON object. Do not include any explanation outside the JSON.
     "formula_numerator": "signup_complete",
     "formula_denominator": "landing_session",
     "base_date_column": "signup_date",
-    "standard_period": "this_week",
-    "compare_period": "last_week",
+    "standard_period": "1W",
+    "compare_period": "1W",
     "sort_by": "delta",
     "sort_direction": "asc",
     "group_by": ["channel"],
