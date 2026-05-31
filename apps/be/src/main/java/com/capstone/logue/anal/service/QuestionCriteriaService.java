@@ -21,6 +21,7 @@ import com.capstone.logue.global.entity.AnalysisFlow;
 import com.capstone.logue.global.entity.Conversation;
 import com.capstone.logue.global.entity.FlowDataWarning;
 import com.capstone.logue.global.entity.Message;
+import com.capstone.logue.global.entity.enums.FlowWarningKey;
 import com.capstone.logue.global.entity.enums.JobStage;
 import com.capstone.logue.global.entity.enums.JobStatus;
 import com.capstone.logue.global.entity.enums.MessageRole;
@@ -62,6 +63,14 @@ public class QuestionCriteriaService {
     private final AnalysisResultAsyncService analysisResultAsyncService;
     private final FastApiClient fastApiClient;
     private final ObjectMapper objectMapper;
+
+    /**
+     * 확정(분석 결과 단계 진입)을 차단하는 경고 코드 집합입니다.
+     * 해당 경고가 해소되지 않은 채 확정 요청이 들어오면 확정을 막습니다.
+     * (현재는 질문·데이터 불일치만 차단성으로 취급하며, 핵심 null 감지는 확인용 soft 경고로 유지합니다.)
+     */
+    private static final Set<FlowWarningKey> BLOCKING_WARNINGS =
+            Set.of(FlowWarningKey.QUESTION_DATA_MISMATCH);
 
     private static final String MESSAGE_CRITERIA_READY =
             "질문 분석이 완료되었어요. 아래 분석 기준으로 검증을 진행해도 될까요?";
@@ -204,6 +213,20 @@ public class QuestionCriteriaService {
         }
 
         boolean wasConfirmed = Boolean.TRUE.equals(criteria.getIsConfirmed());
+
+        // 확정 전이(미확정 -> 확정) 시에만 차단성 경고를 검사한다.
+        // 해소되지 않은 차단성 경고가 남아 있으면 확정 및 결과 단계 진입을 막는다.
+        // (단순 수정은 통과시키며, 경고 해소 UX 는 후속 작업으로 처리한다.)
+        if (!wasConfirmed && request.confirmed()) {
+            List<FlowDataWarning> warnings = flowDataWarningRepository
+                    .findByAnalysisCriteriaId(criteria.getId());
+            boolean blocked = warnings.stream()
+                    .anyMatch(w -> BLOCKING_WARNINGS.contains(w.getCode()));
+            if (blocked) {
+                throw new LogueException(ErrorCode.CRITERIA_BLOCKED_BY_WARNING);
+            }
+        }
+
         applyUpdate(criteria, request);
         analysisCriteriaRepository.save(criteria);
 
