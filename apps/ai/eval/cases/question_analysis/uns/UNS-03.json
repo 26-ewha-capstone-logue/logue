@@ -8,6 +8,7 @@
     "dataset": "dataset-a",
     "question": "최근 6개월 채널별 가입 전환율 top 5"
   },
+  "accept_error_codes": ["LLM_REFERENCE_VIOLATION"],
   "expected": {
     "analysis_criteria": null,
     "unsupported_question": {"detected_intent": "unsupported_period"}

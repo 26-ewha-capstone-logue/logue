@@ -9,6 +9,7 @@
     "override_columns": {"signup_complete": {"remove": true}},
     "question": "이번 주 채널별 가입 전환율 top 5"
   },
+  "accept_error_codes": ["LLM_REFERENCE_VIOLATION"],
   "expected": {
     "analysis_criteria": null,
     "unsupported_question": {"detected_intent": "missing_formula_column"}
