@@ -2,7 +2,7 @@
 
 `analyze_file()` 가 외부 진입점. 내부 흐름:
 1. LLM 호출 → `FileAnalysisResponse` 도출 (`_call_llm` 위임)
-2. LLM 응답의 `primary_candidates` 위에서 `core.rules.source_warnings()` 후처리
+2. 채점된 `column_roles` 위에서 `core.rules.date_conflict_warnings()` 후처리
    — `DATE_FIELD_CONFLICT` 같은 결정론적 규칙은 코드가 truth source
 3. `validate_file_analysis_response()` 로 참조 무결성 검증
 4. 통과 시 response 반환
@@ -24,7 +24,7 @@ from core.errors import (
     LLMCallFailedError,
     LLMOutputInvalidError,
 )
-from core.rules import source_warnings
+from core.rules import date_conflict_warnings
 from core.validators import validate_file_analysis_response
 from schemas.common import SemanticRoleType
 from schemas.api.file_analysis import (
@@ -62,7 +62,7 @@ async def analyze_file(request: FileAnalysisRequest) -> FileAnalysisResponse:
 
     response = response.model_copy(update={
         "request_id": request.request_id,
-        "warnings": source_warnings(response.data_status_summary.primary_candidates),
+        "warnings": date_conflict_warnings(response.column_roles),
     })
 
     try:
@@ -113,7 +113,7 @@ def _infer_semantic_role(column_name: str, data_type: str) -> SemanticRoleType:
 def _build_mock_response(request: FileAnalysisRequest) -> FileAnalysisResponse:
     """LLM 없이 결정론적 응답을 반환한다 (rule-based 추론 재활용).
 
-    `analyze_file()` 의 후처리 단계에서 `source_warnings()` 가 warnings 를 채우므로
+    `analyze_file()` 의 후처리 단계에서 `date_conflict_warnings()` 가 warnings 를 채우므로
     여기서는 빈 배열로 둔다.
     """
     column_roles = [
