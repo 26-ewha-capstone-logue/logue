@@ -60,6 +60,8 @@ def main(argv: list[str] | None = None) -> int:
             actual=result.response,
             error=result.error,
             latency_ms=result.latency_ms,
+            error_code=result.error_code,
+            accept_error_codes=case.get("accept_error_codes"),
         )
         scores.append(score)
         status = "✅" if score.passed else ("🔥" if score.hard_fail else "❌")

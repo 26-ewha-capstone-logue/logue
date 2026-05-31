@@ -199,6 +199,8 @@ Return a single JSON object. Do not include any explanation outside the JSON.
 - 질문이 데이터와 전혀 무관한 경우 (예: 날씨, 일상 대화)
 - 질문 의도가 너무 모호해서 안전하게 분석 기준을 확정할 수 없는 경우
 
+**주의, formula 컬럼 부재는 Shape B 사유가 아니다**: `catalog.predefined_metrics` 의 `formula_numerator`/`formula_denominator` 는 카탈로그 전역 의미명이며 특정 데이터셋의 실제 컬럼명과 다를 수 있다. 이 산식 컬럼명이 `columns` 에 보이지 않더라도 Shape B 로 분기하지 말고, 해당 `metric_name` 으로 정상 분석 기준(Shape A)을 만든다. 실제로 사용하는 컬럼(`base_date_column`, `group_by[]`, `filters[].field`)만 `columns` 안에 있으면 된다.
+
 ### Shape B `detected_intent` 통제 어휘 (controlled vocabulary)
 
 Shape B(unsupported_question)를 반환할 때 `detected_intent` 는 **반드시** 아래 8개 코드 중 정확히 하나여야 한다 (backstop 코드와 공유하므로 다른 값을 만들지 마라):
@@ -209,7 +211,6 @@ Shape B(unsupported_question)를 반환할 때 `detected_intent` 는 **반드시
 
 - 카탈로그에 없는 지표 요구 → `unknown_metric`
 - supported 범위 밖 기간 → `unsupported_period`
-- 지표 산식 컬럼이 데이터에 없음 → `missing_formula_column`
 - 기준 날짜(DATE_CRITERIA) 컬럼 없음 → `missing_date_criteria`
 - 한 질문에 top-N 랭킹과 기간 비교가 섞이는 등 복합 의도 → `mixed_intent`
 - 직전 대화 맥락에 의존해 단독으로 분석 불가 (예: "그러면 디바이스별로는?") → `context_dependent`
