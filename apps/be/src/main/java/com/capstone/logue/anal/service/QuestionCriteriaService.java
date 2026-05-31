@@ -301,7 +301,25 @@ public class QuestionCriteriaService {
                 .findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(messageId, JobStage.ANALYSIS_CRITERIA)
                 .orElseThrow(() -> new LogueException(ErrorCode.CRITERIA_NOT_FOUND));
 
-        return new GetQuestionCriteriaStatusResponse(job.getStatus().name());
+        // FAILED 인 경우에만 실패 원인 코드를 계산해 함께 내려준다. (그 외에는 null)
+        return new GetQuestionCriteriaStatusResponse(job.getStatus().name(), resolveFailureCode(job));
+    }
+
+    /**
+     * FAILED 작업의 실패 원인을 머신 리더블 코드로 변환합니다.
+     *
+     * <p>errorMessage 가 {@code UNSUPPORTED_QUESTION} 으로 시작하면 의도된 실패로 보고
+     * {@code UNSUPPORTED_QUESTION}, 그 외에는 {@code ANALYSIS_FAILED} 를 반환합니다.
+     * FAILED 가 아니면 {@code null} 을 반환합니다.</p>
+     */
+    private String resolveFailureCode(AiTaggingJob job) {
+        if (job.getStatus() != JobStatus.FAILED) {
+            return null;
+        }
+        String msg = job.getErrorMessage();
+        return (msg != null && msg.startsWith("UNSUPPORTED_QUESTION"))
+                ? "UNSUPPORTED_QUESTION"
+                : "ANALYSIS_FAILED";
     }
 
     /**

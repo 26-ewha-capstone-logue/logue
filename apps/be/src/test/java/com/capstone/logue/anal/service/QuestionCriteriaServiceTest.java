@@ -442,7 +442,7 @@ class QuestionCriteriaServiceTest {
     }
 
     @Test
-    @DisplayName("getCriteriaStatus: Job 상태 문자열 반환")
+    @DisplayName("getCriteriaStatus: Job 상태 문자열 반환 (RUNNING 이면 failureCode 는 null)")
     void getCriteriaStatus_returnsStatus() {
         stubAccess();
         Message message = Message.builder().id(MESSAGE_ID).analysisFlow(flow).role(MessageRole.USER).content("Q?").build();
@@ -460,5 +460,74 @@ class QuestionCriteriaServiceTest {
                 CONVERSATION_ID, ANALYSIS_FLOW_ID, MESSAGE_ID);
 
         assertThat(response.status()).isEqualTo("RUNNING");
+        assertThat(response.failureCode()).isNull();
+    }
+
+    @Test
+    @DisplayName("getCriteriaStatus: SUCCESS Job 은 failureCode 가 null")
+    void getCriteriaStatus_successHasNullFailureCode() {
+        stubAccess();
+        Message message = Message.builder().id(MESSAGE_ID).analysisFlow(flow).role(MessageRole.USER).content("Q?").build();
+        when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(message));
+
+        AiTaggingJob job = AiTaggingJob.builder()
+                .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
+                .stage(JobStage.ANALYSIS_CRITERIA).status(JobStatus.SUCCESS)
+                .build();
+        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(
+                MESSAGE_ID, JobStage.ANALYSIS_CRITERIA))
+                .thenReturn(Optional.of(job));
+
+        GetQuestionCriteriaStatusResponse response = service.getCriteriaStatus(
+                CONVERSATION_ID, ANALYSIS_FLOW_ID, MESSAGE_ID);
+
+        assertThat(response.status()).isEqualTo("SUCCESS");
+        assertThat(response.failureCode()).isNull();
+    }
+
+    @Test
+    @DisplayName("getCriteriaStatus: FAILED + UNSUPPORTED_QUESTION 메시지면 failureCode 가 UNSUPPORTED_QUESTION")
+    void getCriteriaStatus_failedUnsupportedQuestion() {
+        stubAccess();
+        Message message = Message.builder().id(MESSAGE_ID).analysisFlow(flow).role(MessageRole.USER).content("Q?").build();
+        when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(message));
+
+        AiTaggingJob job = AiTaggingJob.builder()
+                .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
+                .stage(JobStage.ANALYSIS_CRITERIA).status(JobStatus.QUEUED)
+                .build();
+        job.markFailed("UNSUPPORTED_QUESTION: 분석할 수 없는 질문입니다.");
+        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(
+                MESSAGE_ID, JobStage.ANALYSIS_CRITERIA))
+                .thenReturn(Optional.of(job));
+
+        GetQuestionCriteriaStatusResponse response = service.getCriteriaStatus(
+                CONVERSATION_ID, ANALYSIS_FLOW_ID, MESSAGE_ID);
+
+        assertThat(response.status()).isEqualTo("FAILED");
+        assertThat(response.failureCode()).isEqualTo("UNSUPPORTED_QUESTION");
+    }
+
+    @Test
+    @DisplayName("getCriteriaStatus: FAILED + 일반 에러 메시지면 failureCode 가 ANALYSIS_FAILED")
+    void getCriteriaStatus_failedGenericError() {
+        stubAccess();
+        Message message = Message.builder().id(MESSAGE_ID).analysisFlow(flow).role(MessageRole.USER).content("Q?").build();
+        when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(message));
+
+        AiTaggingJob job = AiTaggingJob.builder()
+                .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
+                .stage(JobStage.ANALYSIS_CRITERIA).status(JobStatus.QUEUED)
+                .build();
+        job.markFailed("FastAPI 호출 실패: connection reset");
+        when(aiTaggingJobRepository.findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(
+                MESSAGE_ID, JobStage.ANALYSIS_CRITERIA))
+                .thenReturn(Optional.of(job));
+
+        GetQuestionCriteriaStatusResponse response = service.getCriteriaStatus(
+                CONVERSATION_ID, ANALYSIS_FLOW_ID, MESSAGE_ID);
+
+        assertThat(response.status()).isEqualTo("FAILED");
+        assertThat(response.failureCode()).isEqualTo("ANALYSIS_FAILED");
     }
 }
