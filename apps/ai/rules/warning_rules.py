@@ -12,7 +12,8 @@ from schemas.enums import FlowWarningKey
 
 
 # 분석에 사용된 컬럼의 null 비율이 이 값 이상이면 CRITICAL_NULL_DETECTED 추론.
-CRITICAL_NULL_RATIO_THRESHOLD = 0.5
+# 0.3 은 프롬프트/평가 기준과 동일한 임계값.
+CRITICAL_NULL_RATIO_THRESHOLD = 0.3
 
 
 def validate_warning_codes(
