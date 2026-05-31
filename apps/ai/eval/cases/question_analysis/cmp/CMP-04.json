@@ -10,6 +10,7 @@
   "expected": {
     "analysis_criteria": {
       "analysis_type": "COMPARISON",
+      "sort_by": "delta",
       "metric_name": "paid_conversion_rate",
       "base_date_column": "event_date",
       "standard_period": "3M",

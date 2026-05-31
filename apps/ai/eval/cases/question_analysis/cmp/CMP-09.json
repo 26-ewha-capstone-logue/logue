@@ -11,6 +11,7 @@
   "expected": {
     "analysis_criteria": {
       "analysis_type": "COMPARISON",
+      "sort_by": "delta",
       "metric_name": "signup_conversion_rate",
       "standard_period": "1W",
       "compare_period": "1W",
