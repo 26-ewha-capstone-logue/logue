@@ -114,10 +114,14 @@ def test_cross_field_violation_returns_422() -> None:
 # ---------- LLM 출력 검증 502 ----------
 
 
-def test_unknown_metric_name_returns_502_reference(
+def test_unknown_metric_name_returns_unsupported_question(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """LLM 이 카탈로그에 없는 metric_name 을 반환 → LLM_REFERENCE_VIOLATION."""
+    """LLM 이 카탈로그에 없는 metric_name 을 반환 → unsupported_question 으로 전환 (200).
+
+    카탈로그 멤버십 위반은 결정론적 backstop 이 답변 불가로 전환하므로
+    더 이상 502 LLM_REFERENCE_VIOLATION 으로 흘러가지 않는다.
+    """
 
     def fake_llm(req: QuestionAnalysisRequest) -> QuestionAnalysisResponse:
         return QuestionAnalysisResponse.model_validate({
@@ -138,12 +142,11 @@ def test_unknown_metric_name_returns_502_reference(
 
     response = client.post(ENDPOINT, json=_valid_request_payload())
 
-    assert response.status_code == 502
+    assert response.status_code == 200
     body = response.json()
-    assert body["error_code"] == "LLM_REFERENCE_VIOLATION"
-    assert any(
-        "metric_name" in (d.get("field") or "") for d in body["details"]
-    )
+    assert body["analysis_criteria"] is None
+    assert body["unsupported_question"] is not None
+    assert "ghost_metric" in body["unsupported_question"]["reason"]
 
 
 def test_mutual_exclusion_violation_returns_502_output_invalid(
