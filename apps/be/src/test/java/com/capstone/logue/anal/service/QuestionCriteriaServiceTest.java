@@ -324,6 +324,8 @@ class QuestionCriteriaServiceTest {
         when(analysisCriteriaRepository.findTopByAnalysisFlowIdOrderByCreatedAtDescIdDesc(ANALYSIS_FLOW_ID))
                 .thenReturn(Optional.of(criteria));
         when(analysisCriteriaRepository.save(any(AnalysisCriteria.class))).thenReturn(criteria);
+        when(flowDataWarningRepository.findByAnalysisCriteriaId(CRITERIA_ID))
+                .thenReturn(List.of());
 
         AiTaggingJob resultJob = AiTaggingJob.builder()
                 .id(JOB_ID).conversation(conversation).analysisFlow(flow).message(message)
@@ -344,6 +346,83 @@ class QuestionCriteriaServiceTest {
         assertThat(criteria.getConfirmedAt()).isNotNull();
         verify(analysisCriteriaRepository).save(criteria);
         verify(analysisResultAsyncService).resolveResultAsync(JOB_ID);
+    }
+
+    @Test
+    @DisplayName("updateCriteria: confirmed=true 인데 차단성 경고(QUESTION_DATA_MISMATCH)가 있으면 CRITERIA_BLOCKED_BY_WARNING 이고 결과 비동기 미호출")
+    void updateCriteria_confirmBlockedByWarning() {
+        stubAccess();
+        Message message = Message.builder().id(MESSAGE_ID).analysisFlow(flow).role(MessageRole.USER).content("Q?").build();
+        when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(message));
+
+        AnalysisCriteria criteria = AnalysisCriteria.builder()
+                .id(CRITERIA_ID).analysisFlow(flow)
+                .analysisType(AnalysisType.COMPARISON).metricName("conversion_rate")
+                .metricType(MetricType.RATIO)
+                .baseDateColumn("signed_at").standardPeriod("this_week").comparePeriod("last_week")
+                .sortBy("delta").sortDirection("asc")
+                .groupBy(objectMapper.valueToTree(List.of("channel")))
+                .isConfirmed(false)
+                .build();
+        when(analysisCriteriaRepository.findTopByAnalysisFlowIdOrderByCreatedAtDescIdDesc(ANALYSIS_FLOW_ID))
+                .thenReturn(Optional.of(criteria));
+
+        FlowDataWarning warning = FlowDataWarning.builder()
+                .id(1L).analysisCriteria(criteria)
+                .code(FlowWarningKey.QUESTION_DATA_MISMATCH)
+                .name(FlowWarningKey.QUESTION_DATA_MISMATCH.getName())
+                .comment(FlowWarningKey.QUESTION_DATA_MISMATCH.getComment())
+                .build();
+        when(flowDataWarningRepository.findByAnalysisCriteriaId(CRITERIA_ID))
+                .thenReturn(List.of(warning));
+
+        UpdateQuestionCriteriaRequest request = new UpdateQuestionCriteriaRequest(
+                "signed_at", "this_week", "last_week",
+                List.of("channel"),
+                "delta", "asc", null, List.of(), true);
+
+        assertThatThrownBy(() -> service.updateCriteria(
+                CONVERSATION_ID, ANALYSIS_FLOW_ID, MESSAGE_ID, request))
+                .isInstanceOf(LogueException.class)
+                .extracting("errorCode").isEqualTo(ErrorCode.CRITERIA_BLOCKED_BY_WARNING);
+
+        assertThat(criteria.getIsConfirmed()).isFalse();
+        verify(analysisCriteriaRepository, never()).save(any());
+        verify(analysisResultAsyncService, never()).resolveResultAsync(any());
+    }
+
+    @Test
+    @DisplayName("updateCriteria: confirmed=false(단순 수정) 면 차단성 경고가 있어도 통과")
+    void updateCriteria_pureEditWithWarningAllowed() {
+        stubAccess();
+        Message message = Message.builder().id(MESSAGE_ID).analysisFlow(flow).role(MessageRole.USER).content("Q?").build();
+        when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(message));
+
+        AnalysisCriteria criteria = AnalysisCriteria.builder()
+                .id(CRITERIA_ID).analysisFlow(flow)
+                .analysisType(AnalysisType.COMPARISON).metricName("conversion_rate")
+                .metricType(MetricType.RATIO)
+                .baseDateColumn("signed_at").standardPeriod("this_week").comparePeriod("last_week")
+                .sortBy("delta").sortDirection("asc")
+                .groupBy(objectMapper.valueToTree(List.of("channel")))
+                .isConfirmed(false)
+                .build();
+        when(analysisCriteriaRepository.findTopByAnalysisFlowIdOrderByCreatedAtDescIdDesc(ANALYSIS_FLOW_ID))
+                .thenReturn(Optional.of(criteria));
+        when(analysisCriteriaRepository.save(any(AnalysisCriteria.class))).thenReturn(criteria);
+
+        UpdateQuestionCriteriaRequest request = new UpdateQuestionCriteriaRequest(
+                "signed_at", "this_week", "last_week",
+                List.of("channel", "device"),
+                "delta", "asc", null, List.of(), false);
+
+        UpdateQuestionCriteriaResponse response = service.updateCriteria(
+                CONVERSATION_ID, ANALYSIS_FLOW_ID, MESSAGE_ID, request);
+
+        assertThat(response.analysisCriteriaId()).isEqualTo(CRITERIA_ID);
+        assertThat(criteria.getIsConfirmed()).isFalse();
+        verify(analysisCriteriaRepository).save(criteria);
+        verify(analysisResultAsyncService, never()).resolveResultAsync(any());
     }
 
     @Test
