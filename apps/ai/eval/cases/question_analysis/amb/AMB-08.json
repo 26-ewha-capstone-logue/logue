@@ -11,6 +11,7 @@
   "expected": {
     "analysis_criteria": {
       "analysis_type": "RANKING",
+      "sort_by": "metric_value",
       "base_date_column": "event_date",
       "standard_period": "1W",
       "group_by": ["channel"],

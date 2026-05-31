@@ -14,6 +14,7 @@
   "expected": {
     "analysis_criteria": {
       "analysis_type": "RANKING",
+      "sort_by": "metric_value",
       "metric_name": "signup_conversion_rate",
       "base_date_column": "event_date",
       "standard_period": "1W",

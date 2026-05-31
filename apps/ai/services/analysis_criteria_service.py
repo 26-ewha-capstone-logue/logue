@@ -118,7 +118,7 @@ def _build_mock_response(req: QuestionAnalysisRequest) -> QuestionAnalysisRespon
             "base_date_column": date_col.column_name,
             "standard_period": standard,
             "compare_period": None,
-            "sort_by": "value",
+            "sort_by": "metric_value",
             "sort_direction": "desc",
             "group_by": [dim_col.column_name],
             "limit_num": 5,

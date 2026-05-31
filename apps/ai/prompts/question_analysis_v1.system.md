@@ -169,6 +169,11 @@ Return a single JSON object. Do not include any explanation outside the JSON.
 - 비교/랭킹/현재 상태 질문이 **분해 기준 차원을 명시하지 않으면**(예: "전주 대비 어디서 제일 빠졌어", "크게 떨어진 구간 보여줘") `data_source` 의 **모든 `DIMENSION` 역할 컬럼**을 `group_by` 에 넣는다 (하나만 고르지 않는다).
 - 질문이 특정 차원을 명시하면(예: "채널별", "지역별") 그 차원에 해당하는 컬럼만 정확히 `group_by` 에 넣는다.
 
+## sort_by 결정
+
+- `analysis_type` 이 `RANKING` 이면 `sort_by` 는 `"metric_value"`.
+- `analysis_type` 이 `COMPARISON` 이면 `sort_by` 는 `"delta"`.
+
 ## warning 판단 기준
 
 | warning code | 발생 조건 |
@@ -304,7 +309,7 @@ Shape B(unsupported_question)를 반환할 때 `detected_intent` 는 **반드시
     "base_date_column": "order_date",
     "standard_period": "this_month",
     "compare_period": null,
-    "sort_by": "value",
+    "sort_by": "metric_value",
     "sort_direction": "desc",
     "group_by": ["region"],
     "limit_num": 5,
