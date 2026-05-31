@@ -106,10 +106,10 @@ Return a single JSON object. Do not include any explanation outside the JSON.
 | role | 우선 조건 |
 |---|---|
 | `DATE_CRITERIA` | `data_type` 이 `date` 또는 `datetime` |
-| `ID_CRITERIA` | `column_name` 이 `id` 이거나 `_id` 로 끝남 / `unique_ratio` 가 `0.9` 이상이면서 식별자 의미를 갖는 컬럼 |
+| `ID_CRITERIA` | `column_name` 이 `id` / `_id` / `번호` / `코드` 등 식별자이거나, `sample_values` 가 식별자 형태(예: `u_001`, `p_001`)인 컬럼. `unique_ratio` 가 `0.9` 이상이라는 사실만으로는 ID 로 분류하지 않는다 (식별자 의미가 없는 고유 문자열은 `DIMENSION`) |
 | `FLAG` | `data_type` 이 `boolean` / `column_name` 에 `is_`, `has_`, `flag` 등 이진 단서 |
-| `STATUS_CONDITION` | `column_name` 에 `status`, `state`, `result`, `결제완료`, `취소`, `승인` 등 상태 단서가 있고 `unique_ratio` 가 비교적 낮은 (≤ 0.3) 카테고리 |
-| `MEASURE` | `data_type` 이 `integer` 또는 `double` 이고 ID/카운트성 식별자가 아님 (집계 대상) |
+| `STATUS_CONDITION` | `data_type` 이 비-숫자형(`string` 등 범주형)이면서 `column_name` 에 `status`, `state`, `result`, `결제완료`, `취소`, `승인` 등 상태 단서가 있고 `unique_ratio` 가 비교적 낮은 (≤ 0.3) 카테고리. `data_type` 이 `integer`/`double` 이면 상태 이름이어도 `STATUS_CONDITION` 이 아니라 `MEASURE` 다 (`data_type` 우선) |
+| `MEASURE` | `data_type` 이 `integer` 또는 `double` 이고 ID/카운트성 식별자가 아님 (집계 대상). 이름이 상태/완료 의미(예: `결제완료`)여도 숫자형이면 `MEASURE` 로 분류한다 (이름 단서보다 `data_type` 우선) |
 | `DIMENSION` | 위 어디에도 해당하지 않는 `string` / 저-카디널리티 카테고리 (`unique_ratio` ≤ 0.3 이 대표적이지만 단일 기준 아님) |
 
 규칙 충돌 시 우선순위: `DATE_CRITERIA` > `ID_CRITERIA` > `FLAG` > `STATUS_CONDITION` > `MEASURE` > `DIMENSION`.
@@ -119,7 +119,7 @@ Return a single JSON object. Do not include any explanation outside the JSON.
 - 한국어 컬럼명도 동일 규칙을 적용한다. 단서 예시:
   - "가입일", "주문일자", "등록일시" → `DATE_CRITERIA`
   - "회원번호", "주문번호" → `ID_CRITERIA`
-  - "결제완료", "주문상태", "처리결과" → `STATUS_CONDITION`
+  - "결제완료", "주문상태", "처리결과" → 문자형(`string` 등 범주형)일 때만 `STATUS_CONDITION`. 숫자형(`integer`/`double`)이면 상태 이름이어도 `MEASURE` (예: `결제완료` integer → `MEASURE`)
   - "활성여부", "탈퇴여부" → `FLAG`
   - "매출", "수량", "금액" → `MEASURE`
   - "채널", "지역", "카테고리" → `DIMENSION`
@@ -304,6 +304,58 @@ Return a single JSON object. Do not include any explanation outside the JSON.
       "status_conditions": [],
       "flags":             [],
       "ids":               ["user_id"]
+    }
+  },
+  "warnings": []
+}
+```
+
+## Example 4 — data_type 우선 / 고유 문자열 ID 아님
+
+`data_type` 이 이름 단서를 이긴다: 숫자형 `결제완료` 는 `MEASURE`. 그리고 `unique_ratio` 가 높아도 식별자 의미가 없으면 ID 가 아니다: `product_name`(0.95) 은 `DIMENSION`, 식별자 형태인 `high_unique`(0.95, `uniq_001`) 은 `ID_CRITERIA`.
+
+**Input**
+```json
+{
+  "data_source": {
+    "file_name": "mixed.csv",
+    "row_count": 500,
+    "column_count": 4,
+    "columns": [
+      {"column_name": "결제완료",     "data_type": "integer", "null_ratio": 0.0, "unique_ratio": 0.4,  "sample_values": [12]},
+      {"column_name": "product_name", "data_type": "string",  "null_ratio": 0.0, "unique_ratio": 0.95, "sample_values": ["Logue Pro"]},
+      {"column_name": "high_unique",  "data_type": "string",  "null_ratio": 0.0, "unique_ratio": 0.95, "sample_values": ["uniq_001"]},
+      {"column_name": "category",     "data_type": "string",  "null_ratio": 0.0, "unique_ratio": 0.05, "sample_values": ["saas"]}
+    ]
+  },
+  "catalog": {
+    "semantic_roles": ["DATE_CRITERIA", "MEASURE", "DIMENSION", "STATUS_CONDITION", "FLAG", "ID_CRITERIA"],
+    "source_warning_keys": [
+      {"code": "DATE_FIELD_CONFLICT", "name": "Date field conflict", "comment": "여러 날짜 컬럼이 후보로 잡혔습니다."}
+    ]
+  }
+}
+```
+
+**Output**
+```json
+{
+  "column_roles": [
+    {"column_name": "결제완료",     "semantic_role": "MEASURE",     "confidence": 0.85, "display_name": "결제완료"},
+    {"column_name": "product_name", "semantic_role": "DIMENSION",   "confidence": 0.7,  "display_name": "product_name"},
+    {"column_name": "high_unique",  "semantic_role": "ID_CRITERIA", "confidence": 0.8,  "display_name": "high_unique"},
+    {"column_name": "category",     "semantic_role": "DIMENSION",   "confidence": 0.9,  "display_name": "category"}
+  ],
+  "data_status_summary": {
+    "total_rows": 500,
+    "total_columns": 4,
+    "primary_candidates": {
+      "date_fields":       [],
+      "measures":          ["결제완료"],
+      "dimensions":        ["product_name", "category"],
+      "status_conditions": [],
+      "flags":             [],
+      "ids":               ["high_unique"]
     }
   },
   "warnings": []
