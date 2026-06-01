@@ -28,9 +28,6 @@ export type { SelectableListItemProps } from './SelectableListItem/SelectableLis
 export { default as Header } from './Header/Header';
 export type { HeaderProps, NavItem } from './Header/Header';
 
-export { default as Card } from './Card/Card';
-export type { CardProps } from './Card/Card';
-
 export { default as FileUploadZone } from './FileUploadZone/FileUploadZone';
 export type { FileUploadZoneProps } from './FileUploadZone/FileUploadZone';
 
@@ -54,15 +51,6 @@ export type {
   DropdownDetailsOption,
   DropdownDetailsProps,
 } from './DropdownDetails/DropdownDetails';
-
-export { default as DataRow } from './DataRow/DataRow';
-export type { DataRowProps } from './DataRow/DataRow';
-
-export { default as ProjectRow } from './ProjectRow/ProjectRow';
-export type { ProjectRowProps } from './ProjectRow/ProjectRow';
-
-export { default as Cell } from './Cell/Cell';
-export type { CellProps } from './Cell/Cell';
 
 export { default as ProgressBar } from './ProgressBar/ProgressBar';
 export type { ProgressBarProps } from './ProgressBar/ProgressBar';
@@ -100,12 +88,6 @@ export type { SimpleListboxDropdownProps } from './ListboxDropdownShell/SimpleLi
 
 export { default as MenuTab } from './MenuTab/MenuTab';
 export type { MenuTabProps } from './MenuTab/MenuTab';
-
-export { default as ChatDropdown } from './ChatDropdown/ChatDropdown';
-export type {
-  ChatDropdownProps,
-  ChatDropdownState,
-} from './ChatDropdown/ChatDropdown';
 
 export { default as Modal } from './Modal/Modal';
 export { ConfirmModal } from './Modal/Modal';
