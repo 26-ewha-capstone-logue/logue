@@ -31,7 +31,6 @@ type MultiProps = CommonProps & {
   values: string[];
   maxSelect?: number;
   onChange: (next: string[]) => void;
-  /** ?듭뀡 由ъ뒪???곷떒???쒖떆?섎뒗 ?ㅻ뜑 (?? "理쒕? 2媛??좏깮") */
   headerLabel?: string;
 };
 
@@ -71,10 +70,10 @@ export default function CriterionSelect(props: CriterionSelectProps) {
 
   const buttonLabel =
     props.values.length === 0
-      ? '?좏깮'
+      ? '선택'
       : props.values.length === 1
         ? props.values[0]
-        : `${props.values[0]} ??${props.values.length - 1}`;
+        : `${props.values[0]} 외 ${props.values.length - 1}`;
 
   return (
     <ListboxDropdownShell
