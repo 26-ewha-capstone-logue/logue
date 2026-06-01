@@ -7,6 +7,7 @@ Logue의 self_demo는 회원가입부터 온보딩, CSV 업로드, 질문 입력
 ## 시작 전 준비 🧭
 
 - 🌐 시연 사이트: [asklogue.co](https://asklogue.co)
+- 🎥 시연 영상: [Logue YouTube 채널](https://www.youtube.com/channel/UCJlg-nOFnb5ouBXR9MfhFwg)
 - 📁 샘플 CSV: [logue_analysis_sample.csv](./logue_analysis_sample.csv)
 - 💬 예시 질문: `이번 주 채널별 총 건수 top 5`
 
