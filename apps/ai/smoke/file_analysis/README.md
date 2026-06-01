@@ -51,7 +51,7 @@ SMOKE_HOST=http://localhost:9000 bash run.sh
 - `request_id` 가 페이로드 값과 그대로 일치 (orchestration 후처리에서 입력값으로 overwrite)
 - `column_roles[]` 길이 = 입력 컬럼 수, `column_name` 1:1 매칭
 - `data_status_summary.primary_candidates` 의 6개 키(`date_fields`·`measures`·`dimensions`·`status_conditions`·`flags`·`ids`) 모두 노출 (빈 배열이라도)
-- `warnings` 는 코드 결정론: `date_fields` 길이 ≥ 2 면 `DATE_FIELD_CONFLICT` 1건, 그 외 `[]`. LLM 이 warnings 를 뱉어도 무시되고 `core.rules.source_warnings()` 결과로 덮어쓴다
+- `warnings` 는 코드 결정론: `column_roles` 에서 `semantic_role == DATE_CRITERIA` 인 컬럼이 2개 이상이면 `DATE_FIELD_CONFLICT` 1건, 그 외 `[]`. LLM 이 warnings 를 뱉어도 무시되고 `core.rules.date_conflict_warnings()` 결과로 덮어쓴다
 
 ## 결과 저장 위치
 

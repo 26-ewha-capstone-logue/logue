@@ -171,13 +171,15 @@ def test_llm_call_failure_returns_502_llm_call_failed(
     assert body["request_id"] == "req_file_warn"
 
 
-def test_warnings_recomputed_after_llm_even_when_response_omits_them(
+def test_date_conflict_derived_from_roles_even_when_candidates_omit_them(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """LLM 이 warnings=[] 로 응답해도 후처리에서 DATE_FIELD_CONFLICT 가 채워져야 한다.
+    """채점된 `column_roles` 기준으로 DATE_FIELD_CONFLICT 가 결정론적으로 채워져야 한다.
 
-    `core.rules.source_warnings()` 가 `primary_candidates.date_fields` 만 보고
-    결정론적으로 재계산하므로, LLM 응답의 warnings 는 신뢰하지 않는다.
+    `core.rules.date_conflict_warnings()` 는 `primary_candidates.date_fields` 가 아니라
+    `semantic_role == DATE_CRITERIA` 인 컬럼 수를 보고 판단한다. 따라서 LLM 이
+    `date_fields` 에 한 컬럼만 나열했더라도, 역할이 두 개면 경고가 발생하고
+    `related_columns` 는 `column_roles` 순서를 따른다.
     """
 
     def fake_llm(req):
@@ -201,7 +203,8 @@ def test_warnings_recomputed_after_llm_even_when_response_omits_them(
                 total_rows=50,
                 total_columns=2,
                 primary_candidates=PrimaryCandidates(
-                    date_fields=["ordered_at", "paid_at"],
+                    # LLM 이 한 컬럼만 date_fields 로 나열했더라도 역할 기준으로 충돌이 잡혀야 한다.
+                    date_fields=["ordered_at"],
                     measures=[],
                     dimensions=[],
                     status_conditions=[],
@@ -220,6 +223,52 @@ def test_warnings_recomputed_after_llm_even_when_response_omits_them(
     body = response.json()
     assert body["warnings"][0]["code"] == "DATE_FIELD_CONFLICT"
     assert body["warnings"][0]["related_columns"] == ["ordered_at", "paid_at"]
+
+
+def test_no_date_conflict_when_single_date_criteria_role(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """DATE_CRITERIA 역할이 하나뿐이면 DATE_FIELD_CONFLICT 가 발생하지 않아야 한다."""
+
+    def fake_llm(req):
+        return FileAnalysisResponse(
+            request_id=req.request_id,
+            column_roles=[
+                ColumnRole(
+                    column_name="ordered_at",
+                    semantic_role="DATE_CRITERIA",
+                    confidence=0.95,
+                    display_name="ordered_at",
+                ),
+                ColumnRole(
+                    column_name="paid_at",
+                    semantic_role="DIMENSION",
+                    confidence=0.6,
+                    display_name="paid_at",
+                ),
+            ],
+            data_status_summary=DataStatusSummary(
+                total_rows=50,
+                total_columns=2,
+                primary_candidates=PrimaryCandidates(
+                    date_fields=["ordered_at"],
+                    measures=[],
+                    dimensions=["paid_at"],
+                    status_conditions=[],
+                    flags=[],
+                    ids=[],
+                ),
+            ),
+            warnings=[],
+        )
+
+    monkeypatch.setattr(svc, "_call_llm", fake_llm)
+
+    response = client.post("/v1/llm/data-sources/analyze", json=_DATE_CONFLICT_PAYLOAD)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["warnings"] == []
 
 
 def test_llm_invalid_column_returns_502_llm_output_invalid(

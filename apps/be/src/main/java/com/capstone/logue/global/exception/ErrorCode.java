@@ -52,6 +52,7 @@ public enum ErrorCode {
     CRITERIA_ALREADY_CONFIRMED(HttpStatus.CONFLICT, "AN104", "이미 확정된 분석 기준입니다."),
     UNSUPPORTED_QUESTION(HttpStatus.BAD_REQUEST, "AN105", "이번 MVP에서 지원하지 않는 질문 유형입니다."),
     DATASOURCE_NOT_READY(HttpStatus.BAD_REQUEST, "AN106", "데이터 상태 요약이 완료되어야 질문을 분석할 수 있습니다."),
+    CRITERIA_BLOCKED_BY_WARNING(HttpStatus.BAD_REQUEST, "AN107", "차단성 경고가 해소되지 않아 분석 기준을 확정할 수 없습니다."),
 
     // Analysis Result
     RESULT_NOT_FOUND(HttpStatus.NOT_FOUND, "AN201", "분석 결과를 찾을 수 없습니다."),

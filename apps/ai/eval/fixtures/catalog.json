@@ -10,6 +10,7 @@
   "supported_periods": ["1W", "1M", "3M"],
   "flow_warning_keys": [
     {"code": "QUESTION_DATA_MISMATCH", "name": "질문/데이터 불일치", "comment": "질문에서 요구한 컬럼이 데이터에 없습니다."},
-    {"code": "CRITICAL_NULL_DETECTED", "name": "critical null", "comment": "분석 필요 컬럼의 null 비율이 임계값을 초과합니다."}
+    {"code": "CRITICAL_NULL_DETECTED", "name": "critical null", "comment": "분석 필요 컬럼의 null 비율이 임계값을 초과합니다."},
+    {"code": "DATE_FIELD_CONFLICT", "name": "기준 날짜 충돌", "comment": "DATE_CRITERIA 역할 컬럼이 둘 이상이라 기준 날짜가 결정되지 않습니다."}
   ]
 }

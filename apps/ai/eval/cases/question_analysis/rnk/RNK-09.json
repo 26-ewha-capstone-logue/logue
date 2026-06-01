@@ -11,11 +11,13 @@
   "expected": {
     "analysis_criteria": {
       "analysis_type": "RANKING",
+      "sort_by": "metric_value",
       "metric_name": "signup_conversion_rate",
       "standard_period": "1W",
       "group_by": ["channel"],
       "sort_direction": "desc",
       "limit_num": 5
-    }
+    },
+    "warnings": {"DATE_FIELD_CONFLICT": true}
   }
 }

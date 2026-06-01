@@ -17,6 +17,8 @@ import logging
 from config.settings import is_mock_mode
 from core.errors import AppError, ErrorDetail, LLMCallFailedError
 from rules.business_validation import validate as validate_business_rules
+from rules.unsupported_backstop import detect_unsupported
+from rules.warning_rules import apply_inferred_warnings
 from schemas.api.question_analysis import (
     QuestionAnalysisRequest,
     QuestionAnalysisResponse,
@@ -48,7 +50,22 @@ def resolve(req: QuestionAnalysisRequest) -> QuestionAnalysisResponse:
             details=[ErrorDetail(reason="업스트림 LLM 호출 중 오류가 발생했습니다.")],
         ) from exc
 
+    # 카탈로그 밖 식별자로 답변 불가한 응답은 비즈니스 검증(502) 대신
+    # unsupported_question 응답으로 결정론적 전환한다.
+    unsupported = detect_unsupported(response, req)
+    if unsupported is not None:
+        return QuestionAnalysisResponse(
+            request_id=req.request_id,
+            analysis_criteria=None,
+            flow_columns=[],
+            warnings=[],
+            unsupported_question=unsupported,
+        )
+
     validate_business_rules(response, req)
+    # 검증 통과 후 데이터 기반 warning 을 추론한다. 추론 코드는 catalog 정의를
+    # 보장하므로 post-validation 단계에서 추가해도 참조 무결성을 깨지 않는다.
+    apply_inferred_warnings(response, req)
     return response
 
 
@@ -101,7 +118,7 @@ def _build_mock_response(req: QuestionAnalysisRequest) -> QuestionAnalysisRespon
             "base_date_column": date_col.column_name,
             "standard_period": standard,
             "compare_period": None,
-            "sort_by": "value",
+            "sort_by": "metric_value",
             "sort_direction": "desc",
             "group_by": [dim_col.column_name],
             "limit_num": 5,

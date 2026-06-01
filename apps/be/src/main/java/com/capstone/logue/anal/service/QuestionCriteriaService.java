@@ -21,6 +21,7 @@ import com.capstone.logue.global.entity.AnalysisFlow;
 import com.capstone.logue.global.entity.Conversation;
 import com.capstone.logue.global.entity.FlowDataWarning;
 import com.capstone.logue.global.entity.Message;
+import com.capstone.logue.global.entity.enums.FlowWarningKey;
 import com.capstone.logue.global.entity.enums.JobStage;
 import com.capstone.logue.global.entity.enums.JobStatus;
 import com.capstone.logue.global.entity.enums.MessageRole;
@@ -62,6 +63,14 @@ public class QuestionCriteriaService {
     private final AnalysisResultAsyncService analysisResultAsyncService;
     private final FastApiClient fastApiClient;
     private final ObjectMapper objectMapper;
+
+    /**
+     * 확정(분석 결과 단계 진입)을 차단하는 경고 코드 집합입니다.
+     * 해당 경고가 해소되지 않은 채 확정 요청이 들어오면 확정을 막습니다.
+     * (현재는 질문·데이터 불일치만 차단성으로 취급하며, 핵심 null 감지는 확인용 soft 경고로 유지합니다.)
+     */
+    private static final Set<FlowWarningKey> BLOCKING_WARNINGS =
+            Set.of(FlowWarningKey.QUESTION_DATA_MISMATCH);
 
     private static final String MESSAGE_CRITERIA_READY =
             "질문 분석이 완료되었어요. 아래 분석 기준으로 검증을 진행해도 될까요?";
@@ -204,6 +213,20 @@ public class QuestionCriteriaService {
         }
 
         boolean wasConfirmed = Boolean.TRUE.equals(criteria.getIsConfirmed());
+
+        // 확정 전이(미확정 -> 확정) 시에만 차단성 경고를 검사한다.
+        // 해소되지 않은 차단성 경고가 남아 있으면 확정 및 결과 단계 진입을 막는다.
+        // (단순 수정은 통과시키며, 경고 해소 UX 는 후속 작업으로 처리한다.)
+        if (!wasConfirmed && request.confirmed()) {
+            List<FlowDataWarning> warnings = flowDataWarningRepository
+                    .findByAnalysisCriteriaId(criteria.getId());
+            boolean blocked = warnings.stream()
+                    .anyMatch(w -> BLOCKING_WARNINGS.contains(w.getCode()));
+            if (blocked) {
+                throw new LogueException(ErrorCode.CRITERIA_BLOCKED_BY_WARNING);
+            }
+        }
+
         applyUpdate(criteria, request);
         analysisCriteriaRepository.save(criteria);
 
@@ -301,7 +324,25 @@ public class QuestionCriteriaService {
                 .findTopByMessageIdAndStageOrderByCreatedAtDescIdDesc(messageId, JobStage.ANALYSIS_CRITERIA)
                 .orElseThrow(() -> new LogueException(ErrorCode.CRITERIA_NOT_FOUND));
 
-        return new GetQuestionCriteriaStatusResponse(job.getStatus().name());
+        // FAILED 인 경우에만 실패 원인 코드를 계산해 함께 내려준다. (그 외에는 null)
+        return new GetQuestionCriteriaStatusResponse(job.getStatus().name(), resolveFailureCode(job));
+    }
+
+    /**
+     * FAILED 작업의 실패 원인을 머신 리더블 코드로 변환합니다.
+     *
+     * <p>errorMessage 가 {@code UNSUPPORTED_QUESTION} 으로 시작하면 의도된 실패로 보고
+     * {@code UNSUPPORTED_QUESTION}, 그 외에는 {@code ANALYSIS_FAILED} 를 반환합니다.
+     * FAILED 가 아니면 {@code null} 을 반환합니다.</p>
+     */
+    private String resolveFailureCode(AiTaggingJob job) {
+        if (job.getStatus() != JobStatus.FAILED) {
+            return null;
+        }
+        String msg = job.getErrorMessage();
+        return (msg != null && msg.startsWith("UNSUPPORTED_QUESTION"))
+                ? "UNSUPPORTED_QUESTION"
+                : "ANALYSIS_FAILED";
     }
 
     /**
