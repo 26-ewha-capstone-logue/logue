@@ -10,12 +10,12 @@ import { useToast } from '@/hooks/useToast';
 import { validateCsvFile } from '@/lib/fileValidation';
 import DataSourceTable from './_components/DataSourceTable';
 import DataSourceToolbar from './_components/DataSourceToolbar';
-import { useDataSourceList } from './_hooks/useDataSourceList';
-import { useDataSourceSelection } from './_hooks/useDataSourceSelection';
-import { useDataSourceUserContext } from './_hooks/useDataSourceUserContext';
-import { useDeleteDataSources } from './_hooks/useDeleteDataSources';
-import { useUploadDataSource } from './_hooks/useUploadDataSource';
-import { getTableMessage } from './_utils/tableMessage';
+import { useDataSourceList } from '@/features/dataSource/hooks/useDataSourceList';
+import { useDataSourceSelection } from '@/features/dataSource/hooks/useDataSourceSelection';
+import { useDataSourceUserContext } from '@/features/dataSource/hooks/useDataSourceUserContext';
+import { useDeleteDataSources } from '@/features/dataSource/hooks/useDeleteDataSources';
+import { useUploadDataSource } from '@/features/dataSource/hooks/useUploadDataSource';
+import { getTableMessage } from '@/features/dataSource/utils/tableMessage';
 
 const DELETE_ILLUST_SRC = '/illusts/delete.svg';
 

@@ -1,4 +1,4 @@
-import type { QuestionResultViewModel } from '../_models/analysisViewModels';
+import type { QuestionResultViewModel } from '@/features/analysis/models/analysisViewModels';
 import AnalysisCard from './AnalysisCard';
 import AnalysisWarningList from './AnalysisWarningList';
 import ResultChartPanel from './ResultChartPanel';

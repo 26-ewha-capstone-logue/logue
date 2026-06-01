@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type {
   BarChartViewModel,
   ChartViewModel,
-} from '../_models/analysisViewModels';
+} from '@/features/analysis/models/analysisViewModels';
 import BarResultChart from './BarResultChart';
 
 type ResultChartPanelProps = {
