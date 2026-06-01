@@ -7,10 +7,16 @@ import {
   LISTBOX_DROPDOWN_PANEL_BASE_CLASS,
   LISTBOX_DROPDOWN_TRIGGER_BASE_CLASS,
   SimpleListboxDropdown,
+  type ListboxOption,
+  type ListboxOptionBadge,
 } from '@/components';
+import type {
+  CriteriaOption,
+  CriteriaOptionOrigin,
+} from '../_config/criteriaEditRows';
 
 type CommonProps = {
-  options: string[];
+  options: CriteriaOption[];
   className?: string;
 };
 
@@ -31,7 +37,22 @@ type MultiProps = CommonProps & {
 
 export type CriterionSelectProps = SingleProps | MultiProps;
 
+const ORIGIN_BADGES = {
+  dynamic: { label: '분석값', tone: 'dynamic' },
+  default: { label: '기본', tone: 'default' },
+} as const satisfies Record<CriteriaOptionOrigin, ListboxOptionBadge>;
+
+function toListboxOption(option: CriteriaOption): ListboxOption {
+  return {
+    value: option.value,
+    label: option.label,
+    badges: option.origins.map((origin) => ORIGIN_BADGES[origin]),
+  };
+}
+
 export default function CriterionSelect(props: CriterionSelectProps) {
+  const options = props.options.map(toListboxOption);
+
   if (!props.multi) {
     return (
       <SimpleListboxDropdown
@@ -39,10 +60,7 @@ export default function CriterionSelect(props: CriterionSelectProps) {
         icon={ArrowDownIcon}
         iconClassName="icon-12 text-gray-700"
         label={props.value}
-        options={props.options.map((opt) => ({
-          value: opt,
-          label: opt,
-        }))}
+        options={options}
         panelClassName="w-max min-w-full"
         triggerClassName="text-body2 text-gray-900"
         value={props.value}
@@ -88,7 +106,7 @@ export default function CriterionSelect(props: CriterionSelectProps) {
 
           <ListboxCheckboxOptionList
             maxSelect={props.maxSelect}
-            options={props.options}
+            options={options}
             values={props.values}
             onChange={props.onChange}
           />

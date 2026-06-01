@@ -91,6 +91,8 @@ export {
   ListboxOptionList,
 } from './ListboxDropdownShell/ListboxOptionList';
 export type {
+  ListboxOptionBadge,
+  ListboxOptionBadgeTone,
   ListboxCheckboxOptionListProps,
   ListboxOption,
   ListboxOptionListProps,

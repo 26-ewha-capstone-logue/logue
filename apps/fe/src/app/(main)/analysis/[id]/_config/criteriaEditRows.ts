@@ -2,8 +2,16 @@ import type {
   CriteriaEditValues,
   CriteriaViewModel,
 } from '../_models/analysisViewModels';
-import { uniqueStrings as uniqueOptions } from '../_utils/stringList';
+import { normalizeString } from '../_utils/stringList';
 import { CRITERIA_FIELD_DEFINITIONS } from './criteriaSchema';
+
+export type CriteriaOptionOrigin = 'default' | 'dynamic';
+
+export type CriteriaOption = {
+  value: string;
+  label: string;
+  origins: CriteriaOptionOrigin[];
+};
 
 export type CriteriaStaticRow = {
   kind: 'static';
@@ -22,14 +30,14 @@ export type CriteriaSingleRow = {
     | 'sortBy'
     | 'sortDirection'
   >;
-  options: string[];
+  options: CriteriaOption[];
 };
 
 export type CriteriaMultiRow = {
   kind: 'multi';
   label: string;
   key: 'groupBy';
-  options: string[];
+  options: CriteriaOption[];
   maxSelect?: number;
   headerLabel: string;
 };
@@ -42,6 +50,43 @@ export type CriteriaEditRowSpec =
 const DEFAULT_PERIOD_OPTIONS = ['이번 주', '지난 주', '이번 달', '지난 달'];
 const DEFAULT_SORT_DIRECTION_OPTIONS = ['ASC', 'DESC'];
 const FIELD = CRITERIA_FIELD_DEFINITIONS;
+
+function createCriteriaOptions({
+  defaults = [],
+  dynamic = [],
+}: {
+  defaults?: readonly (string | null | undefined)[];
+  dynamic?: readonly (string | null | undefined)[];
+}): CriteriaOption[] {
+  const options = new Map<string, CriteriaOption>();
+
+  const addOption = (
+    value: string | null | undefined,
+    origin: CriteriaOptionOrigin,
+  ) => {
+    const normalized = normalizeString(value);
+    if (!normalized) return;
+
+    const option = options.get(normalized);
+    if (!option) {
+      options.set(normalized, {
+        value: normalized,
+        label: normalized,
+        origins: [origin],
+      });
+      return;
+    }
+
+    if (!option.origins.includes(origin)) {
+      option.origins.push(origin);
+    }
+  };
+
+  dynamic.forEach((value) => addOption(value, 'dynamic'));
+  defaults.forEach((value) => addOption(value, 'default'));
+
+  return Array.from(options.values());
+}
 
 export function createCriteriaEditRows({
   baseDateColumnOptions,
@@ -75,31 +120,35 @@ export function createCriteriaEditRows({
       kind: 'single',
       label: FIELD.baseDateColumn.label,
       key: 'baseDateColumn',
-      options: uniqueOptions([
-        values.baseDateColumn,
-        ...(baseDateColumnOptions ?? []),
-      ]),
+      options: createCriteriaOptions({
+        dynamic: [values.baseDateColumn, ...(baseDateColumnOptions ?? [])],
+      }),
     },
     {
       kind: 'single',
       label: FIELD.standardPeriod.label,
       key: 'standardPeriod',
-      options: uniqueOptions([
-        values.standardPeriod,
-        ...DEFAULT_PERIOD_OPTIONS,
-      ]),
+      options: createCriteriaOptions({
+        defaults: DEFAULT_PERIOD_OPTIONS,
+        dynamic: [values.standardPeriod],
+      }),
     },
     {
       kind: 'single',
       label: FIELD.comparePeriod.label,
       key: 'comparePeriod',
-      options: uniqueOptions([values.comparePeriod, ...DEFAULT_PERIOD_OPTIONS]),
+      options: createCriteriaOptions({
+        defaults: DEFAULT_PERIOD_OPTIONS,
+        dynamic: [values.comparePeriod],
+      }),
     },
     {
       kind: 'multi',
       label: FIELD.groupBy.label,
       key: 'groupBy',
-      options: uniqueOptions([...groupBy, ...(groupByOptions ?? [])]),
+      options: createCriteriaOptions({
+        dynamic: [...groupBy, ...(groupByOptions ?? [])],
+      }),
       maxSelect: 5,
       headerLabel: '여러 값 선택 가능',
     },
@@ -107,16 +156,21 @@ export function createCriteriaEditRows({
       kind: 'single',
       label: FIELD.sortBy.label,
       key: 'sortBy',
-      options: uniqueOptions([values.sortBy, ...(sortByOptions ?? [])]),
+      options: createCriteriaOptions({
+        dynamic: [values.sortBy, ...(sortByOptions ?? [])],
+      }),
     },
     {
       kind: 'single',
       label: FIELD.sortDirection.label,
       key: 'sortDirection',
-      options: uniqueOptions([
-        values.sortDirection,
-        ...(sortDirectionOptions ?? DEFAULT_SORT_DIRECTION_OPTIONS),
-      ]),
+      options: createCriteriaOptions({
+        defaults:
+          sortDirectionOptions === undefined
+            ? DEFAULT_SORT_DIRECTION_OPTIONS
+            : [],
+        dynamic: [values.sortDirection, ...(sortDirectionOptions ?? [])],
+      }),
     },
     {
       kind: 'static',
