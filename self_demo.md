@@ -1,6 +1,6 @@
 # self_demo 시연 가이드 🚀
 
-![self_demo banner](../assets/self_demo_banner.png)
+![self_demo banner](assets/self_demo_banner.png)
 
 Logue의 self_demo는 회원가입부터 온보딩, CSV 업로드, 질문 입력, 분석 기준 확인, 검증 결과 확인까지 이어지는 핵심 사용자 흐름을 보여줍니다.
 
@@ -8,7 +8,7 @@ Logue의 self_demo는 회원가입부터 온보딩, CSV 업로드, 질문 입력
 
 - 🌐 시연 사이트: [asklogue.co](https://asklogue.co)
 - 🎥 시연 영상: [Logue YouTube 채널](https://www.youtube.com/channel/UCJlg-nOFnb5ouBXR9MfhFwg)
-- 📁 샘플 CSV: [logue_analysis_sample.csv](./logue_analysis_sample.csv)
+- 📁 샘플 CSV: [logue_analysis_sample.csv](docs/logue_analysis_sample.csv)
 - 💬 예시 질문: `이번 주 채널별 총 건수 top 5`
 
 샘플 CSV 링크를 클릭한 뒤 파일을 다운로드해 주세요. GitHub에서 문서를 보고 있다면 CSV 화면의 **Download raw file** 버튼으로 저장하면 됩니다.
@@ -23,15 +23,15 @@ Logue의 self_demo는 회원가입부터 온보딩, CSV 업로드, 질문 입력
 
 시연 사이트에 접속한 뒤 회원가입 버튼을 눌러 온보딩으로 진입합니다.
 
-![회원가입 화면](../assets/1_sign_up.png)
+![회원가입 화면](assets/1_sign_up.png)
 
 온보딩에서는 각 단계의 질문에 맞춰 선택지를 고르고 다음 단계로 이동합니다. 이 시연에서는 온보딩 선택값보다 CSV 업로드 이후의 분석 흐름을 확인하는 것이 핵심입니다.
 
-![온보딩 1단계](../assets/2_onboarding1.png)
+![온보딩 1단계](assets/2_onboarding1.png)
 
-![온보딩 2단계](../assets/3_onboarding2.png)
+![온보딩 2단계](assets/3_onboarding2.png)
 
-![온보딩 3단계](../assets/4_onboarding3.png)
+![온보딩 3단계](assets/4_onboarding3.png)
 
 ## 2. CSV 업로드 및 질문 입력 📁
 
@@ -45,7 +45,7 @@ Logue의 self_demo는 회원가입부터 온보딩, CSV 업로드, 질문 입력
 
 라이브 시연에서는 결과 안정성을 위해 위 예시처럼 `total_count` 기반 질문을 먼저 사용하는 것을 권장합니다.
 
-![분석 질문 입력 화면](../assets/5_analysis.png)
+![분석 질문 입력 화면](assets/5_analysis.png)
 
 ## 3. 분석 기준 확인 ✅
 
@@ -59,7 +59,7 @@ Logue의 self_demo는 회원가입부터 온보딩, CSV 업로드, 질문 입력
 
 분석 기준이 의도와 맞다면 **"이 기준으로 계속 할게요"** 버튼을 눌러 다음 단계로 진행합니다.
 
-![분석 기준 확인 화면](../assets/6_result1.png)
+![분석 기준 확인 화면](assets/6_result1.png)
 
 ## 4. 검증 결과 및 리포트 활용 📊
 
@@ -67,7 +67,7 @@ Logue의 self_demo는 회원가입부터 온보딩, CSV 업로드, 질문 입력
 
 결과 화면에서는 질문이 어떤 기준으로 해석되었는지와 실제 분석 결과를 함께 확인할 수 있습니다. 채널별 상위 5개 결과가 차트로 표시되면 self_demo 흐름이 정상적으로 완료된 것입니다.
 
-![검증 결과 화면](../assets/7_result2.png)
+![검증 결과 화면](assets/7_result2.png)
 
 ## 문제가 생겼을 때 🔁
 
