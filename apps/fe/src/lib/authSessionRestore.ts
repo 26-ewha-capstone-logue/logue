@@ -7,20 +7,9 @@ import {
   type AuthTokens,
 } from './auth';
 import type { AuthStatus } from './authSession';
+import { hasUsableRotatedTokens } from './authTokenRefresh';
 
 export type ReissueAuthTokens = (refreshToken: string) => Promise<AuthTokens>;
-
-function hasUsableRotatedTokens(previousRefreshToken: string) {
-  const latestAccessToken = getAccessToken();
-  const latestRefreshToken = getRefreshToken();
-
-  return (
-    !!latestAccessToken &&
-    !!latestRefreshToken &&
-    latestRefreshToken !== previousRefreshToken &&
-    !shouldRefreshAccessToken(latestAccessToken)
-  );
-}
 
 export async function restoreAuthSession(
   reissueAuthTokens: ReissueAuthTokens,
