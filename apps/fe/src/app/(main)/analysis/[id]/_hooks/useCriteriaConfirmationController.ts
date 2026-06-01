@@ -23,8 +23,9 @@ type UseCriteriaConfirmationControllerParams = {
   ) => boolean;
   conversationId: number | null;
   criteriaSubmissionLocked: boolean;
-  dispatchCriteriaSubmissionFinished: () => void;
+  dispatchCriteriaSubmissionFailed: () => void;
   dispatchCriteriaSubmissionStarted: () => void;
+  dispatchCriteriaSubmissionSucceeded: () => void;
   showToast: (message: string) => void;
 };
 
@@ -35,8 +36,9 @@ export function useCriteriaConfirmationController({
   consumeCanceledResult,
   conversationId,
   criteriaSubmissionLocked,
-  dispatchCriteriaSubmissionFinished,
+  dispatchCriteriaSubmissionFailed,
   dispatchCriteriaSubmissionStarted,
+  dispatchCriteriaSubmissionSucceeded,
   showToast,
 }: UseCriteriaConfirmationControllerParams) {
   const [pendingResultCancelParams, setPendingResultCancelParams] =
@@ -104,7 +106,7 @@ export function useCriteriaConfirmationController({
                     return;
                   }
 
-                  dispatchCriteriaSubmissionFinished();
+                  dispatchCriteriaSubmissionSucceeded();
                   appendResultMessage(result);
                 },
                 onError: (error, variables) => {
@@ -113,7 +115,7 @@ export function useCriteriaConfirmationController({
                     return;
                   }
 
-                  dispatchCriteriaSubmissionFinished();
+                  dispatchCriteriaSubmissionFailed();
                   const message = getAnalysisErrorMessage(
                     error,
                     ANALYSIS_WORKFLOW_MESSAGES.result.getError,
@@ -126,7 +128,7 @@ export function useCriteriaConfirmationController({
           },
           onError: (error) => {
             setPendingResultCancelParams(null);
-            dispatchCriteriaSubmissionFinished();
+            dispatchCriteriaSubmissionFailed();
             const message = getAnalysisErrorMessage(
               error,
               ANALYSIS_WORKFLOW_MESSAGES.criteria.updateError,
@@ -145,8 +147,9 @@ export function useCriteriaConfirmationController({
       consumeCanceledResult,
       conversationId,
       criteriaSubmissionLocked,
-      dispatchCriteriaSubmissionFinished,
+      dispatchCriteriaSubmissionFailed,
       dispatchCriteriaSubmissionStarted,
+      dispatchCriteriaSubmissionSucceeded,
       resultAnalysisMutation,
       showToast,
       updateCriteriaMutation,

@@ -30,6 +30,7 @@ type UseAnalysisCancelControllerParams = {
   markResultCanceled: (params: QuestionResultParams) => void;
   onCriteriaCanceled: () => void;
   onResultCanceled: () => void;
+  onSummaryCanceled: () => void;
   pendingCriteriaCancelTarget: PendingCriteriaCancelTarget | null;
   pendingResultCancelParams: QuestionResultParams | null;
   questionAnalysisActive: boolean;
@@ -58,6 +59,7 @@ export function useAnalysisCancelController({
   markResultCanceled,
   onCriteriaCanceled,
   onResultCanceled,
+  onSummaryCanceled,
   pendingCriteriaCancelTarget,
   pendingResultCancelParams,
   questionAnalysisActive,
@@ -128,6 +130,7 @@ export function useAnalysisCancelController({
 
       if (target.stage === 'summary') {
         setCanceledSummaryKey(getAnalysisFlowKey(target.params));
+        onSummaryCanceled();
         appendNotice(ANALYSIS_WORKFLOW_MESSAGES.summary.canceled);
         return;
       }

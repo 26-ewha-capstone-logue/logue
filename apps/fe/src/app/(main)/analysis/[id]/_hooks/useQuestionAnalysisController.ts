@@ -20,8 +20,9 @@ type UseQuestionAnalysisControllerParams = {
   appendUserQuestion: (content: string) => void;
   consumeCanceledCriteriaOperation: (operationKey: string) => boolean;
   conversationId: number | null;
-  dispatchQuestionSubmissionFinished: () => void;
+  dispatchQuestionSubmissionFailed: () => void;
   dispatchQuestionSubmissionStarted: () => void;
+  dispatchQuestionSubmissionSucceeded: () => void;
   questionSubmissionLocked: boolean;
   showToast: (message: string) => void;
 };
@@ -33,8 +34,9 @@ export function useQuestionAnalysisController({
   appendUserQuestion,
   consumeCanceledCriteriaOperation,
   conversationId,
-  dispatchQuestionSubmissionFinished,
+  dispatchQuestionSubmissionFailed,
   dispatchQuestionSubmissionStarted,
+  dispatchQuestionSubmissionSucceeded,
   questionSubmissionLocked,
   showToast,
 }: UseQuestionAnalysisControllerParams) {
@@ -112,7 +114,7 @@ export function useQuestionAnalysisController({
               return;
             }
 
-            dispatchQuestionSubmissionFinished();
+            dispatchQuestionSubmissionSucceeded();
             appendCriteriaMessage(criteria, variables.initialMode);
           },
           onError: (error, variables) => {
@@ -121,7 +123,7 @@ export function useQuestionAnalysisController({
               return;
             }
 
-            dispatchQuestionSubmissionFinished();
+            dispatchQuestionSubmissionFailed();
             const message = getAnalysisErrorMessage(
               error,
               ANALYSIS_WORKFLOW_MESSAGES.question.createError,
@@ -141,8 +143,9 @@ export function useQuestionAnalysisController({
       consumeCanceledCriteriaOperation,
       conversationId,
       createOperationKey,
-      dispatchQuestionSubmissionFinished,
+      dispatchQuestionSubmissionFailed,
       dispatchQuestionSubmissionStarted,
+      dispatchQuestionSubmissionSucceeded,
       mutateQuestionAnalysis,
       questionSubmissionLocked,
       showToast,
