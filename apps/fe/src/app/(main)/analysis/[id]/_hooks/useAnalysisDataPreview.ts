@@ -1,9 +1,12 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { dataSourceKeys, getDataSource } from '@/apis/datasource';
 import { getApiErrorMessage } from '@/apis/errors';
-import { createDataSourcePreviewTableModel } from '@/features/dataSource';
+import {
+  createDataSourcePreviewTableModel,
+  dataSourceKeys,
+  getDataSource,
+} from '@/features/dataSource';
 
 type UseAnalysisDataPreviewParams = {
   dataSourceId: number | null;

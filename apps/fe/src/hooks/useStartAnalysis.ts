@@ -3,8 +3,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { startAnalysisFlowFromDataSource } from '@/apis/analysis';
-import { dataSourceKeys, uploadDataSource } from '@/apis/datasource';
 import { getApiErrorMessage } from '@/apis/errors';
+import { dataSourceKeys, uploadDataSource } from '@/features/dataSource';
 import { writeAnalysisStartPayload } from '@/lib/analysisStartPayload';
 import { useAuthSession } from '@/providers/AuthProvider';
 

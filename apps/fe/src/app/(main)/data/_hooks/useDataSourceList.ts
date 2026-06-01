@@ -2,8 +2,11 @@
 
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { dataSourceKeys, type DataSourceSort } from '@/apis/datasource';
-import { getDataSources } from '@/features/dataSource';
+import {
+  dataSourceKeys,
+  getDataSources,
+  type DataSourceSort,
+} from '@/features/dataSource';
 import type { MockDataSourceManager } from '@/features/mockDataSource';
 import { getDataSourceErrorMessage } from '../_utils/dataSourceErrorMessage';
 

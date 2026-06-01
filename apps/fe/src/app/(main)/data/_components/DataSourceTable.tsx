@@ -1,4 +1,4 @@
-import type { DataSourceSummary } from '@/apis/datasource';
+import type { DataSourceSummary } from '@/features/dataSource';
 import { Checkbox } from '@/components';
 import DataSourceRow from './DataSourceRow';
 
