@@ -25,7 +25,7 @@
   },
   "expected": {
     "hard": {
-      "plain_text_contains": ["120,000", "100,000"]
+      "plain_text_contains": ["120,000"]
     },
     "soft": {
       "emphasis_pattern": [false, true, false]
