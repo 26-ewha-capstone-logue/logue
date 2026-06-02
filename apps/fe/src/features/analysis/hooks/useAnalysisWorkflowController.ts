@@ -39,7 +39,7 @@ export function useAnalysisWorkflowController({
   summary,
   summaryPending,
 }: UseAnalysisWorkflowControllerParams) {
-  const { dispatch, messages, notify } = effects;
+  const { dispatch, notify } = effects;
   const route = {
     analysisFlowId,
     conversationId,
@@ -50,9 +50,7 @@ export function useAnalysisWorkflowController({
       consumeCanceledCriteriaOperation:
         cancellationRegistry.consumeCanceledCriteriaOperation,
     },
-    dispatch,
-    messages,
-    notify,
+    effects,
     pending: {
       questionSubmissionLocked,
     },
@@ -62,9 +60,7 @@ export function useAnalysisWorkflowController({
     cancellation: {
       consumeCanceledResult: cancellationRegistry.consumeCanceledResult,
     },
-    dispatch,
-    messages,
-    notify,
+    effects,
     pending: {
       criteriaSubmissionLocked,
     },
@@ -79,9 +75,7 @@ export function useAnalysisWorkflowController({
       markCriteriaCanceled: cancellationRegistry.markCriteriaCanceled,
       markResultCanceled: cancellationRegistry.markResultCanceled,
     },
-    dispatch,
-    messages,
-    notify,
+    effects,
     pending: {
       pendingCriteriaCancelTarget:
         questionController.pendingCriteriaCancelTarget,

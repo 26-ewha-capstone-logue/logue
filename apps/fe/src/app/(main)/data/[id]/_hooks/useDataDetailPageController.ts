@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { DATA_SOURCE_MESSAGES } from '@/constants/messages';
 import type { GetFileResponse } from '@/features/dataSource';
@@ -29,10 +30,87 @@ export type DataDetailPageController =
   | DataDetailReadyController
   | DataDetailStatusController;
 
+type DataDetailStatusParams = {
+  detailQuery: ReturnType<typeof useDataSourceDetail>;
+  hasAccessToken: boolean;
+  isDeletedMockDataSource: boolean;
+  isValidDataSourceId: boolean;
+  status: ReturnType<typeof useDataSourceUserContext>['status'];
+};
+
+type DataDetailActionsParams = {
+  dataSourceDetailId: number | null;
+  mockDataSource: ReturnType<typeof useDataSourceUserContext>['mockDataSource'];
+  showToast: ReturnType<typeof useToast>['showToast'];
+};
+
+function getDataDetailStatusMessage({
+  detailQuery,
+  hasAccessToken,
+  isDeletedMockDataSource,
+  isValidDataSourceId,
+  status,
+}: DataDetailStatusParams) {
+  if (!isValidDataSourceId) {
+    return DATA_SOURCE_MESSAGES.detailInvalid;
+  }
+
+  if (status === 'initializing') {
+    return DATA_SOURCE_MESSAGES.detailLoading;
+  }
+
+  if (!hasAccessToken) {
+    return DATA_SOURCE_MESSAGES.detailLoginRequired;
+  }
+
+  if (detailQuery.isLoading) {
+    return DATA_SOURCE_MESSAGES.detailLoading;
+  }
+
+  if (isDeletedMockDataSource || detailQuery.isError || !detailQuery.data) {
+    return DATA_SOURCE_MESSAGES.detailLoadFailed;
+  }
+
+  return null;
+}
+
+function useDataDetailActions({
+  dataSourceDetailId,
+  mockDataSource,
+  showToast,
+}: DataDetailActionsParams) {
+  const router = useRouter();
+  const deleteFlow = useDataSourceDeleteFlow({
+    conflictErrorMessage: DATA_SOURCE_MESSAGES.deleteConflict,
+    fallbackErrorMessage: DATA_SOURCE_MESSAGES.detailDeleteError,
+    mockDataSource,
+    onDeleted: () => router.push('/data'),
+    showToast,
+  });
+  const handleDeleteConfirm = useCallback(async () => {
+    if (dataSourceDetailId === null) return;
+
+    await deleteFlow.confirmDelete([dataSourceDetailId]);
+  }, [dataSourceDetailId, deleteFlow]);
+  const handleChat = useCallback(() => {
+    if (dataSourceDetailId === null) return;
+
+    router.push(`/analysis/${dataSourceDetailId}`);
+  }, [dataSourceDetailId, router]);
+
+  return {
+    deleteOpen: deleteFlow.deleteOpen,
+    deletePending: deleteFlow.deletePending,
+    onChat: handleChat,
+    onDelete: deleteFlow.openDelete,
+    onDeleteClose: deleteFlow.closeDelete,
+    onDeleteConfirm: () => void handleDeleteConfirm(),
+  };
+}
+
 export function useDataDetailPageController(
   id: string,
 ): DataDetailPageController {
-  const router = useRouter();
   const { hasAccessToken, isAuthenticated, mockDataSource, status } =
     useDataSourceUserContext();
   const { toast, showToast } = useToast();
@@ -47,49 +125,28 @@ export function useDataDetailPageController(
   const detailQuery = useDataSourceDetail(dataSourceDetailId, {
     enabled: isAuthenticated && !isDeletedMockDataSource,
   });
-  const deleteFlow = useDataSourceDeleteFlow({
-    conflictErrorMessage: DATA_SOURCE_MESSAGES.deleteConflict,
-    fallbackErrorMessage: DATA_SOURCE_MESSAGES.detailDeleteError,
+  const actions = useDataDetailActions({
+    dataSourceDetailId,
     mockDataSource,
-    onDeleted: () => router.push('/data'),
     showToast,
   });
+  const statusMessage = getDataDetailStatusMessage({
+    detailQuery,
+    hasAccessToken,
+    isDeletedMockDataSource,
+    isValidDataSourceId,
+    status,
+  });
 
-  const handleDeleteConfirm = async () => {
-    if (dataSourceDetailId === null) return;
-
-    await deleteFlow.confirmDelete([dataSourceDetailId]);
-  };
-
-  if (!isValidDataSourceId) {
+  if (statusMessage) {
     return {
-      message: DATA_SOURCE_MESSAGES.detailInvalid,
+      message: statusMessage,
       status: 'status',
     };
   }
 
-  if (status === 'initializing') {
-    return {
-      message: DATA_SOURCE_MESSAGES.detailLoading,
-      status: 'status',
-    };
-  }
-
-  if (!hasAccessToken) {
-    return {
-      message: DATA_SOURCE_MESSAGES.detailLoginRequired,
-      status: 'status',
-    };
-  }
-
-  if (detailQuery.isLoading) {
-    return {
-      message: DATA_SOURCE_MESSAGES.detailLoading,
-      status: 'status',
-    };
-  }
-
-  if (isDeletedMockDataSource || detailQuery.isError || !detailQuery.data) {
+  const detail = detailQuery.data;
+  if (!detail) {
     return {
       message: DATA_SOURCE_MESSAGES.detailLoadFailed,
       status: 'status',
@@ -97,13 +154,8 @@ export function useDataDetailPageController(
   }
 
   return {
-    deleteOpen: deleteFlow.deleteOpen,
-    deletePending: deleteFlow.deletePending,
-    detail: detailQuery.data,
-    onChat: () => router.push(`/analysis/${id}`),
-    onDelete: deleteFlow.openDelete,
-    onDeleteClose: deleteFlow.closeDelete,
-    onDeleteConfirm: () => void handleDeleteConfirm(),
+    ...actions,
+    detail,
     status: 'ready',
     toast,
   };

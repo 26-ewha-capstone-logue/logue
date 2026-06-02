@@ -29,9 +29,7 @@ type UseAnalysisCancelControllerParams = {
     markCriteriaCanceled: (operationKey: string) => void;
     markResultCanceled: (params: QuestionResultParams) => void;
   };
-  dispatch: AnalysisWorkflowEffects['dispatch'];
-  messages: AnalysisWorkflowEffects['messages'];
-  notify: AnalysisWorkflowEffects['notify'];
+  effects: AnalysisWorkflowEffects;
   pending: {
     pendingCriteriaCancelTarget: PendingCriteriaCancelTarget | null;
     pendingResultCancelParams: QuestionResultParams | null;
@@ -54,9 +52,7 @@ function getAnalysisFlowKey({
 
 export function useAnalysisCancelController({
   cancellation,
-  dispatch,
-  messages,
-  notify,
+  effects,
   pending,
   route,
 }: UseAnalysisCancelControllerParams) {
@@ -66,6 +62,7 @@ export function useAnalysisCancelController({
     markCriteriaCanceled,
     markResultCanceled,
   } = cancellation;
+  const { dispatch, messages, notify } = effects;
   const {
     pendingCriteriaCancelTarget,
     pendingResultCancelParams,
