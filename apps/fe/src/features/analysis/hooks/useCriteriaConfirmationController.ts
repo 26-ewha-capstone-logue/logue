@@ -1,51 +1,55 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { QuestionResultParams } from '@/apis/analysis';
 import { getAnalysisErrorMessage } from '../adapters/normalizeAnalysisError';
 import { createUpdateCriteriaRequest } from '@/features/analysis/adapters/normalizeCriteria';
 import { ANALYSIS_WORKFLOW_MESSAGES } from '../config/analysisWorkflowMessages';
 import { ANALYSIS_JOB_POLICY } from '../config/analysisWorkflowPolicy';
-import type {
-  CriteriaEditValues,
-  QuestionResultViewModel,
-} from '@/features/analysis/models/analysisViewModels';
+import type { CriteriaEditValues } from '@/features/analysis/models/analysisViewModels';
 import { getResultCancelKey } from '../utils/analysisCancelTarget';
 import { useUpdateCriteriaMutation } from './useCriteriaPhase';
 import { useResultPhase } from './useResultPhase';
+import type { AnalysisWorkflowEffects } from './useAnalysisWorkflowEffects';
+import type { AnalysisWorkflowRoute } from './analysisWorkflowTypes';
 
 type UseCriteriaConfirmationControllerParams = {
-  analysisFlowId: number | null;
-  appendNotice: (content: string, tone?: 'default' | 'error') => void;
-  appendResultMessage: (result: QuestionResultViewModel) => void;
-  consumeCanceledResult: (
-    params: Pick<QuestionResultParams, 'analysisCriteriaId' | 'messageId'>,
-  ) => boolean;
-  conversationId: number | null;
-  criteriaSubmissionLocked: boolean;
-  dispatchCriteriaSubmissionFailed: () => void;
-  dispatchCriteriaSubmissionStarted: () => void;
-  dispatchCriteriaSubmissionSucceeded: () => void;
-  showToast: (message: string) => void;
+  cancellation: {
+    consumeCanceledResult: (
+      params: Pick<QuestionResultParams, 'analysisCriteriaId' | 'messageId'>,
+    ) => boolean;
+  };
+  dispatch: AnalysisWorkflowEffects['dispatch'];
+  messages: AnalysisWorkflowEffects['messages'];
+  notify: AnalysisWorkflowEffects['notify'];
+  pending: {
+    criteriaSubmissionLocked: boolean;
+  };
+  route: AnalysisWorkflowRoute;
 };
 
 export function useCriteriaConfirmationController({
-  analysisFlowId,
-  appendNotice,
-  appendResultMessage,
-  consumeCanceledResult,
-  conversationId,
-  criteriaSubmissionLocked,
-  dispatchCriteriaSubmissionFailed,
-  dispatchCriteriaSubmissionStarted,
-  dispatchCriteriaSubmissionSucceeded,
-  showToast,
+  cancellation,
+  dispatch,
+  messages,
+  notify,
+  pending,
+  route,
 }: UseCriteriaConfirmationControllerParams) {
+  const { consumeCanceledResult } = cancellation;
+  const { criteriaSubmissionLocked } = pending;
+  const { analysisFlowId, conversationId } = route;
+  const handledResultKeyRef = useRef<string | null>(null);
+  const activeResultSubmissionRef = useRef(false);
   const [pendingResultCancelParams, setPendingResultCancelParams] =
+    useState<QuestionResultParams | null>(null);
+  const [pendingResultParams, setPendingResultParams] =
     useState<QuestionResultParams | null>(null);
   const updateCriteriaMutation = useUpdateCriteriaMutation();
   const resultAnalysisMutation = useResultPhase({
+    enabled: pendingResultParams !== null,
     getResultErrorMessage: ANALYSIS_WORKFLOW_MESSAGES.result.getError,
+    params: pendingResultParams,
     resultAnalysisTimeoutMs: ANALYSIS_JOB_POLICY.resultAnalysisTimeoutMs,
     statusPollIntervalMs: ANALYSIS_JOB_POLICY.statusPollIntervalMs,
   });
@@ -59,21 +63,86 @@ export function useCriteriaConfirmationController({
       setPendingResultCancelParams((current) =>
         current && getResultCancelKey(current) === canceledKey ? null : current,
       );
+      setPendingResultParams((current) =>
+        current && getResultCancelKey(current) === canceledKey ? null : current,
+      );
+      activeResultSubmissionRef.current = false;
     },
     [],
   );
 
+  useEffect(() => {
+    if (pendingResultParams === null) return;
+    if (resultAnalysisMutation.pending) return;
+
+    const resultKey = getResultCancelKey(pendingResultParams);
+    if (handledResultKeyRef.current === resultKey) {
+      return;
+    }
+
+    handledResultKeyRef.current = resultKey;
+
+    const result = resultAnalysisMutation.result;
+    if (result) {
+      queueMicrotask(() => {
+        clearPendingResultCancelParams(pendingResultParams);
+        if (consumeCanceledResult(pendingResultParams)) {
+          return;
+        }
+
+        dispatch.criteriaSubmissionSucceeded();
+        messages.appendResultMessage(result);
+      });
+      return;
+    }
+
+    const error = resultAnalysisMutation.error;
+    if (error) {
+      queueMicrotask(() => {
+        clearPendingResultCancelParams(pendingResultParams);
+        if (consumeCanceledResult(pendingResultParams)) {
+          return;
+        }
+
+        dispatch.criteriaSubmissionFailed();
+        notify.showToast(error.message);
+        messages.appendNotice(error.message, 'error');
+      });
+    }
+  }, [
+    clearPendingResultCancelParams,
+    consumeCanceledResult,
+    dispatch,
+    messages,
+    notify,
+    pendingResultParams,
+    resultAnalysisMutation.error,
+    resultAnalysisMutation.pending,
+    resultAnalysisMutation.result,
+  ]);
+
   const handleConfirmCriteria = useCallback(
     (messageId: number, values: CriteriaEditValues) => {
-      if (criteriaSubmissionLocked) return;
-
-      if (conversationId === null || analysisFlowId === null) {
-        showToast(ANALYSIS_WORKFLOW_MESSAGES.invalidRoute);
+      if (
+        criteriaSubmissionLocked ||
+        activeResultSubmissionRef.current ||
+        updateCriteriaMutation.isPending ||
+        pendingResultParams !== null ||
+        pendingResultCancelParams !== null
+      ) {
         return;
       }
 
-      dispatchCriteriaSubmissionStarted();
+      if (conversationId === null || analysisFlowId === null) {
+        notify.showToast(ANALYSIS_WORKFLOW_MESSAGES.invalidRoute);
+        return;
+      }
+
+      handledResultKeyRef.current = null;
+      activeResultSubmissionRef.current = true;
+      dispatch.criteriaSubmissionStarted();
       setPendingResultCancelParams(null);
+      setPendingResultParams(null);
 
       updateCriteriaMutation.mutate(
         {
@@ -84,7 +153,9 @@ export function useCriteriaConfirmationController({
         },
         {
           onSuccess: ({ analysisCriteriaId }) => {
-            appendNotice(ANALYSIS_WORKFLOW_MESSAGES.criteria.confirmed);
+            messages.appendNotice(
+              ANALYSIS_WORKFLOW_MESSAGES.criteria.confirmed,
+            );
             const resultParams = {
               conversationId,
               analysisFlowId,
@@ -92,78 +163,44 @@ export function useCriteriaConfirmationController({
               analysisCriteriaId,
             };
             setPendingResultCancelParams(resultParams);
-            resultAnalysisMutation.mutate(
-              {
-                targetConversationId: conversationId,
-                targetAnalysisFlowId: analysisFlowId,
-                messageId,
-                analysisCriteriaId,
-              },
-              {
-                onSuccess: (result) => {
-                  clearPendingResultCancelParams(resultParams);
-                  if (consumeCanceledResult(resultParams)) {
-                    return;
-                  }
-
-                  dispatchCriteriaSubmissionSucceeded();
-                  appendResultMessage(result);
-                },
-                onError: (error, variables) => {
-                  clearPendingResultCancelParams(variables);
-                  if (consumeCanceledResult(variables)) {
-                    return;
-                  }
-
-                  dispatchCriteriaSubmissionFailed();
-                  const message = getAnalysisErrorMessage(
-                    error,
-                    ANALYSIS_WORKFLOW_MESSAGES.result.getError,
-                  );
-                  showToast(message);
-                  appendNotice(message, 'error');
-                },
-              },
-            );
+            setPendingResultParams(resultParams);
           },
           onError: (error) => {
+            activeResultSubmissionRef.current = false;
             setPendingResultCancelParams(null);
-            dispatchCriteriaSubmissionFailed();
+            setPendingResultParams(null);
+            dispatch.criteriaSubmissionFailed();
             const message = getAnalysisErrorMessage(
               error,
               ANALYSIS_WORKFLOW_MESSAGES.criteria.updateError,
             );
-            showToast(message);
-            appendNotice(message, 'error');
+            notify.showToast(message);
+            messages.appendNotice(message, 'error');
           },
         },
       );
     },
     [
       analysisFlowId,
-      appendNotice,
-      appendResultMessage,
-      clearPendingResultCancelParams,
-      consumeCanceledResult,
       conversationId,
       criteriaSubmissionLocked,
-      dispatchCriteriaSubmissionFailed,
-      dispatchCriteriaSubmissionStarted,
-      dispatchCriteriaSubmissionSucceeded,
-      resultAnalysisMutation,
-      showToast,
+      dispatch,
+      messages,
+      notify,
+      pendingResultCancelParams,
+      pendingResultParams,
       updateCriteriaMutation,
     ],
   );
   const resultAnalysisActive =
-    resultAnalysisMutation.isPending && pendingResultCancelParams !== null;
+    resultAnalysisMutation.pending && pendingResultCancelParams !== null;
 
   return {
     clearPendingResultCancelParams,
     handleConfirmCriteria,
     pendingResultCancelParams,
     resultAnalysisActive,
-    resultAnalysisPending: resultAnalysisMutation.isPending,
+    resultAnalysisPending: resultAnalysisMutation.pending,
     updateCriteriaPending: updateCriteriaMutation.isPending,
   };
 }

@@ -17,26 +17,29 @@ import {
   type AnalysisCancelTarget,
   type PendingCriteriaCancelTarget,
 } from '../utils/analysisCancelTarget';
+import type { AnalysisWorkflowEffects } from './useAnalysisWorkflowEffects';
+import type { AnalysisWorkflowRoute } from './analysisWorkflowTypes';
 
 type UseAnalysisCancelControllerParams = {
-  analysisFlowId: number | null;
-  appendNotice: (content: string, tone?: 'default' | 'error') => void;
-  clearPendingCriteriaOperation: (operationKey: string) => void;
-  clearPendingResultCancelParams: (
-    params: Pick<QuestionResultParams, 'analysisCriteriaId' | 'messageId'>,
-  ) => void;
-  conversationId: number | null;
-  markCriteriaCanceled: (operationKey: string) => void;
-  markResultCanceled: (params: QuestionResultParams) => void;
-  onCriteriaCanceled: () => void;
-  onResultCanceled: () => void;
-  onSummaryCanceled: () => void;
-  pendingCriteriaCancelTarget: PendingCriteriaCancelTarget | null;
-  pendingResultCancelParams: QuestionResultParams | null;
-  questionAnalysisActive: boolean;
-  resultAnalysisActive: boolean;
-  showToast: (message: string) => void;
-  summaryPending: boolean;
+  cancellation: {
+    clearPendingCriteriaOperation: (operationKey: string) => void;
+    clearPendingResultCancelParams: (
+      params: Pick<QuestionResultParams, 'analysisCriteriaId' | 'messageId'>,
+    ) => void;
+    markCriteriaCanceled: (operationKey: string) => void;
+    markResultCanceled: (params: QuestionResultParams) => void;
+  };
+  dispatch: AnalysisWorkflowEffects['dispatch'];
+  messages: AnalysisWorkflowEffects['messages'];
+  notify: AnalysisWorkflowEffects['notify'];
+  pending: {
+    pendingCriteriaCancelTarget: PendingCriteriaCancelTarget | null;
+    pendingResultCancelParams: QuestionResultParams | null;
+    questionAnalysisActive: boolean;
+    resultAnalysisActive: boolean;
+    summaryPending: boolean;
+  };
+  route: AnalysisWorkflowRoute;
 };
 
 function getAnalysisFlowKey({
@@ -50,23 +53,27 @@ function getAnalysisFlowKey({
 }
 
 export function useAnalysisCancelController({
-  analysisFlowId,
-  appendNotice,
-  clearPendingCriteriaOperation,
-  clearPendingResultCancelParams,
-  conversationId,
-  markCriteriaCanceled,
-  markResultCanceled,
-  onCriteriaCanceled,
-  onResultCanceled,
-  onSummaryCanceled,
-  pendingCriteriaCancelTarget,
-  pendingResultCancelParams,
-  questionAnalysisActive,
-  resultAnalysisActive,
-  showToast,
-  summaryPending,
+  cancellation,
+  dispatch,
+  messages,
+  notify,
+  pending,
+  route,
 }: UseAnalysisCancelControllerParams) {
+  const {
+    clearPendingCriteriaOperation,
+    clearPendingResultCancelParams,
+    markCriteriaCanceled,
+    markResultCanceled,
+  } = cancellation;
+  const {
+    pendingCriteriaCancelTarget,
+    pendingResultCancelParams,
+    questionAnalysisActive,
+    resultAnalysisActive,
+    summaryPending,
+  } = pending;
+  const { analysisFlowId, conversationId } = route;
   const queryClient = useQueryClient();
   const [canceledSummaryKey, setCanceledSummaryKey] = useState<string | null>(
     null,
@@ -130,31 +137,31 @@ export function useAnalysisCancelController({
 
       if (target.stage === 'summary') {
         setCanceledSummaryKey(getAnalysisFlowKey(target.params));
-        onSummaryCanceled();
-        appendNotice(ANALYSIS_WORKFLOW_MESSAGES.summary.canceled);
+        dispatch.summaryCanceled();
+        messages.appendNotice(ANALYSIS_WORKFLOW_MESSAGES.summary.canceled);
         return;
       }
 
       if (target.stage === 'criteria') {
         markCriteriaCanceled(target.operationKey);
         clearPendingCriteriaOperation(target.operationKey);
-        onCriteriaCanceled();
-        appendNotice(ANALYSIS_WORKFLOW_MESSAGES.question.canceled);
+        dispatch.questionSubmissionCanceled();
+        messages.appendNotice(ANALYSIS_WORKFLOW_MESSAGES.question.canceled);
         return;
       }
 
       markResultCanceled(target.params);
       clearPendingResultCancelParams(target.params);
-      onResultCanceled();
-      appendNotice(ANALYSIS_WORKFLOW_MESSAGES.result.canceled);
+      dispatch.criteriaSubmissionCanceled();
+      messages.appendNotice(ANALYSIS_WORKFLOW_MESSAGES.result.canceled);
     },
     onError: (error) => {
       const message = getAnalysisErrorMessage(
         error,
         ANALYSIS_WORKFLOW_MESSAGES.cancel.error,
       );
-      showToast(message);
-      appendNotice(message, 'error');
+      notify.showToast(message);
+      messages.appendNotice(message, 'error');
     },
   });
 

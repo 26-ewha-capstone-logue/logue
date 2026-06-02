@@ -40,53 +40,58 @@ export function useAnalysisWorkflowController({
   summaryPending,
 }: UseAnalysisWorkflowControllerParams) {
   const { dispatch, messages, notify } = effects;
+  const route = {
+    analysisFlowId,
+    conversationId,
+  };
   const cancellationRegistry = useAnalysisCancellationRegistry();
   const questionController = useQuestionAnalysisController({
-    analysisFlowId,
-    appendCriteriaMessage: messages.appendCriteriaMessage,
-    appendNotice: messages.appendNotice,
-    appendUserQuestion: messages.appendUserQuestion,
-    consumeCanceledCriteriaOperation:
-      cancellationRegistry.consumeCanceledCriteriaOperation,
-    conversationId,
-    dispatchQuestionSubmissionFailed: dispatch.questionSubmissionFailed,
-    dispatchQuestionSubmissionStarted: dispatch.questionSubmissionStarted,
-    dispatchQuestionSubmissionSucceeded: dispatch.questionSubmissionSucceeded,
-    questionSubmissionLocked,
-    showToast: notify.showToast,
+    cancellation: {
+      consumeCanceledCriteriaOperation:
+        cancellationRegistry.consumeCanceledCriteriaOperation,
+    },
+    dispatch,
+    messages,
+    notify,
+    pending: {
+      questionSubmissionLocked,
+    },
+    route,
   });
   const criteriaConfirmationController = useCriteriaConfirmationController({
-    analysisFlowId,
-    appendNotice: messages.appendNotice,
-    appendResultMessage: messages.appendResultMessage,
-    consumeCanceledResult: cancellationRegistry.consumeCanceledResult,
-    conversationId,
-    criteriaSubmissionLocked,
-    dispatchCriteriaSubmissionFailed: dispatch.criteriaSubmissionFailed,
-    dispatchCriteriaSubmissionStarted: dispatch.criteriaSubmissionStarted,
-    dispatchCriteriaSubmissionSucceeded: dispatch.criteriaSubmissionSucceeded,
-    showToast: notify.showToast,
+    cancellation: {
+      consumeCanceledResult: cancellationRegistry.consumeCanceledResult,
+    },
+    dispatch,
+    messages,
+    notify,
+    pending: {
+      criteriaSubmissionLocked,
+    },
+    route,
   });
   const cancelController = useAnalysisCancelController({
-    analysisFlowId,
-    appendNotice: messages.appendNotice,
-    clearPendingCriteriaOperation:
-      questionController.clearPendingCriteriaOperation,
-    clearPendingResultCancelParams:
-      criteriaConfirmationController.clearPendingResultCancelParams,
-    conversationId,
-    markCriteriaCanceled: cancellationRegistry.markCriteriaCanceled,
-    markResultCanceled: cancellationRegistry.markResultCanceled,
-    onCriteriaCanceled: dispatch.questionSubmissionCanceled,
-    onResultCanceled: dispatch.criteriaSubmissionCanceled,
-    onSummaryCanceled: dispatch.summaryCanceled,
-    pendingCriteriaCancelTarget: questionController.pendingCriteriaCancelTarget,
-    pendingResultCancelParams:
-      criteriaConfirmationController.pendingResultCancelParams,
-    questionAnalysisActive: questionController.questionAnalysisActive,
-    resultAnalysisActive: criteriaConfirmationController.resultAnalysisActive,
-    showToast: notify.showToast,
-    summaryPending,
+    cancellation: {
+      clearPendingCriteriaOperation:
+        questionController.clearPendingCriteriaOperation,
+      clearPendingResultCancelParams:
+        criteriaConfirmationController.clearPendingResultCancelParams,
+      markCriteriaCanceled: cancellationRegistry.markCriteriaCanceled,
+      markResultCanceled: cancellationRegistry.markResultCanceled,
+    },
+    dispatch,
+    messages,
+    notify,
+    pending: {
+      pendingCriteriaCancelTarget:
+        questionController.pendingCriteriaCancelTarget,
+      pendingResultCancelParams:
+        criteriaConfirmationController.pendingResultCancelParams,
+      questionAnalysisActive: questionController.questionAnalysisActive,
+      resultAnalysisActive: criteriaConfirmationController.resultAnalysisActive,
+      summaryPending,
+    },
+    route,
   });
   const { startQuestion } = questionController;
 
