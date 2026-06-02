@@ -23,7 +23,7 @@ import httpx
 import pytest
 from openai import APITimeoutError
 
-from llm import LLMResponseEmptyError
+from llm import LLMResponseEmptyError, TokenUsage
 from schemas.api.result_summary import (
     AnalysisCriteria,
     AnalysisSummaryRequest,
@@ -33,6 +33,13 @@ from schemas.api.result_summary import (
     Segment,
 )
 from services.result_summary import v1_baseline
+
+
+# complete_structured 는 (response, TokenUsage) 를 반환한다. 호출 인자/반환 검증
+# 테스트에서는 usage 값 자체가 의미 없으므로 고정 더미를 쓴다.
+_USAGE = TokenUsage(
+    input_tokens=100, cached_input_tokens=0, output_tokens=50, total_tokens=150
+)
 
 
 # ────────────────────────────────────────────────────────────────
@@ -109,7 +116,7 @@ def test_run_calls_llm_with_model_gpt4_nano(
     mock_client: MagicMock, mock_prompt: None
 ) -> None:
     req = _make_request()
-    mock_client.complete_structured.return_value = _make_valid_response(req)
+    mock_client.complete_structured.return_value = (_make_valid_response(req), _USAGE)
 
     v1_baseline.run(req)
 
@@ -121,7 +128,7 @@ def test_run_calls_llm_with_temperature_zero_point_one(
     mock_client: MagicMock, mock_prompt: None
 ) -> None:
     req = _make_request()
-    mock_client.complete_structured.return_value = _make_valid_response(req)
+    mock_client.complete_structured.return_value = (_make_valid_response(req), _USAGE)
 
     v1_baseline.run(req)
 
@@ -133,7 +140,7 @@ def test_run_calls_llm_with_max_output_tokens_300(
     mock_client: MagicMock, mock_prompt: None
 ) -> None:
     req = _make_request()
-    mock_client.complete_structured.return_value = _make_valid_response(req)
+    mock_client.complete_structured.return_value = (_make_valid_response(req), _USAGE)
 
     v1_baseline.run(req)
 
@@ -146,7 +153,7 @@ def test_run_excludes_request_id_from_user_payload(
 ) -> None:
     """user_payload 에 request_id 가 없어야 한다 — LLM 판단에 불필요한 필드."""
     req = _make_request()
-    mock_client.complete_structured.return_value = _make_valid_response(req)
+    mock_client.complete_structured.return_value = (_make_valid_response(req), _USAGE)
 
     v1_baseline.run(req)
 
@@ -159,7 +166,7 @@ def test_run_loads_system_prompt_with_name_result_summary(
 ) -> None:
     """load_system_prompt 가 "result_summary" 이름으로 호출되는지 확인."""
     req = _make_request()
-    mock_client.complete_structured.return_value = _make_valid_response(req)
+    mock_client.complete_structured.return_value = (_make_valid_response(req), _USAGE)
 
     captured: dict[str, str] = {}
 
@@ -184,7 +191,7 @@ def test_run_returns_llm_response_as_is(
     """LLMClient 반환값을 변환 없이 그대로 돌려줘야 한다."""
     req = _make_request()
     expected = _make_valid_response(req)
-    mock_client.complete_structured.return_value = expected
+    mock_client.complete_structured.return_value = (expected, _USAGE)
 
     result = v1_baseline.run(req)
 

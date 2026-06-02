@@ -24,7 +24,7 @@ import httpx
 import pytest
 from openai import APITimeoutError
 
-from llm import LLMResponseEmptyError
+from llm import LLMResponseEmptyError, TokenUsage
 from schemas.api.file_analysis import (
     Catalog,
     ColumnMeta,
@@ -37,6 +37,13 @@ from schemas.api.file_analysis import (
     SourceWarningKey,
 )
 from services.file_analysis import v1_baseline
+
+
+# complete_structured 는 (response, TokenUsage) 를 반환한다. 호출 인자/반환 검증
+# 테스트에서는 usage 값 자체가 의미 없으므로 고정 더미를 쓴다.
+_USAGE = TokenUsage(
+    input_tokens=100, cached_input_tokens=0, output_tokens=50, total_tokens=150
+)
 
 
 # ────────────────────────────────────────────────────────────────
@@ -155,7 +162,7 @@ def test_run_calls_llm_with_model_gpt4_nano(
     mock_client: MagicMock, mock_prompt: None
 ) -> None:
     req = _make_request()
-    mock_client.complete_structured.return_value = _make_valid_response(req)
+    mock_client.complete_structured.return_value = (_make_valid_response(req), _USAGE)
 
     v1_baseline.run(req)
 
@@ -167,7 +174,7 @@ def test_run_calls_llm_with_temperature_zero(
     mock_client: MagicMock, mock_prompt: None
 ) -> None:
     req = _make_request()
-    mock_client.complete_structured.return_value = _make_valid_response(req)
+    mock_client.complete_structured.return_value = (_make_valid_response(req), _USAGE)
 
     v1_baseline.run(req)
 
@@ -179,7 +186,7 @@ def test_run_calls_llm_with_max_output_tokens_1600(
     mock_client: MagicMock, mock_prompt: None
 ) -> None:
     req = _make_request()
-    mock_client.complete_structured.return_value = _make_valid_response(req)
+    mock_client.complete_structured.return_value = (_make_valid_response(req), _USAGE)
 
     v1_baseline.run(req)
 
@@ -192,7 +199,7 @@ def test_run_calls_llm_with_response_model_file_analysis_response(
 ) -> None:
     """response_model 이 FileAnalysisResponse 클래스 자체여야 Structured Outputs 가 동작한다."""
     req = _make_request()
-    mock_client.complete_structured.return_value = _make_valid_response(req)
+    mock_client.complete_structured.return_value = (_make_valid_response(req), _USAGE)
 
     v1_baseline.run(req)
 
@@ -205,7 +212,7 @@ def test_run_excludes_request_id_from_user_payload(
 ) -> None:
     """user_payload 에 request_id 가 없어야 한다 (LLM 판단에 불필요)."""
     req = _make_request()
-    mock_client.complete_structured.return_value = _make_valid_response(req)
+    mock_client.complete_structured.return_value = (_make_valid_response(req), _USAGE)
 
     v1_baseline.run(req)
 
@@ -218,7 +225,7 @@ def test_run_includes_data_source_and_catalog_in_user_payload(
 ) -> None:
     """LLM 이 판단에 사용하는 핵심 필드는 user_payload 에 포함되어야 한다."""
     req = _make_request()
-    mock_client.complete_structured.return_value = _make_valid_response(req)
+    mock_client.complete_structured.return_value = (_make_valid_response(req), _USAGE)
 
     v1_baseline.run(req)
 
@@ -232,7 +239,7 @@ def test_run_passes_system_prompt_from_loader(
 ) -> None:
     """load_system_prompt 의 반환값이 system_prompt kwarg 로 그대로 전달돼야 한다."""
     req = _make_request()
-    mock_client.complete_structured.return_value = _make_valid_response(req)
+    mock_client.complete_structured.return_value = (_make_valid_response(req), _USAGE)
 
     v1_baseline.run(req)
 
@@ -245,7 +252,7 @@ def test_run_loads_system_prompt_with_name_file_analysis(
 ) -> None:
     """load_system_prompt 가 "file_analysis" 이름으로 호출되는지 확인."""
     req = _make_request()
-    mock_client.complete_structured.return_value = _make_valid_response(req)
+    mock_client.complete_structured.return_value = (_make_valid_response(req), _USAGE)
 
     captured: dict[str, str] = {}
 
@@ -270,12 +277,58 @@ def test_run_returns_llm_response_as_is(
     """LLMClient 반환값을 변환 없이 그대로 돌려줘야 한다."""
     req = _make_request()
     expected = _make_valid_response(req)
-    mock_client.complete_structured.return_value = expected
+    mock_client.complete_structured.return_value = (expected, _USAGE)
 
     result = v1_baseline.run(req)
 
     assert result is expected
     assert isinstance(result, FileAnalysisResponse)
+
+
+# ────────────────────────────────────────────────────────────────
+# 2.5 관측 이벤트 — 호출 단위 usage·cost emit
+# ────────────────────────────────────────────────────────────────
+
+def test_run_emits_llm_call_cost_event(
+    mock_client: MagicMock, mock_prompt: None, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """실호출 경로에서 api_name·usage·estimated_cost_usd 이벤트 1줄이 emit 돼야 한다."""
+    import json
+
+    req = _make_request()
+    mock_client.complete_structured.return_value = (
+        _make_valid_response(req),
+        TokenUsage(
+            input_tokens=1000,
+            cached_input_tokens=200,
+            output_tokens=300,
+            total_tokens=1300,
+        ),
+    )
+
+    v1_baseline.run(req)
+
+    events = [
+        json.loads(line)
+        for line in capsys.readouterr().out.strip().split("\n")
+        if line
+    ]
+    llm_events = [e for e in events if e.get("event_type") == "llm_call"]
+    assert len(llm_events) == 1
+
+    event = llm_events[0]
+    assert event["api_name"] == "file_analysis"
+    assert event["request_id"] == "req_test"
+    assert event["llm"]["model"] == "gpt-4.1-nano"
+    assert event["usage"]["input_tokens"] == 1000
+    assert event["usage"]["cached_input_tokens"] == 200
+    assert event["usage"]["output_tokens"] == 300
+
+    # gpt-4.1-nano: non-cached input 800*0.10 + cached 200*0.025 + output 300*0.40 (per 1M)
+    expected_cost = round(
+        (800 * 0.10 + 200 * 0.025 + 300 * 0.40) / 1_000_000, 6
+    )
+    assert event["cost"]["estimated_cost_usd"] == expected_cost
 
 
 # ────────────────────────────────────────────────────────────────
