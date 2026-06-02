@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use } from 'react';
 import { useRouter } from 'next/navigation';
 import { ToastPortal } from '@/components';
 import { DATA_SOURCE_MESSAGES } from '@/constants/messages';
@@ -8,8 +8,8 @@ import { useToast } from '@/hooks/useToast';
 import DataDetailStatus from './_components/DataDetailStatus';
 import DataDetailView from './_components/DataDetailView';
 import { useDataDetail } from '@/features/dataSource/hooks/useDataDetail';
+import { useDataSourceDeleteFlow } from '@/features/dataSource/hooks/useDataSourceDeleteFlow';
 import { useDataSourceUserContext } from '@/features/dataSource/hooks/useDataSourceUserContext';
-import { useDeleteDataSources } from '@/features/dataSource/hooks/useDeleteDataSources';
 
 type PageParams = { id: string };
 
@@ -22,7 +22,6 @@ export default function DataDetailPage({
   const router = useRouter();
   const { hasAccessToken, isAuthenticated, mockDataSource, status } =
     useDataSourceUserContext();
-  const [deleteOpen, setDeleteOpen] = useState(false);
   const { toast, showToast } = useToast();
 
   const dataSourceId = Number(id);
@@ -34,22 +33,16 @@ export default function DataDetailPage({
     dataSourceId: isValidDataSourceId ? dataSourceId : null,
     enabled: isAuthenticated && isValidDataSourceId && !isDeletedMockDataSource,
   });
-  const deleteDataSourcesMutation = useDeleteDataSources({
+  const deleteFlow = useDataSourceDeleteFlow({
     conflictErrorMessage: DATA_SOURCE_MESSAGES.deleteConflict,
     fallbackErrorMessage: DATA_SOURCE_MESSAGES.detailDeleteError,
     mockDataSource,
-    onError: (message) => {
-      setDeleteOpen(false);
-      showToast(message, 'error');
-    },
-    onSuccess: () => {
-      setDeleteOpen(false);
-      router.push('/data');
-    },
+    onDeleted: () => router.push('/data'),
+    showToast,
   });
 
   const handleDeleteConfirm = async () => {
-    await deleteDataSourcesMutation.remove([dataSourceId]);
+    await deleteFlow.confirmDelete([dataSourceId]);
   };
 
   if (!isValidDataSourceId) {
@@ -77,12 +70,12 @@ export default function DataDetailPage({
   return (
     <>
       <DataDetailView
-        deleteOpen={deleteOpen}
-        deletePending={deleteDataSourcesMutation.isPending}
+        deleteOpen={deleteFlow.deleteOpen}
+        deletePending={deleteFlow.deletePending}
         detail={dataDetail.detail}
         onChat={() => router.push(`/analysis/${id}`)}
-        onDelete={() => setDeleteOpen(true)}
-        onDeleteClose={() => setDeleteOpen(false)}
+        onDelete={deleteFlow.openDelete}
+        onDeleteClose={deleteFlow.closeDelete}
         onDeleteConfirm={() => void handleDeleteConfirm()}
       />
       <ToastPortal toast={toast} />

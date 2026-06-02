@@ -17,25 +17,22 @@ import {
   type AnalysisCancelTarget,
   type PendingCriteriaCancelTarget,
 } from '../utils/analysisCancelTarget';
+import type { AnalysisWorkflowEffects } from './useAnalysisWorkflowEffects';
 
 type UseAnalysisCancelControllerParams = {
   analysisFlowId: number | null;
-  appendNotice: (content: string, tone?: 'default' | 'error') => void;
   clearPendingCriteriaOperation: (operationKey: string) => void;
   clearPendingResultCancelParams: (
     params: Pick<QuestionResultParams, 'analysisCriteriaId' | 'messageId'>,
   ) => void;
   conversationId: number | null;
+  effects: AnalysisWorkflowEffects;
   markCriteriaCanceled: (operationKey: string) => void;
   markResultCanceled: (params: QuestionResultParams) => void;
-  onCriteriaCanceled: () => void;
-  onResultCanceled: () => void;
-  onSummaryCanceled: () => void;
   pendingCriteriaCancelTarget: PendingCriteriaCancelTarget | null;
   pendingResultCancelParams: QuestionResultParams | null;
   questionAnalysisActive: boolean;
   resultAnalysisActive: boolean;
-  showToast: (message: string) => void;
   summaryPending: boolean;
 };
 
@@ -51,22 +48,19 @@ function getAnalysisFlowKey({
 
 export function useAnalysisCancelController({
   analysisFlowId,
-  appendNotice,
   clearPendingCriteriaOperation,
   clearPendingResultCancelParams,
   conversationId,
+  effects,
   markCriteriaCanceled,
   markResultCanceled,
-  onCriteriaCanceled,
-  onResultCanceled,
-  onSummaryCanceled,
   pendingCriteriaCancelTarget,
   pendingResultCancelParams,
   questionAnalysisActive,
   resultAnalysisActive,
-  showToast,
   summaryPending,
 }: UseAnalysisCancelControllerParams) {
+  const { dispatch, messages, notify } = effects;
   const queryClient = useQueryClient();
   const [canceledSummaryKey, setCanceledSummaryKey] = useState<string | null>(
     null,
@@ -130,31 +124,31 @@ export function useAnalysisCancelController({
 
       if (target.stage === 'summary') {
         setCanceledSummaryKey(getAnalysisFlowKey(target.params));
-        onSummaryCanceled();
-        appendNotice(ANALYSIS_WORKFLOW_MESSAGES.summary.canceled);
+        dispatch.summaryCanceled();
+        messages.appendNotice(ANALYSIS_WORKFLOW_MESSAGES.summary.canceled);
         return;
       }
 
       if (target.stage === 'criteria') {
         markCriteriaCanceled(target.operationKey);
         clearPendingCriteriaOperation(target.operationKey);
-        onCriteriaCanceled();
-        appendNotice(ANALYSIS_WORKFLOW_MESSAGES.question.canceled);
+        dispatch.questionSubmissionCanceled();
+        messages.appendNotice(ANALYSIS_WORKFLOW_MESSAGES.question.canceled);
         return;
       }
 
       markResultCanceled(target.params);
       clearPendingResultCancelParams(target.params);
-      onResultCanceled();
-      appendNotice(ANALYSIS_WORKFLOW_MESSAGES.result.canceled);
+      dispatch.criteriaSubmissionCanceled();
+      messages.appendNotice(ANALYSIS_WORKFLOW_MESSAGES.result.canceled);
     },
     onError: (error) => {
       const message = getAnalysisErrorMessage(
         error,
         ANALYSIS_WORKFLOW_MESSAGES.cancel.error,
       );
-      showToast(message);
-      appendNotice(message, 'error');
+      notify.showToast(message);
+      messages.appendNotice(message, 'error');
     },
   });
 

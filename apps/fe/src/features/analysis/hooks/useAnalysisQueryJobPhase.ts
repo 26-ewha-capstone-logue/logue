@@ -3,11 +3,11 @@
 import { useQuery, type QueryKey } from '@tanstack/react-query';
 import type { AnalysisStatusResponse } from '@/apis/analysis';
 import {
+  isFailedAnalysisStatus,
   normalizeAnalysisError,
   normalizeAnalysisStatusError,
 } from '../adapters/normalizeAnalysisError';
 import { useAnalysisStatusPolling } from './useAnalysisStatusPolling';
-import { isFailedJobStatus } from './useJobPoller';
 
 type UseAnalysisQueryJobPhaseOptions<TParams, TResponse, TResult> = {
   enabled: boolean;
@@ -21,6 +21,7 @@ type UseAnalysisQueryJobPhaseOptions<TParams, TResponse, TResult> = {
   params: TParams | null;
   resultQueryKey: QueryKey;
   statusQueryKey: QueryKey;
+  timeoutMs?: number;
 };
 
 export function useAnalysisQueryJobPhase<TParams, TResponse, TResult>({
@@ -35,6 +36,7 @@ export function useAnalysisQueryJobPhase<TParams, TResponse, TResult>({
   params,
   resultQueryKey,
   statusQueryKey,
+  timeoutMs,
 }: UseAnalysisQueryJobPhaseOptions<TParams, TResponse, TResult>) {
   const statusQuery = useAnalysisStatusPolling<TParams>({
     enabled,
@@ -43,6 +45,8 @@ export function useAnalysisQueryJobPhase<TParams, TResponse, TResult>({
     intervalMs,
     params,
     queryKey: statusQueryKey,
+    timeoutMessage: getResultErrorMessage,
+    timeoutMs,
   });
   const status = enabled ? statusQuery.data?.status : undefined;
   const resultQuery = useQuery({
@@ -71,7 +75,7 @@ export function useAnalysisQueryJobPhase<TParams, TResponse, TResult>({
     !statusQuery.isError &&
     !resultQuery.isError &&
     !result &&
-    !isFailedJobStatus(status);
+    !isFailedAnalysisStatus(status);
 
   return {
     error,

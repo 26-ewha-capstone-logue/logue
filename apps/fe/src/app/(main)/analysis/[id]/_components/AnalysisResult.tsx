@@ -5,12 +5,7 @@ import ArrowDownIcon from '@/assets/icons/arrow-down.svg';
 import type { SummaryViewModel } from '@/features/analysis/models/analysisViewModels';
 import AnalysisActionButtons from './AnalysisActionButtons';
 import AnalysisCard from './AnalysisCard';
-import {
-  AnalysisTable,
-  AnalysisTableCell,
-  AnalysisTableHeaderCell,
-  AnalysisTableRow,
-} from './AnalysisTable';
+import AnalysisKeyValueTable from './AnalysisKeyValueTable';
 import AnalysisWarningList from './AnalysisWarningList';
 
 export type AnalysisResultProps = {
@@ -30,6 +25,11 @@ export default function AnalysisResult({
 }: AnalysisResultProps) {
   const [summaryOpen, setSummaryOpen] = useState(true);
   const hasWarnings = summary.warnings.length > 0;
+  const summaryRows = summary.keyPoints.map((item, index) => ({
+    key: `${item.name}-${item.example}-${index}`,
+    cells: [item.name, item.example] as const,
+    cellClassNames: ['text-gray-900', 'text-orange-500'] as const,
+  }));
 
   return (
     <AnalysisCard>
@@ -63,42 +63,15 @@ export default function AnalysisResult({
         </button>
 
         {summaryOpen && (
-          <AnalysisTable tableClassName="text-body4">
-            <thead>
-              <tr className="bg-gray-100">
-                <AnalysisTableHeaderCell className="w-[14rem]">
-                  Name
-                </AnalysisTableHeaderCell>
-                <AnalysisTableHeaderCell>예시</AnalysisTableHeaderCell>
-              </tr>
-            </thead>
-            <tbody>
-              {summary.keyPoints.length === 0 ? (
-                <tr>
-                  <AnalysisTableCell
-                    colSpan={2}
-                    className="text-center text-gray-600"
-                  >
-                    {summary.emptyMessage ??
-                      '표시할 데이터 요약 항목이 없습니다.'}
-                  </AnalysisTableCell>
-                </tr>
-              ) : (
-                summary.keyPoints.map((item, index) => (
-                  <AnalysisTableRow
-                    key={`${item.name}-${item.example}-${index}`}
-                  >
-                    <AnalysisTableCell className="text-gray-900">
-                      {item.name}
-                    </AnalysisTableCell>
-                    <AnalysisTableCell className="text-orange-500">
-                      {item.example}
-                    </AnalysisTableCell>
-                  </AnalysisTableRow>
-                ))
-              )}
-            </tbody>
-          </AnalysisTable>
+          <AnalysisKeyValueTable
+            headers={['Name', '예시']}
+            headerRowClassName="bg-gray-100"
+            rows={summaryRows}
+            tableClassName="text-body4"
+            emptyContent={
+              summary.emptyMessage ?? '표시할 데이터 요약 항목이 없습니다.'
+            }
+          />
         )}
       </div>
 
