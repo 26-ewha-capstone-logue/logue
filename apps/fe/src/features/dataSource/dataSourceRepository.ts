@@ -7,12 +7,18 @@ import {
 } from '@/apis/datasource';
 import {
   getMockDataSource,
+  getMockDataSourceIds,
   getMockDataSourceListResponse,
   getServerDataSourceIds,
   isMockDataSourceId,
   withMockDataSource,
 } from '@/features/mockDataSource';
 import type { GetDataSourceListParams, GetFileResponse } from './types';
+
+export type DeleteDataSourcesResult = {
+  deletedMockDataSourceIds: number[];
+  deletedServerDataSourceIds: number[];
+};
 
 type DataSourceDetailReader = (
   dataSourceId: number,
@@ -34,10 +40,16 @@ async function deleteMockAwareDataSources(
   deleteDataSources: DataSourcesDeleteRequest,
 ) {
   const serverDataSourceIds = getServerDataSourceIds(dataSourceIds);
+  const mockDataSourceIds = getMockDataSourceIds(dataSourceIds);
 
-  if (serverDataSourceIds.length === 0) return;
+  if (serverDataSourceIds.length > 0) {
+    await deleteDataSources(serverDataSourceIds);
+  }
 
-  return deleteDataSources(serverDataSourceIds);
+  return {
+    deletedMockDataSourceIds: mockDataSourceIds,
+    deletedServerDataSourceIds: serverDataSourceIds,
+  } satisfies DeleteDataSourcesResult;
 }
 
 async function deleteMockAwareDataSource(

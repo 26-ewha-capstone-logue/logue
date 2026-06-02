@@ -2,6 +2,7 @@ export {
   MOCK_MARKETING_CVR_DATA_SOURCE_ID,
   getDeletedMockDataSourceStorageKey,
   getMockDataSource,
+  getMockDataSourceIds,
   getMockDataSourceListResponse,
   getServerDataSourceIds,
   isMockDataSourceId,
@@ -11,6 +12,5 @@ export {
 } from './mockDataSource';
 export {
   useMockDataSourceManager,
-  type MockDataSourceDeletionPlan,
   type MockDataSourceManager,
 } from './useMockDataSourceManager';

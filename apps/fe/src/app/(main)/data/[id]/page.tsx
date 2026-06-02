@@ -31,7 +31,7 @@ export default function DataDetailPage({
   const isDeletedMockDataSource =
     mockDataSource.isDeletedDataSource(dataSourceId);
   const dataDetail = useDataDetail({
-    dataSourceId: isValidDataSourceId ? dataSourceId : 0,
+    dataSourceId: isValidDataSourceId ? dataSourceId : null,
     enabled: isAuthenticated && isValidDataSourceId && !isDeletedMockDataSource,
   });
   const deleteDataSourcesMutation = useDeleteDataSources({

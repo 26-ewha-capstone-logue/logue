@@ -1,4 +1,9 @@
-export { default as DataSourcePreviewTable } from './DataSourcePreviewTable';
+export { default as DeleteConfirmModal } from './DeleteConfirmModal';
+export type { DeleteConfirmModalProps } from './DeleteConfirmModal';
+export {
+  DataSourceAnalysisPreviewTable,
+  DataSourceDetailPreviewTable,
+} from './DataSourcePreviewTable';
 export {
   deleteDataSource,
   deleteDataSources,
@@ -6,6 +11,8 @@ export {
   getDataSources,
   uploadDataSource,
 } from './dataSourceRepository';
+export type { DeleteDataSourcesResult } from './dataSourceRepository';
+export { useDataSourceDetail } from './hooks/useDataSourceDetail';
 export {
   createDataSourcePreviewTableModel,
   type DataSourcePreviewColumn,

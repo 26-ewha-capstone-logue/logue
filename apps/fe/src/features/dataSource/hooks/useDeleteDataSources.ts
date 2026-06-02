@@ -12,7 +12,7 @@ type UseDeleteDataSourcesOptions = {
   fallbackErrorMessage: string;
   mockDataSource: Pick<
     MockDataSourceManager,
-    'getDeletionPlan' | 'markDeletedDataSources'
+    'canPersistDeletedDataSources' | 'markDeletedDataSources'
   >;
   onError: (message: string) => void;
   onSuccess: () => void;
@@ -34,20 +34,18 @@ export function useDeleteDataSources({
     async (dataSourceIds: number[]) => {
       if (dataSourceIds.length === 0) return;
 
-      const deletionPlan = mockDataSource.getDeletionPlan(dataSourceIds);
-
-      if (deletionPlan.requiresUser) {
+      if (!mockDataSource.canPersistDeletedDataSources(dataSourceIds)) {
         onError(AUTH_MESSAGES.userInfoRequired);
         return;
       }
 
       try {
-        if (deletionPlan.serverDataSourceIds.length > 0) {
-          await mutation.mutateAsync(deletionPlan.serverDataSourceIds);
-        }
+        const result = await mutation.mutateAsync(dataSourceIds);
 
-        if (deletionPlan.mockDataSourceIds.length > 0) {
-          mockDataSource.markDeletedDataSources(deletionPlan.mockDataSourceIds);
+        if (result.deletedMockDataSourceIds.length > 0) {
+          mockDataSource.markDeletedDataSources(
+            result.deletedMockDataSourceIds,
+          );
         }
 
         await queryClient.invalidateQueries({

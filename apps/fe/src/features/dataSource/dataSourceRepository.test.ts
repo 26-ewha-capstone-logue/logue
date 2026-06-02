@@ -39,10 +39,37 @@ describe('dataSourceRepository', () => {
     });
   });
 
-  it('passes only server data source ids to the raw multi-delete API', async () => {
+  it('deletes server data source ids through the raw multi-delete API', async () => {
     vi.mocked(dataSourceApi.deleteDataSources).mockResolvedValue(undefined);
 
-    await deleteDataSources([1, MOCK_MARKETING_CVR_DATA_SOURCE_ID, 2]);
+    await expect(deleteDataSources([1, 2])).resolves.toEqual({
+      deletedMockDataSourceIds: [],
+      deletedServerDataSourceIds: [1, 2],
+    });
+
+    expect(dataSourceApi.deleteDataSources).toHaveBeenCalledWith([1, 2]);
+  });
+
+  it('deletes mock data source ids without calling the raw multi-delete API', async () => {
+    await expect(
+      deleteDataSources([MOCK_MARKETING_CVR_DATA_SOURCE_ID]),
+    ).resolves.toEqual({
+      deletedMockDataSourceIds: [MOCK_MARKETING_CVR_DATA_SOURCE_ID],
+      deletedServerDataSourceIds: [],
+    });
+
+    expect(dataSourceApi.deleteDataSources).not.toHaveBeenCalled();
+  });
+
+  it('returns server and mock data source ids after a mixed delete', async () => {
+    vi.mocked(dataSourceApi.deleteDataSources).mockResolvedValue(undefined);
+
+    await expect(
+      deleteDataSources([1, MOCK_MARKETING_CVR_DATA_SOURCE_ID, 2]),
+    ).resolves.toEqual({
+      deletedMockDataSourceIds: [MOCK_MARKETING_CVR_DATA_SOURCE_ID],
+      deletedServerDataSourceIds: [1, 2],
+    });
 
     expect(dataSourceApi.deleteDataSources).toHaveBeenCalledWith([1, 2]);
   });

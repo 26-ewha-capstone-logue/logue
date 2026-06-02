@@ -3,7 +3,7 @@
 import ChatIcon from '@/assets/icons/chat.svg';
 import TrashIcon from '@/assets/icons/trash.svg';
 import {
-  DataSourcePreviewTable,
+  DataSourceDetailPreviewTable,
   type FilePreview,
 } from '@/features/dataSource';
 
@@ -61,7 +61,7 @@ export default function DataChartCard({
         </div>
       </div>
 
-      <DataSourcePreviewTable preview={preview} />
+      <DataSourceDetailPreviewTable preview={preview} />
     </div>
   );
 }
