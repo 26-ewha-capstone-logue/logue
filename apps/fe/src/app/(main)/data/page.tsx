@@ -2,9 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ConfirmModal, FileUploadModal, ToastPortal } from '@/components';
+import { FileUploadModal, ToastPortal } from '@/components';
 import { AUTH_MESSAGES, DATA_SOURCE_MESSAGES } from '@/constants/messages';
-import type { DataSourceSummary, DataSourceSort } from '@/features/dataSource';
+import {
+  DeleteConfirmModal,
+  type DataSourceSummary,
+  type DataSourceSort,
+} from '@/features/dataSource';
 import { useStartAnalysis } from '@/hooks/useStartAnalysis';
 import { useToast } from '@/hooks/useToast';
 import { validateCsvFile } from '@/lib/fileValidation';
@@ -16,8 +20,6 @@ import { useDataSourceUserContext } from '@/features/dataSource/hooks/useDataSou
 import { useDeleteDataSources } from '@/features/dataSource/hooks/useDeleteDataSources';
 import { useUploadDataSource } from '@/features/dataSource/hooks/useUploadDataSource';
 import { getTableMessage } from '@/features/dataSource/utils/tableMessage';
-
-const DELETE_ILLUST_SRC = '/illusts/delete.svg';
 
 const SORT_OPTIONS = [
   { value: 'MOST_USED', label: '사용량 많은 순' },
@@ -176,26 +178,11 @@ export default function DataPage() {
         onUpload={uploadDataSourceMutation.upload}
       />
 
-      <ConfirmModal
+      <DeleteConfirmModal
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
         onConfirm={() => void handleDeleteConfirm()}
-        title={DATA_SOURCE_MESSAGES.deleteTitle}
-        description={DATA_SOURCE_MESSAGES.deleteDescription}
-        confirmLabel={DATA_SOURCE_MESSAGES.deleteConfirmLabel}
-        cancelLabel={DATA_SOURCE_MESSAGES.deleteCancelLabel}
-        confirmDisabled={deleteDataSourcesMutation.isPending}
-        icon={
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={DELETE_ILLUST_SRC}
-              alt=""
-              aria-hidden
-              className="h-[8rem] w-auto"
-            />
-          </>
-        }
+        isPending={deleteDataSourcesMutation.isPending}
       />
 
       <ToastPortal toast={toast} />

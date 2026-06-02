@@ -71,7 +71,6 @@ export function useAnalysisPageData({
     dataSourceId,
     enabled: hasAccessToken,
     errorMessage: ANALYSIS_WORKFLOW_MESSAGES.dataSource.getError,
-    invalidRouteMessage: ANALYSIS_WORKFLOW_MESSAGES.invalidRoute,
   });
 
   return {

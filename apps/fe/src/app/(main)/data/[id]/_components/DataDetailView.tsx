@@ -1,7 +1,10 @@
 'use client';
 
-import { ConfirmModal } from '@/components';
-import type { GetFileResponse } from '@/features/dataSource';
+import {
+  DeleteConfirmModal,
+  type GetFileResponse,
+} from '@/features/dataSource';
+import { DATA_SOURCE_MESSAGES } from '@/constants/messages';
 import { formatDateTime } from '@/lib/dateTime';
 import { formatFileSize } from '@/lib/fileValidation';
 import DataChartCard from '../../_components/DataChartCard';
@@ -15,8 +18,6 @@ type DataDetailViewProps = {
   onDeleteClose: () => void;
   onDeleteConfirm: () => void;
 };
-
-const DELETE_ILLUST_SRC = '/illusts/delete.svg';
 
 export default function DataDetailView({
   deleteOpen,
@@ -38,27 +39,13 @@ export default function DataDetailView({
         onDelete={onDelete}
       />
 
-      <ConfirmModal
+      <DeleteConfirmModal
         open={deleteOpen}
         onClose={onDeleteClose}
         onConfirm={onDeleteConfirm}
-        title="파일을 삭제하시겠어요?"
-        description="삭제 후에는 복구할 수 없어요."
-        confirmLabel={deletePending ? '삭제 중' : '삭제하기'}
-        cancelLabel="취소하기"
-        confirmDisabled={deletePending}
-        cancelDisabled={deletePending}
-        icon={
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={DELETE_ILLUST_SRC}
-              alt=""
-              aria-hidden
-              className="h-[8rem] w-auto"
-            />
-          </>
-        }
+        isPending={deletePending}
+        pendingConfirmLabel={DATA_SOURCE_MESSAGES.deletePendingLabel}
+        cancelDisabledOnPending
       />
     </main>
   );
