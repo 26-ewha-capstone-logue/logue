@@ -7,20 +7,12 @@ import {
   type AuthTokens,
 } from './auth';
 import type { AuthStatus } from './authSession';
+import {
+  getSharedReissuedAuthTokens,
+  hasUsableRotatedTokens,
+} from './authTokenRefresh';
 
 export type ReissueAuthTokens = (refreshToken: string) => Promise<AuthTokens>;
-
-function hasUsableRotatedTokens(previousRefreshToken: string) {
-  const latestAccessToken = getAccessToken();
-  const latestRefreshToken = getRefreshToken();
-
-  return (
-    !!latestAccessToken &&
-    !!latestRefreshToken &&
-    latestRefreshToken !== previousRefreshToken &&
-    !shouldRefreshAccessToken(latestAccessToken)
-  );
-}
 
 export async function restoreAuthSession(
   reissueAuthTokens: ReissueAuthTokens,
@@ -42,7 +34,10 @@ export async function restoreAuthSession(
   }
 
   try {
-    const nextTokens = await reissueAuthTokens(refreshToken);
+    const nextTokens = await getSharedReissuedAuthTokens(
+      refreshToken,
+      reissueAuthTokens,
+    );
     setAuthTokens(nextTokens);
     return 'authenticated';
   } catch {

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import ArrowDownIcon from '@/assets/icons/arrow-down.svg';
-import type { SummaryViewModel } from '../_models/analysisViewModels';
+import type { SummaryViewModel } from '@/features/analysis/models/analysisViewModels';
 import AnalysisActionButtons from './AnalysisActionButtons';
 import AnalysisCard from './AnalysisCard';
 import {
