@@ -1,49 +1,41 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
-import type { QuestionCriteriaParams } from '@/apis/analysis';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getAnalysisErrorMessage } from '../adapters/normalizeAnalysisError';
 import { ANALYSIS_WORKFLOW_MESSAGES } from '../config/analysisWorkflowMessages';
 import { ANALYSIS_JOB_POLICY } from '../config/analysisWorkflowPolicy';
-import type { CriteriaViewModel } from '@/features/analysis/models/analysisViewModels';
 import type { PendingCriteriaCancelTarget } from '../utils/analysisCancelTarget';
 import type { CriteriaInitialMode } from './useAnalysisChatMessages';
-import { useQuestionAnalysisPhase } from './useCriteriaPhase';
+import {
+  useCreateQuestionMutation,
+  useQuestionAnalysisPhase,
+  type QuestionAnalysisContext,
+} from './useCriteriaPhase';
+import type { AnalysisWorkflowEffects } from './useAnalysisWorkflowEffects';
 
 type UseQuestionAnalysisControllerParams = {
   analysisFlowId: number | null;
-  appendCriteriaMessage: (
-    criteria: CriteriaViewModel,
-    initialMode?: CriteriaInitialMode,
-  ) => void;
-  appendNotice: (content: string, tone?: 'default' | 'error') => void;
-  appendUserQuestion: (content: string) => void;
   consumeCanceledCriteriaOperation: (operationKey: string) => boolean;
   conversationId: number | null;
-  dispatchQuestionSubmissionFailed: () => void;
-  dispatchQuestionSubmissionStarted: () => void;
-  dispatchQuestionSubmissionSucceeded: () => void;
+  effects: AnalysisWorkflowEffects;
   questionSubmissionLocked: boolean;
-  showToast: (message: string) => void;
 };
 
 export function useQuestionAnalysisController({
   analysisFlowId,
-  appendCriteriaMessage,
-  appendNotice,
-  appendUserQuestion,
   consumeCanceledCriteriaOperation,
   conversationId,
-  dispatchQuestionSubmissionFailed,
-  dispatchQuestionSubmissionStarted,
-  dispatchQuestionSubmissionSucceeded,
+  effects,
   questionSubmissionLocked,
-  showToast,
 }: UseQuestionAnalysisControllerParams) {
+  const { dispatch, messages, notify } = effects;
   const operationSequenceRef = useRef(0);
+  const handledOperationKeyRef = useRef<string | null>(null);
   const [pendingOperationKey, setPendingOperationKey] = useState<string | null>(
     null,
   );
+  const [pendingAnalysis, setPendingAnalysis] =
+    useState<QuestionAnalysisContext | null>(null);
   const [pendingCancelTarget, setPendingCancelTarget] =
     useState<PendingCriteriaCancelTarget | null>(null);
 
@@ -58,20 +50,70 @@ export function useQuestionAnalysisController({
     setPendingCancelTarget((current) =>
       current?.operationKey === operationKey ? null : current,
     );
+    setPendingAnalysis((current) =>
+      current?.operationKey === operationKey ? null : current,
+    );
   }, []);
 
-  const questionAnalysisMutation = useQuestionAnalysisPhase({
+  const createQuestionMutation = useCreateQuestionMutation();
+  const { mutate: createQuestion, isPending: questionCreatePending } =
+    createQuestionMutation;
+  const criteriaPhase = useQuestionAnalysisPhase({
+    enabled: pendingAnalysis !== null,
     getCriteriaErrorMessage:
       ANALYSIS_WORKFLOW_MESSAGES.question.getCriteriaError,
-    onQuestionCreated: (context: {
-      operationKey: string;
-      params: QuestionCriteriaParams;
-    }) => setPendingCancelTarget(context),
+    params: pendingAnalysis?.params ?? null,
     questionAnalysisTimeoutMs: ANALYSIS_JOB_POLICY.questionAnalysisTimeoutMs,
     statusPollIntervalMs: ANALYSIS_JOB_POLICY.statusPollIntervalMs,
   });
-  const { mutate: mutateQuestionAnalysis, isPending } =
-    questionAnalysisMutation;
+
+  useEffect(() => {
+    if (pendingAnalysis === null) return;
+    if (criteriaPhase.pending) return;
+    if (handledOperationKeyRef.current === pendingAnalysis.operationKey) {
+      return;
+    }
+
+    handledOperationKeyRef.current = pendingAnalysis.operationKey;
+
+    const criteria = criteriaPhase.result;
+    if (criteria) {
+      queueMicrotask(() => {
+        clearPendingOperation(pendingAnalysis.operationKey);
+        if (consumeCanceledCriteriaOperation(pendingAnalysis.operationKey)) {
+          return;
+        }
+
+        dispatch.questionSubmissionSucceeded();
+        messages.appendCriteriaMessage(criteria, pendingAnalysis.initialMode);
+      });
+      return;
+    }
+
+    const error = criteriaPhase.error;
+    if (error) {
+      queueMicrotask(() => {
+        clearPendingOperation(pendingAnalysis.operationKey);
+        if (consumeCanceledCriteriaOperation(pendingAnalysis.operationKey)) {
+          return;
+        }
+
+        dispatch.questionSubmissionFailed();
+        notify.showToast(error.message);
+        messages.appendNotice(error.message, 'error');
+      });
+    }
+  }, [
+    clearPendingOperation,
+    consumeCanceledCriteriaOperation,
+    criteriaPhase.error,
+    criteriaPhase.pending,
+    criteriaPhase.result,
+    dispatch,
+    messages,
+    notify,
+    pendingAnalysis,
+  ]);
 
   const startQuestion = useCallback(
     (
@@ -82,8 +124,8 @@ export function useQuestionAnalysisController({
       if (questionSubmissionLocked) return;
 
       if (conversationId === null || analysisFlowId === null) {
-        showToast(ANALYSIS_WORKFLOW_MESSAGES.invalidRoute);
-        appendNotice(ANALYSIS_WORKFLOW_MESSAGES.invalidRoute, 'error');
+        notify.showToast(ANALYSIS_WORKFLOW_MESSAGES.invalidRoute);
+        messages.appendNotice(ANALYSIS_WORKFLOW_MESSAGES.invalidRoute, 'error');
         return;
       }
 
@@ -91,15 +133,17 @@ export function useQuestionAnalysisController({
       if (!normalizedQuestion) return;
 
       const operationKey = createOperationKey('criteria');
+      handledOperationKeyRef.current = null;
       setPendingOperationKey(operationKey);
+      setPendingAnalysis(null);
       setPendingCancelTarget(null);
-      dispatchQuestionSubmissionStarted();
+      dispatch.questionSubmissionStarted();
 
       if (appendUserMessage) {
-        appendUserQuestion(normalizedQuestion);
+        messages.appendUserQuestion(normalizedQuestion);
       }
 
-      mutateQuestionAnalysis(
+      createQuestion(
         {
           operationKey,
           targetConversationId: conversationId,
@@ -108,14 +152,12 @@ export function useQuestionAnalysisController({
           initialMode,
         },
         {
-          onSuccess: (criteria, variables) => {
-            clearPendingOperation(variables.operationKey);
-            if (consumeCanceledCriteriaOperation(variables.operationKey)) {
-              return;
-            }
-
-            dispatchQuestionSubmissionSucceeded();
-            appendCriteriaMessage(criteria, variables.initialMode);
+          onSuccess: (context) => {
+            setPendingCancelTarget({
+              operationKey: context.operationKey,
+              params: context.params,
+            });
+            setPendingAnalysis(context);
           },
           onError: (error, variables) => {
             clearPendingOperation(variables.operationKey);
@@ -123,39 +165,37 @@ export function useQuestionAnalysisController({
               return;
             }
 
-            dispatchQuestionSubmissionFailed();
+            dispatch.questionSubmissionFailed();
             const message = getAnalysisErrorMessage(
               error,
               ANALYSIS_WORKFLOW_MESSAGES.question.createError,
             );
-            showToast(message);
-            appendNotice(message, 'error');
+            notify.showToast(message);
+            messages.appendNotice(message, 'error');
           },
         },
       );
     },
     [
       analysisFlowId,
-      appendCriteriaMessage,
-      appendNotice,
-      appendUserQuestion,
       clearPendingOperation,
       consumeCanceledCriteriaOperation,
       conversationId,
+      createQuestion,
       createOperationKey,
-      dispatchQuestionSubmissionFailed,
-      dispatchQuestionSubmissionStarted,
-      dispatchQuestionSubmissionSucceeded,
-      mutateQuestionAnalysis,
+      dispatch,
+      messages,
+      notify,
       questionSubmissionLocked,
-      showToast,
     ],
   );
 
   return {
     clearPendingCriteriaOperation: clearPendingOperation,
     pendingCriteriaCancelTarget: pendingCancelTarget,
-    questionAnalysisActive: isPending && pendingOperationKey !== null,
+    questionAnalysisActive:
+      (questionCreatePending || criteriaPhase.pending) &&
+      pendingOperationKey !== null,
     startQuestion,
   };
 }

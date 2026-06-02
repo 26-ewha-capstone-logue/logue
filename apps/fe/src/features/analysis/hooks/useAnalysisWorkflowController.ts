@@ -39,53 +39,38 @@ export function useAnalysisWorkflowController({
   summary,
   summaryPending,
 }: UseAnalysisWorkflowControllerParams) {
-  const { dispatch, messages, notify } = effects;
+  const { dispatch, notify } = effects;
   const cancellationRegistry = useAnalysisCancellationRegistry();
   const questionController = useQuestionAnalysisController({
     analysisFlowId,
-    appendCriteriaMessage: messages.appendCriteriaMessage,
-    appendNotice: messages.appendNotice,
-    appendUserQuestion: messages.appendUserQuestion,
     consumeCanceledCriteriaOperation:
       cancellationRegistry.consumeCanceledCriteriaOperation,
     conversationId,
-    dispatchQuestionSubmissionFailed: dispatch.questionSubmissionFailed,
-    dispatchQuestionSubmissionStarted: dispatch.questionSubmissionStarted,
-    dispatchQuestionSubmissionSucceeded: dispatch.questionSubmissionSucceeded,
+    effects,
     questionSubmissionLocked,
-    showToast: notify.showToast,
   });
   const criteriaConfirmationController = useCriteriaConfirmationController({
     analysisFlowId,
-    appendNotice: messages.appendNotice,
-    appendResultMessage: messages.appendResultMessage,
     consumeCanceledResult: cancellationRegistry.consumeCanceledResult,
     conversationId,
     criteriaSubmissionLocked,
-    dispatchCriteriaSubmissionFailed: dispatch.criteriaSubmissionFailed,
-    dispatchCriteriaSubmissionStarted: dispatch.criteriaSubmissionStarted,
-    dispatchCriteriaSubmissionSucceeded: dispatch.criteriaSubmissionSucceeded,
-    showToast: notify.showToast,
+    effects,
   });
   const cancelController = useAnalysisCancelController({
     analysisFlowId,
-    appendNotice: messages.appendNotice,
     clearPendingCriteriaOperation:
       questionController.clearPendingCriteriaOperation,
     clearPendingResultCancelParams:
       criteriaConfirmationController.clearPendingResultCancelParams,
     conversationId,
+    effects,
     markCriteriaCanceled: cancellationRegistry.markCriteriaCanceled,
     markResultCanceled: cancellationRegistry.markResultCanceled,
-    onCriteriaCanceled: dispatch.questionSubmissionCanceled,
-    onResultCanceled: dispatch.criteriaSubmissionCanceled,
-    onSummaryCanceled: dispatch.summaryCanceled,
     pendingCriteriaCancelTarget: questionController.pendingCriteriaCancelTarget,
     pendingResultCancelParams:
       criteriaConfirmationController.pendingResultCancelParams,
     questionAnalysisActive: questionController.questionAnalysisActive,
     resultAnalysisActive: criteriaConfirmationController.resultAnalysisActive,
-    showToast: notify.showToast,
     summaryPending,
   });
   const { startQuestion } = questionController;
