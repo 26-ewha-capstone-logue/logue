@@ -49,8 +49,9 @@ export function useAnalysisWorkflowController({
     consumeCanceledCriteriaOperation:
       cancellationRegistry.consumeCanceledCriteriaOperation,
     conversationId,
-    dispatchQuestionSubmissionFinished: dispatch.questionSubmissionFinished,
+    dispatchQuestionSubmissionFailed: dispatch.questionSubmissionFailed,
     dispatchQuestionSubmissionStarted: dispatch.questionSubmissionStarted,
+    dispatchQuestionSubmissionSucceeded: dispatch.questionSubmissionSucceeded,
     questionSubmissionLocked,
     showToast: notify.showToast,
   });
@@ -61,8 +62,9 @@ export function useAnalysisWorkflowController({
     consumeCanceledResult: cancellationRegistry.consumeCanceledResult,
     conversationId,
     criteriaSubmissionLocked,
-    dispatchCriteriaSubmissionFinished: dispatch.criteriaSubmissionFinished,
+    dispatchCriteriaSubmissionFailed: dispatch.criteriaSubmissionFailed,
     dispatchCriteriaSubmissionStarted: dispatch.criteriaSubmissionStarted,
+    dispatchCriteriaSubmissionSucceeded: dispatch.criteriaSubmissionSucceeded,
     showToast: notify.showToast,
   });
   const cancelController = useAnalysisCancelController({
@@ -75,8 +77,9 @@ export function useAnalysisWorkflowController({
     conversationId,
     markCriteriaCanceled: cancellationRegistry.markCriteriaCanceled,
     markResultCanceled: cancellationRegistry.markResultCanceled,
-    onCriteriaCanceled: dispatch.questionSubmissionFinished,
-    onResultCanceled: dispatch.criteriaSubmissionFinished,
+    onCriteriaCanceled: dispatch.questionSubmissionCanceled,
+    onResultCanceled: dispatch.criteriaSubmissionCanceled,
+    onSummaryCanceled: dispatch.summaryCanceled,
     pendingCriteriaCancelTarget: questionController.pendingCriteriaCancelTarget,
     pendingResultCancelParams:
       criteriaConfirmationController.pendingResultCancelParams,

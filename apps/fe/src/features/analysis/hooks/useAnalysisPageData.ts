@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { ANALYSIS_WORKFLOW_MESSAGES } from '../config/analysisWorkflowMessages';
 import { ANALYSIS_JOB_POLICY } from '../config/analysisWorkflowPolicy';
 import type { AnalysisChatFlowActions } from './useAnalysisChatFlow';
@@ -37,6 +38,30 @@ export function useAnalysisPageData({
     routeReady: hasAccessToken && routeReady,
     statusPollIntervalMs: ANALYSIS_JOB_POLICY.statusPollIntervalMs,
   });
+  useEffect(() => {
+    if (!hasAccessToken || !routeReady) return;
+
+    if (summaryPending) {
+      flowActions.summaryPending();
+      return;
+    }
+
+    if (summaryErrorMessage) {
+      flowActions.summaryFailed();
+      return;
+    }
+
+    if (summary) {
+      flowActions.summaryReady();
+    }
+  }, [
+    flowActions,
+    hasAccessToken,
+    routeReady,
+    summary,
+    summaryErrorMessage,
+    summaryPending,
+  ]);
   const {
     dataSourceErrorMessage,
     isDataSourceEmpty,

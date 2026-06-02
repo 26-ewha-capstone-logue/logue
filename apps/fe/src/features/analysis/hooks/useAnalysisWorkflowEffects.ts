@@ -10,11 +10,17 @@ import type { CriteriaInitialMode } from './useAnalysisChatMessages';
 
 type AnalysisWorkflowDispatchActions = Pick<
   AnalysisChatFlowActions,
-  | 'criteriaSubmissionFinished'
+  | 'criteriaSubmissionCanceled'
+  | 'criteriaSubmissionFailed'
   | 'criteriaSubmissionStarted'
+  | 'criteriaSubmissionSucceeded'
   | 'initialQuestionStarted'
-  | 'questionSubmissionFinished'
+  | 'questionSubmissionCanceled'
+  | 'questionSubmissionFailed'
   | 'questionSubmissionStarted'
+  | 'questionSubmissionSucceeded'
+  | 'summaryCanceled'
+  | 'summaryFailed'
 >;
 
 type UseAnalysisWorkflowEffectsParams = {

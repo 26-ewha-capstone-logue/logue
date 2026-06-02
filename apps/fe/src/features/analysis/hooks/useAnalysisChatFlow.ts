@@ -1,6 +1,15 @@
 'use client';
 
 import { useMemo, useReducer } from 'react';
+import {
+  analysisWorkflowReducer,
+  initialAnalysisWorkflowState,
+  isCriteriaSubmissionLocked,
+  isQuestionSubmissionLocked,
+  type AnalysisWorkflowAction,
+  type AnalysisWorkflowState,
+  type AnalysisWorkflowStatus,
+} from '../models/analysisWorkflowState';
 
 export type AnalysisChatFlowState = {
   canAutoStartInitialQuestion: boolean;
@@ -8,112 +17,85 @@ export type AnalysisChatFlowState = {
   hasResolvedStartPayload: boolean;
   hasStartedInitialQuestion: boolean;
   questionSubmissionLocked: boolean;
+  status: AnalysisWorkflowStatus;
 };
 
-export type AnalysisChatFlowAction =
-  | { type: 'start-payload-loading' }
-  | { type: 'start-payload-resolved'; canAutoStartInitialQuestion: boolean }
-  | { type: 'initial-question-started' }
-  | { type: 'auto-start-disabled' }
-  | { type: 'question-submission-started' }
-  | { type: 'question-submission-finished' }
-  | { type: 'criteria-submission-started' }
-  | { type: 'criteria-submission-finished' };
+export type AnalysisChatFlowAction = AnalysisWorkflowAction;
 
 export type AnalysisChatFlowActions = {
   autoStartDisabled: () => void;
-  criteriaSubmissionFinished: () => void;
+  criteriaSubmissionCanceled: () => void;
+  criteriaSubmissionFailed: () => void;
   criteriaSubmissionStarted: () => void;
+  criteriaSubmissionSucceeded: () => void;
   initialQuestionStarted: () => void;
-  questionSubmissionFinished: () => void;
+  questionSubmissionCanceled: () => void;
+  questionSubmissionFailed: () => void;
   questionSubmissionStarted: () => void;
+  questionSubmissionSucceeded: () => void;
   startPayloadLoading: () => void;
   startPayloadResolved: (canAutoStartInitialQuestion: boolean) => void;
+  summaryCanceled: () => void;
+  summaryFailed: () => void;
+  summaryPending: () => void;
+  summaryReady: () => void;
 };
 
-export const initialAnalysisChatFlowState: AnalysisChatFlowState = {
-  canAutoStartInitialQuestion: false,
-  criteriaSubmissionLocked: false,
-  hasResolvedStartPayload: false,
-  hasStartedInitialQuestion: false,
-  questionSubmissionLocked: false,
-};
+function toChatFlowState(state: AnalysisWorkflowState): AnalysisChatFlowState {
+  return {
+    ...state,
+    criteriaSubmissionLocked: isCriteriaSubmissionLocked(state),
+    questionSubmissionLocked: isQuestionSubmissionLocked(state),
+  };
+}
+
+export const initialAnalysisChatFlowState = toChatFlowState(
+  initialAnalysisWorkflowState,
+);
 
 export function analysisChatFlowReducer(
   state: AnalysisChatFlowState,
   action: AnalysisChatFlowAction,
 ): AnalysisChatFlowState {
-  switch (action.type) {
-    case 'start-payload-loading':
-      return {
-        ...state,
-        canAutoStartInitialQuestion: false,
-        hasResolvedStartPayload: false,
-      };
-    case 'start-payload-resolved':
-      return {
-        ...state,
-        canAutoStartInitialQuestion: action.canAutoStartInitialQuestion,
-        hasResolvedStartPayload: true,
-      };
-    case 'initial-question-started':
-      return {
-        ...state,
-        canAutoStartInitialQuestion: false,
-        hasStartedInitialQuestion: true,
-      };
-    case 'auto-start-disabled':
-      return {
-        ...state,
-        canAutoStartInitialQuestion: false,
-      };
-    case 'question-submission-started':
-      return {
-        ...state,
-        questionSubmissionLocked: true,
-      };
-    case 'question-submission-finished':
-      return {
-        ...state,
-        questionSubmissionLocked: false,
-      };
-    case 'criteria-submission-started':
-      return {
-        ...state,
-        criteriaSubmissionLocked: true,
-      };
-    case 'criteria-submission-finished':
-      return {
-        ...state,
-        criteriaSubmissionLocked: false,
-      };
-  }
+  return toChatFlowState(analysisWorkflowReducer(state, action));
 }
 
 export function useAnalysisChatFlow() {
-  const [flow, dispatchFlow] = useReducer(
-    analysisChatFlowReducer,
-    initialAnalysisChatFlowState,
+  const [workflowState, dispatchFlow] = useReducer(
+    analysisWorkflowReducer,
+    initialAnalysisWorkflowState,
   );
   const actions = useMemo<AnalysisChatFlowActions>(
     () => ({
       autoStartDisabled: () => {
         dispatchFlow({ type: 'auto-start-disabled' });
       },
-      criteriaSubmissionFinished: () => {
-        dispatchFlow({ type: 'criteria-submission-finished' });
+      criteriaSubmissionCanceled: () => {
+        dispatchFlow({ type: 'criteria-submission-canceled' });
+      },
+      criteriaSubmissionFailed: () => {
+        dispatchFlow({ type: 'criteria-submission-failed' });
       },
       criteriaSubmissionStarted: () => {
         dispatchFlow({ type: 'criteria-submission-started' });
       },
+      criteriaSubmissionSucceeded: () => {
+        dispatchFlow({ type: 'criteria-submission-succeeded' });
+      },
       initialQuestionStarted: () => {
         dispatchFlow({ type: 'initial-question-started' });
       },
-      questionSubmissionFinished: () => {
-        dispatchFlow({ type: 'question-submission-finished' });
+      questionSubmissionCanceled: () => {
+        dispatchFlow({ type: 'question-submission-canceled' });
+      },
+      questionSubmissionFailed: () => {
+        dispatchFlow({ type: 'question-submission-failed' });
       },
       questionSubmissionStarted: () => {
         dispatchFlow({ type: 'question-submission-started' });
+      },
+      questionSubmissionSucceeded: () => {
+        dispatchFlow({ type: 'question-submission-succeeded' });
       },
       startPayloadLoading: () => {
         dispatchFlow({ type: 'start-payload-loading' });
@@ -124,9 +106,22 @@ export function useAnalysisChatFlow() {
           canAutoStartInitialQuestion,
         });
       },
+      summaryCanceled: () => {
+        dispatchFlow({ type: 'summary-canceled' });
+      },
+      summaryFailed: () => {
+        dispatchFlow({ type: 'summary-failed' });
+      },
+      summaryPending: () => {
+        dispatchFlow({ type: 'summary-pending' });
+      },
+      summaryReady: () => {
+        dispatchFlow({ type: 'summary-ready' });
+      },
     }),
     [dispatchFlow],
   );
+  const flow = useMemo(() => toChatFlowState(workflowState), [workflowState]);
 
   return {
     actions,
