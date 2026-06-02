@@ -5,10 +5,18 @@ import {
   isCriteriaSubmissionLocked,
   isQuestionSubmissionLocked,
   type AnalysisWorkflowAction,
+  type AnalysisWorkflowStatus,
 } from '../models/analysisWorkflowState';
 
 function reduceWorkflow(actions: AnalysisWorkflowAction[]) {
   return actions.reduce(analysisWorkflowReducer, initialAnalysisWorkflowState);
+}
+
+function createWorkflowState(status: AnalysisWorkflowStatus) {
+  return {
+    ...initialAnalysisWorkflowState,
+    status,
+  };
 }
 
 describe('analysisWorkflowReducer', () => {
@@ -37,7 +45,11 @@ describe('analysisWorkflowReducer', () => {
   });
 
   it('tracks criteria confirmation through result readiness', () => {
-    const pending = reduceWorkflow([{ type: 'criteria-submission-started' }]);
+    const pending = reduceWorkflow([
+      { type: 'question-submission-started' },
+      { type: 'question-submission-succeeded' },
+      { type: 'criteria-submission-started' },
+    ]);
 
     expect(pending.status).toBe('resultPending');
     expect(isCriteriaSubmissionLocked(pending)).toBe(true);
@@ -73,9 +85,55 @@ describe('analysisWorkflowReducer', () => {
 
     expect(
       reduceWorkflow([
+        { type: 'question-submission-started' },
+        { type: 'question-submission-succeeded' },
         { type: 'criteria-submission-started' },
         { type: 'criteria-submission-canceled' },
       ]).status,
     ).toBe('canceled');
+  });
+
+  it('does not clear command failures when the summary becomes ready again', () => {
+    const failed = reduceWorkflow([
+      { type: 'question-submission-started' },
+      { type: 'question-submission-failed' },
+    ]);
+
+    const ready = analysisWorkflowReducer(failed, { type: 'summary-ready' });
+
+    expect(ready.status).toBe('failed');
+  });
+
+  it('ignores command completions that do not match the pending phase', () => {
+    const summaryPending = reduceWorkflow([{ type: 'summary-pending' }]);
+
+    expect(
+      analysisWorkflowReducer(initialAnalysisWorkflowState, {
+        type: 'criteria-submission-started',
+      }).status,
+    ).toBe('idle');
+    expect(
+      analysisWorkflowReducer(summaryPending, {
+        type: 'question-submission-succeeded',
+      }).status,
+    ).toBe('summaryPending');
+    expect(
+      analysisWorkflowReducer(createWorkflowState('criteriaReady'), {
+        type: 'criteria-submission-succeeded',
+      }).status,
+    ).toBe('criteriaReady');
+  });
+
+  it('allows explicit command retries from terminal workflow states', () => {
+    expect(
+      analysisWorkflowReducer(createWorkflowState('failed'), {
+        type: 'question-submission-started',
+      }).status,
+    ).toBe('criteriaPending');
+    expect(
+      analysisWorkflowReducer(createWorkflowState('canceled'), {
+        type: 'criteria-submission-started',
+      }).status,
+    ).toBe('resultPending');
   });
 });

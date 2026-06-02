@@ -40,10 +40,32 @@ export const initialAnalysisWorkflowState: AnalysisWorkflowState = {
   status: 'idle',
 };
 
+const questionSubmissionStartStatuses = new Set<AnalysisWorkflowStatus>([
+  'idle',
+  'criteriaReady',
+  'resultReady',
+  'canceled',
+  'failed',
+]);
+const criteriaSubmissionStartStatuses = new Set<AnalysisWorkflowStatus>([
+  'criteriaReady',
+  'resultReady',
+  'canceled',
+  'failed',
+]);
+
 function keepTerminalCancel(
   state: AnalysisWorkflowState,
 ): AnalysisWorkflowState {
   return state.status === 'canceled' ? state : { ...state, status: 'failed' };
+}
+
+function transitionStatusWhen(
+  state: AnalysisWorkflowState,
+  allowedStatuses: ReadonlySet<AnalysisWorkflowStatus>,
+  status: AnalysisWorkflowStatus,
+): AnalysisWorkflowState {
+  return allowedStatuses.has(state.status) ? { ...state, status } : state;
 }
 
 export function isQuestionSubmissionLocked(state: AnalysisWorkflowState) {
@@ -77,7 +99,7 @@ export function analysisWorkflowReducer(
         status: 'summaryPending',
       };
     case 'summary-ready':
-      return state.status === 'summaryPending' || state.status === 'failed'
+      return state.status === 'summaryPending'
         ? { ...state, status: 'idle' }
         : state;
     case 'summary-failed':
@@ -99,44 +121,40 @@ export function analysisWorkflowReducer(
         canAutoStartInitialQuestion: false,
       };
     case 'question-submission-started':
-      return {
-        ...state,
-        status: 'criteriaPending',
-      };
+      return transitionStatusWhen(
+        state,
+        questionSubmissionStartStatuses,
+        'criteriaPending',
+      );
     case 'question-submission-succeeded':
-      return {
-        ...state,
-        status: 'criteriaReady',
-      };
+      return state.status === 'criteriaPending'
+        ? { ...state, status: 'criteriaReady' }
+        : state;
     case 'question-submission-failed':
-      return {
-        ...state,
-        status: 'failed',
-      };
+      return state.status === 'criteriaPending'
+        ? { ...state, status: 'failed' }
+        : state;
     case 'question-submission-canceled':
-      return {
-        ...state,
-        status: 'canceled',
-      };
+      return state.status === 'criteriaPending'
+        ? { ...state, status: 'canceled' }
+        : state;
     case 'criteria-submission-started':
-      return {
-        ...state,
-        status: 'resultPending',
-      };
+      return transitionStatusWhen(
+        state,
+        criteriaSubmissionStartStatuses,
+        'resultPending',
+      );
     case 'criteria-submission-succeeded':
-      return {
-        ...state,
-        status: 'resultReady',
-      };
+      return state.status === 'resultPending'
+        ? { ...state, status: 'resultReady' }
+        : state;
     case 'criteria-submission-failed':
-      return {
-        ...state,
-        status: 'failed',
-      };
+      return state.status === 'resultPending'
+        ? { ...state, status: 'failed' }
+        : state;
     case 'criteria-submission-canceled':
-      return {
-        ...state,
-        status: 'canceled',
-      };
+      return state.status === 'resultPending'
+        ? { ...state, status: 'canceled' }
+        : state;
   }
 }
