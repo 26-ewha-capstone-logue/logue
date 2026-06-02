@@ -17,6 +17,22 @@
 
 <br />
 
+## Contents
+
+- [Overview](#-overview)
+- [Demo & Links](#-demo--links)
+- [빠른 시작](#-빠른-시작)
+- [Product Highlights](#-product-highlights)
+- [2026.06 기준 지원 범위](#-202606-기준-지원-범위)
+- [User Flow](#-user-flow)
+- [System Architecture](#-system-architecture)
+- [프로젝트 구조](#-프로젝트-구조)
+- [기술 스택](#-기술-스택)
+- [테스트 범위](#-테스트-범위)
+- [확장 전략](#-확장-전략)
+- [협업 컨벤션](#-협업-컨벤션)
+- [Team](#-team)
+
 ## 🧭 Overview
 
 현업 실무자는 성과를 설명하고 다음 액션을 정하기 위해 데이터를 확인해야 하지만, 실제 업무에서는 데이터가 여러 도구와 파일에 흩어져 있고 질문을 SQL, BI 필터, 분석 조건으로 번역하는 과정이 병목이 됩니다.
@@ -92,6 +108,16 @@ cd logue
 | 지원 분석 유형 | `comparison`, `ranking`만 지원 중 |
 | 데이터 입력 | CSV 업로드 기반 분석 지원 |
 
+### Current Scope vs Future Scope
+
+| 구분 | 현재 지원 | 확장 예정 |
+| --- | --- | --- |
+| 데이터 입력 | CSV 업로드 | 외부 DB, SaaS 데이터 채널 연결 |
+| 분석 유형 | `comparison`, `ranking` | trend, segmentation, anomaly 등 분석 유형 추가 |
+| 적용 도메인 | 마케팅/CRM predefined metrics | 세일즈, CS, 운영, HR, 재무, PM 도메인 확장 |
+| 지표 관리 | `total_count`, `conversion_rate` 중심 | 조직별 Metric Registry와 지표 버전 관리 |
+| 결과 활용 | 표, 차트, 한 줄 인사이트 | 반복 리포트, PDF/이미지/CSV export |
+
 ### Known Limitations
 
 - 현재는 마케팅/CRM 도메인의 predefined metrics에 최적화되어 있으며, 다른 도메인의 질문은 해석 정확도가 낮을 수 있습니다.
@@ -106,6 +132,26 @@ cd logue
 3. 사용자가 자연어 질문을 입력합니다.
 4. Logue가 질문을 분석 기준으로 변환하고 사용자에게 확인을 요청합니다.
 5. 사용자가 기준을 확정하거나 수정하면 결과를 표, 차트, 설명으로 확인합니다.
+
+```mermaid
+sequenceDiagram
+  participant User as User
+  participant FE as Frontend
+  participant BE as Backend
+  participant AI as AI Server
+  participant LLM as OpenAI
+
+  User->>FE: CSV 업로드 및 자연어 질문 입력
+  FE->>BE: 분석 요청 생성
+  BE->>AI: 파일/질문 분석 요청
+  AI->>LLM: 분석 기준 구조화 요청
+  LLM-->>AI: structured criteria 반환
+  AI-->>BE: 분석 기준 및 경고 반환
+  BE-->>FE: 기준 확인 요청
+  User->>FE: 기준 확정 또는 수정
+  FE->>BE: 결과 계산 요청
+  BE-->>FE: 표, 차트, 설명 반환
+```
 
 <img src="assets/readme/solution-1.png" width="100%" alt="Logue 온보딩 기반 분석 경험" />
 
@@ -127,6 +173,29 @@ Logue는 프론트엔드, 백엔드, AI 서버를 분리해 사용자 경험, �
 | Backend | 서비스 API 및 분석 흐름 제어 | 인증, 데이터 소스 관리, 분석 작업 상태 관리, AI 서버 연동 |
 | AI | 질문/파일 분석 LLM 서비스 | CSV 컬럼 역할 분석, 질문 기준 구조화, 결과 요약 생성 |
 | Infra | 배포 및 운영 | Vercel, EC2, ECR, RDS, S3, CloudWatch, GitHub Actions 기반 운영 |
+
+```mermaid
+flowchart LR
+  User["User"] --> FE["Frontend<br/>Next.js 16"]
+  FE --> BE["Backend<br/>Spring Boot 3.5"]
+  BE --> AI["AI Server<br/>FastAPI"]
+  AI --> LLM["OpenAI API<br/>Structured Outputs"]
+  BE --> DB[(PostgreSQL)]
+  BE --> Redis[(Redis)]
+  BE --> S3[(AWS S3)]
+  FE -.-> Vercel["Vercel"]
+  BE -.-> EC2["AWS EC2 / ECR"]
+  AI -.-> AIInfra["AWS EC2 / ECR"]
+```
+
+### Service Boundary
+
+| 서비스 | 책임 경계 | 주요 연결 |
+| --- | --- | --- |
+| Frontend | 사용자 입력, CSV 업로드, 기준 확인, 결과 시각화 | Backend API |
+| Backend | 인증, 데이터 소스 관리, 분석 상태 관리, 결과 집계 | Frontend, AI Server, PostgreSQL, Redis, S3 |
+| AI Server | CSV 컬럼 역할 추론, 질문 기준 구조화, 결과 요약 | Backend, OpenAI API |
+| Infra | 배포, 이미지 관리, 로그 수집, 도메인 운영 | Vercel, GitHub Actions, AWS ECR/EC2/SSM, CloudWatch, Route 53 |
 
 <img src="assets/readme/system-architecture.png" width="100%" alt="Logue 시스템 아키텍처" />
 
@@ -235,6 +304,13 @@ main ← 프로덕션 배포
       ├── feat/ai/#이슈번호-설명
       └── docs/#이슈번호-설명
 ```
+
+| 단계 | 컨벤션 |
+| --- | --- |
+| Issue | 작업 단위로 생성하고, 제목은 `docs: README 구조성 보강`처럼 prefix를 포함합니다. |
+| Branch | 이슈 번호를 포함해 `docs/#이슈번호-설명` 형식으로 생성합니다. |
+| Commit | `docs: README 구조성 보강`처럼 `prefix: 한국어 설명` 형식을 따릅니다. |
+| PR | `dev`를 타겟으로 올리고, PR 템플릿을 채운 뒤 `Closes #이슈번호`를 포함합니다. |
 
 - 기능, 버그 수정, 문서 작업은 `dev`로 PR을 올립니다.
 - 커밋 메시지는 `prefix: 한국어 설명` 형식을 따릅니다.
