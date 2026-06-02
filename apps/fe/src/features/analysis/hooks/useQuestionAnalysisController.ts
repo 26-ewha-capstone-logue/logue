@@ -13,22 +13,35 @@ import {
 } from './useCriteriaPhase';
 import type { AnalysisWorkflowEffects } from './useAnalysisWorkflowEffects';
 
-type UseQuestionAnalysisControllerParams = {
+type AnalysisWorkflowRoute = {
   analysisFlowId: number | null;
-  consumeCanceledCriteriaOperation: (operationKey: string) => boolean;
   conversationId: number | null;
-  effects: AnalysisWorkflowEffects;
-  questionSubmissionLocked: boolean;
+};
+
+type UseQuestionAnalysisControllerParams = {
+  cancellation: {
+    consumeCanceledCriteriaOperation: (operationKey: string) => boolean;
+  };
+  dispatch: AnalysisWorkflowEffects['dispatch'];
+  messages: AnalysisWorkflowEffects['messages'];
+  notify: AnalysisWorkflowEffects['notify'];
+  pending: {
+    questionSubmissionLocked: boolean;
+  };
+  route: AnalysisWorkflowRoute;
 };
 
 export function useQuestionAnalysisController({
-  analysisFlowId,
-  consumeCanceledCriteriaOperation,
-  conversationId,
-  effects,
-  questionSubmissionLocked,
+  cancellation,
+  dispatch,
+  messages,
+  notify,
+  pending,
+  route,
 }: UseQuestionAnalysisControllerParams) {
-  const { dispatch, messages, notify } = effects;
+  const { consumeCanceledCriteriaOperation } = cancellation;
+  const { questionSubmissionLocked } = pending;
+  const { analysisFlowId, conversationId } = route;
   const operationSequenceRef = useRef(0);
   const handledOperationKeyRef = useRef<string | null>(null);
   const [pendingOperationKey, setPendingOperationKey] = useState<string | null>(

@@ -12,24 +12,37 @@ import { useUpdateCriteriaMutation } from './useCriteriaPhase';
 import { useResultPhase } from './useResultPhase';
 import type { AnalysisWorkflowEffects } from './useAnalysisWorkflowEffects';
 
-type UseCriteriaConfirmationControllerParams = {
+type AnalysisWorkflowRoute = {
   analysisFlowId: number | null;
-  consumeCanceledResult: (
-    params: Pick<QuestionResultParams, 'analysisCriteriaId' | 'messageId'>,
-  ) => boolean;
   conversationId: number | null;
-  criteriaSubmissionLocked: boolean;
-  effects: AnalysisWorkflowEffects;
+};
+
+type UseCriteriaConfirmationControllerParams = {
+  cancellation: {
+    consumeCanceledResult: (
+      params: Pick<QuestionResultParams, 'analysisCriteriaId' | 'messageId'>,
+    ) => boolean;
+  };
+  dispatch: AnalysisWorkflowEffects['dispatch'];
+  messages: AnalysisWorkflowEffects['messages'];
+  notify: AnalysisWorkflowEffects['notify'];
+  pending: {
+    criteriaSubmissionLocked: boolean;
+  };
+  route: AnalysisWorkflowRoute;
 };
 
 export function useCriteriaConfirmationController({
-  analysisFlowId,
-  consumeCanceledResult,
-  conversationId,
-  criteriaSubmissionLocked,
-  effects,
+  cancellation,
+  dispatch,
+  messages,
+  notify,
+  pending,
+  route,
 }: UseCriteriaConfirmationControllerParams) {
-  const { dispatch, messages, notify } = effects;
+  const { consumeCanceledResult } = cancellation;
+  const { criteriaSubmissionLocked } = pending;
+  const { analysisFlowId, conversationId } = route;
   const handledResultKeyRef = useRef<string | null>(null);
   const [pendingResultCancelParams, setPendingResultCancelParams] =
     useState<QuestionResultParams | null>(null);

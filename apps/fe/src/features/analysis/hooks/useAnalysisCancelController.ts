@@ -19,21 +19,31 @@ import {
 } from '../utils/analysisCancelTarget';
 import type { AnalysisWorkflowEffects } from './useAnalysisWorkflowEffects';
 
-type UseAnalysisCancelControllerParams = {
+type AnalysisWorkflowRoute = {
   analysisFlowId: number | null;
-  clearPendingCriteriaOperation: (operationKey: string) => void;
-  clearPendingResultCancelParams: (
-    params: Pick<QuestionResultParams, 'analysisCriteriaId' | 'messageId'>,
-  ) => void;
   conversationId: number | null;
-  effects: AnalysisWorkflowEffects;
-  markCriteriaCanceled: (operationKey: string) => void;
-  markResultCanceled: (params: QuestionResultParams) => void;
-  pendingCriteriaCancelTarget: PendingCriteriaCancelTarget | null;
-  pendingResultCancelParams: QuestionResultParams | null;
-  questionAnalysisActive: boolean;
-  resultAnalysisActive: boolean;
-  summaryPending: boolean;
+};
+
+type UseAnalysisCancelControllerParams = {
+  cancellation: {
+    clearPendingCriteriaOperation: (operationKey: string) => void;
+    clearPendingResultCancelParams: (
+      params: Pick<QuestionResultParams, 'analysisCriteriaId' | 'messageId'>,
+    ) => void;
+    markCriteriaCanceled: (operationKey: string) => void;
+    markResultCanceled: (params: QuestionResultParams) => void;
+  };
+  dispatch: AnalysisWorkflowEffects['dispatch'];
+  messages: AnalysisWorkflowEffects['messages'];
+  notify: AnalysisWorkflowEffects['notify'];
+  pending: {
+    pendingCriteriaCancelTarget: PendingCriteriaCancelTarget | null;
+    pendingResultCancelParams: QuestionResultParams | null;
+    questionAnalysisActive: boolean;
+    resultAnalysisActive: boolean;
+    summaryPending: boolean;
+  };
+  route: AnalysisWorkflowRoute;
 };
 
 function getAnalysisFlowKey({
@@ -47,20 +57,27 @@ function getAnalysisFlowKey({
 }
 
 export function useAnalysisCancelController({
-  analysisFlowId,
-  clearPendingCriteriaOperation,
-  clearPendingResultCancelParams,
-  conversationId,
-  effects,
-  markCriteriaCanceled,
-  markResultCanceled,
-  pendingCriteriaCancelTarget,
-  pendingResultCancelParams,
-  questionAnalysisActive,
-  resultAnalysisActive,
-  summaryPending,
+  cancellation,
+  dispatch,
+  messages,
+  notify,
+  pending,
+  route,
 }: UseAnalysisCancelControllerParams) {
-  const { dispatch, messages, notify } = effects;
+  const {
+    clearPendingCriteriaOperation,
+    clearPendingResultCancelParams,
+    markCriteriaCanceled,
+    markResultCanceled,
+  } = cancellation;
+  const {
+    pendingCriteriaCancelTarget,
+    pendingResultCancelParams,
+    questionAnalysisActive,
+    resultAnalysisActive,
+    summaryPending,
+  } = pending;
+  const { analysisFlowId, conversationId } = route;
   const queryClient = useQueryClient();
   const [canceledSummaryKey, setCanceledSummaryKey] = useState<string | null>(
     null,

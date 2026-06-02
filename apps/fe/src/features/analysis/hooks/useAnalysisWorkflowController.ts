@@ -39,39 +39,59 @@ export function useAnalysisWorkflowController({
   summary,
   summaryPending,
 }: UseAnalysisWorkflowControllerParams) {
-  const { dispatch, notify } = effects;
+  const { dispatch, messages, notify } = effects;
+  const route = {
+    analysisFlowId,
+    conversationId,
+  };
   const cancellationRegistry = useAnalysisCancellationRegistry();
   const questionController = useQuestionAnalysisController({
-    analysisFlowId,
-    consumeCanceledCriteriaOperation:
-      cancellationRegistry.consumeCanceledCriteriaOperation,
-    conversationId,
-    effects,
-    questionSubmissionLocked,
+    cancellation: {
+      consumeCanceledCriteriaOperation:
+        cancellationRegistry.consumeCanceledCriteriaOperation,
+    },
+    dispatch,
+    messages,
+    notify,
+    pending: {
+      questionSubmissionLocked,
+    },
+    route,
   });
   const criteriaConfirmationController = useCriteriaConfirmationController({
-    analysisFlowId,
-    consumeCanceledResult: cancellationRegistry.consumeCanceledResult,
-    conversationId,
-    criteriaSubmissionLocked,
-    effects,
+    cancellation: {
+      consumeCanceledResult: cancellationRegistry.consumeCanceledResult,
+    },
+    dispatch,
+    messages,
+    notify,
+    pending: {
+      criteriaSubmissionLocked,
+    },
+    route,
   });
   const cancelController = useAnalysisCancelController({
-    analysisFlowId,
-    clearPendingCriteriaOperation:
-      questionController.clearPendingCriteriaOperation,
-    clearPendingResultCancelParams:
-      criteriaConfirmationController.clearPendingResultCancelParams,
-    conversationId,
-    effects,
-    markCriteriaCanceled: cancellationRegistry.markCriteriaCanceled,
-    markResultCanceled: cancellationRegistry.markResultCanceled,
-    pendingCriteriaCancelTarget: questionController.pendingCriteriaCancelTarget,
-    pendingResultCancelParams:
-      criteriaConfirmationController.pendingResultCancelParams,
-    questionAnalysisActive: questionController.questionAnalysisActive,
-    resultAnalysisActive: criteriaConfirmationController.resultAnalysisActive,
-    summaryPending,
+    cancellation: {
+      clearPendingCriteriaOperation:
+        questionController.clearPendingCriteriaOperation,
+      clearPendingResultCancelParams:
+        criteriaConfirmationController.clearPendingResultCancelParams,
+      markCriteriaCanceled: cancellationRegistry.markCriteriaCanceled,
+      markResultCanceled: cancellationRegistry.markResultCanceled,
+    },
+    dispatch,
+    messages,
+    notify,
+    pending: {
+      pendingCriteriaCancelTarget:
+        questionController.pendingCriteriaCancelTarget,
+      pendingResultCancelParams:
+        criteriaConfirmationController.pendingResultCancelParams,
+      questionAnalysisActive: questionController.questionAnalysisActive,
+      resultAnalysisActive: criteriaConfirmationController.resultAnalysisActive,
+      summaryPending,
+    },
+    route,
   });
   const { startQuestion } = questionController;
 
