@@ -12,12 +12,7 @@ import type {
 } from '@/features/analysis/models/analysisViewModels';
 import AnalysisActionButtons from './AnalysisActionButtons';
 import AnalysisCard from './AnalysisCard';
-import {
-  AnalysisTable,
-  AnalysisTableCell,
-  AnalysisTableHeaderCell,
-  AnalysisTableRow,
-} from './AnalysisTable';
+import AnalysisKeyValueTable from './AnalysisKeyValueTable';
 import AnalysisWarningList from './AnalysisWarningList';
 import CriterionSelect from './CriterionSelect';
 
@@ -89,6 +84,41 @@ export default function QuestionAnalysisResult({
     return values[row.key] || '-';
   };
 
+  const renderCriteriaValue = (row: CriteriaEditRowSpec) => {
+    if (mode === 'normal' || row.kind === 'static') {
+      return renderStaticValue(row);
+    }
+
+    if (row.kind === 'single') {
+      return (
+        <CriterionSelect
+          options={row.options}
+          value={values[row.key]}
+          onChange={(next) =>
+            setValues((prev) => ({ ...prev, [row.key]: next }))
+          }
+        />
+      );
+    }
+
+    return (
+      <CriterionSelect
+        multi
+        options={row.options}
+        values={values.groupBy}
+        maxSelect={row.maxSelect}
+        headerLabel={row.headerLabel}
+        onChange={(next) => setValues((prev) => ({ ...prev, groupBy: next }))}
+      />
+    );
+  };
+
+  const tableRows = rows.map((row) => ({
+    key: row.label,
+    cells: [row.label, renderCriteriaValue(row)] as const,
+    cellClassNames: ['text-gray-700', 'text-gray-900'] as const,
+  }));
+
   return (
     <AnalysisCard>
       <div className="flex flex-col gap-4">
@@ -100,49 +130,7 @@ export default function QuestionAnalysisResult({
         </p>
       </div>
 
-      <AnalysisTable>
-        <thead>
-          <tr>
-            <AnalysisTableHeaderCell className="w-[14rem]">
-              항목
-            </AnalysisTableHeaderCell>
-            <AnalysisTableHeaderCell>필드명</AnalysisTableHeaderCell>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <AnalysisTableRow key={row.label}>
-              <AnalysisTableCell className="text-gray-700">
-                {row.label}
-              </AnalysisTableCell>
-              <AnalysisTableCell className="text-gray-900">
-                {mode === 'normal' || row.kind === 'static' ? (
-                  renderStaticValue(row)
-                ) : row.kind === 'single' ? (
-                  <CriterionSelect
-                    options={row.options}
-                    value={values[row.key]}
-                    onChange={(next) =>
-                      setValues((prev) => ({ ...prev, [row.key]: next }))
-                    }
-                  />
-                ) : (
-                  <CriterionSelect
-                    multi
-                    options={row.options}
-                    values={values.groupBy}
-                    maxSelect={row.maxSelect}
-                    headerLabel={row.headerLabel}
-                    onChange={(next) =>
-                      setValues((prev) => ({ ...prev, groupBy: next }))
-                    }
-                  />
-                )}
-              </AnalysisTableCell>
-            </AnalysisTableRow>
-          ))}
-        </tbody>
-      </AnalysisTable>
+      <AnalysisKeyValueTable headers={['항목', '필드명']} rows={tableRows} />
 
       <AnalysisWarningList warnings={criteria.warnings} />
 
