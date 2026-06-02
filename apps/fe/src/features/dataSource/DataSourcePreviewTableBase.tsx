@@ -1,10 +1,5 @@
 import type { DataSourcePreviewTableModel } from './previewTable';
 
-export const DEFAULT_PREVIEW_TABLE_EMPTY_MESSAGE =
-  '\uBBF8\uB9AC\uBCF4\uAE30 \uB370\uC774\uD130\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.';
-export const DEFAULT_PREVIEW_TABLE_ROW_EMPTY_MESSAGE =
-  '\uD45C\uC2DC\uD560 \uD589\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.';
-
 type DataSourcePreviewTableBaseProps = {
   bodyWrapperClassName?: string;
   cellClassName: string;

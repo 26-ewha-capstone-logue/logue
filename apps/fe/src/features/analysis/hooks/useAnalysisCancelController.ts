@@ -18,11 +18,7 @@ import {
   type PendingCriteriaCancelTarget,
 } from '../utils/analysisCancelTarget';
 import type { AnalysisWorkflowEffects } from './useAnalysisWorkflowEffects';
-
-type AnalysisWorkflowRoute = {
-  analysisFlowId: number | null;
-  conversationId: number | null;
-};
+import type { AnalysisWorkflowRoute } from './analysisWorkflowTypes';
 
 type UseAnalysisCancelControllerParams = {
   cancellation: {

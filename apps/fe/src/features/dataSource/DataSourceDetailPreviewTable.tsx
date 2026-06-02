@@ -1,8 +1,5 @@
-import {
-  DataSourcePreviewTableBase,
-  DEFAULT_PREVIEW_TABLE_EMPTY_MESSAGE,
-  DEFAULT_PREVIEW_TABLE_ROW_EMPTY_MESSAGE,
-} from './DataSourcePreviewTableBase';
+import { DATA_SOURCE_MESSAGES } from '@/constants/messages';
+import { DataSourcePreviewTableBase } from './DataSourcePreviewTableBase';
 import {
   createDataSourcePreviewTableModel,
   type DataSourcePreviewTableModel,
@@ -20,9 +17,9 @@ type DataSourceDetailPreviewTableProps = {
 const DEFAULT_TITLE = 'CSV \uBBF8\uB9AC\uBCF4\uAE30';
 
 export function DataSourceDetailPreviewTable({
-  emptyMessage = DEFAULT_PREVIEW_TABLE_EMPTY_MESSAGE,
+  emptyMessage = DATA_SOURCE_MESSAGES.previewTableEmpty,
   preview,
-  rowEmptyMessage = DEFAULT_PREVIEW_TABLE_ROW_EMPTY_MESSAGE,
+  rowEmptyMessage = DATA_SOURCE_MESSAGES.previewTableRowEmpty,
   table,
   title = DEFAULT_TITLE,
 }: DataSourceDetailPreviewTableProps) {

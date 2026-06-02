@@ -12,11 +12,7 @@ import {
   type QuestionAnalysisContext,
 } from './useCriteriaPhase';
 import type { AnalysisWorkflowEffects } from './useAnalysisWorkflowEffects';
-
-type AnalysisWorkflowRoute = {
-  analysisFlowId: number | null;
-  conversationId: number | null;
-};
+import type { AnalysisWorkflowRoute } from './analysisWorkflowTypes';
 
 type UseQuestionAnalysisControllerParams = {
   cancellation: {
@@ -43,6 +39,7 @@ export function useQuestionAnalysisController({
   const { questionSubmissionLocked } = pending;
   const { analysisFlowId, conversationId } = route;
   const operationSequenceRef = useRef(0);
+  const activeOperationKeyRef = useRef<string | null>(null);
   const handledOperationKeyRef = useRef<string | null>(null);
   const [pendingOperationKey, setPendingOperationKey] = useState<string | null>(
     null,
@@ -57,6 +54,9 @@ export function useQuestionAnalysisController({
     return `${stage}-${operationSequenceRef.current}`;
   }, []);
   const clearPendingOperation = useCallback((operationKey: string) => {
+    if (activeOperationKeyRef.current === operationKey) {
+      activeOperationKeyRef.current = null;
+    }
     setPendingOperationKey((current) =>
       current === operationKey ? null : current,
     );
@@ -134,7 +134,14 @@ export function useQuestionAnalysisController({
       appendUserMessage = true,
       initialMode: CriteriaInitialMode = 'normal',
     ) => {
-      if (questionSubmissionLocked) return;
+      if (
+        questionSubmissionLocked ||
+        activeOperationKeyRef.current !== null ||
+        pendingOperationKey !== null ||
+        pendingAnalysis !== null
+      ) {
+        return;
+      }
 
       if (conversationId === null || analysisFlowId === null) {
         notify.showToast(ANALYSIS_WORKFLOW_MESSAGES.invalidRoute);
@@ -146,6 +153,7 @@ export function useQuestionAnalysisController({
       if (!normalizedQuestion) return;
 
       const operationKey = createOperationKey('criteria');
+      activeOperationKeyRef.current = operationKey;
       handledOperationKeyRef.current = null;
       setPendingOperationKey(operationKey);
       setPendingAnalysis(null);
@@ -199,6 +207,8 @@ export function useQuestionAnalysisController({
       dispatch,
       messages,
       notify,
+      pendingAnalysis,
+      pendingOperationKey,
       questionSubmissionLocked,
     ],
   );

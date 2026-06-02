@@ -8,15 +8,6 @@ import { useDataSourceDeleteFlow } from '@/features/dataSource/hooks/useDataSour
 import { useDataSourceUserContext } from '@/features/dataSource/hooks/useDataSourceUserContext';
 import { useToast, type ToastState } from '@/hooks/useToast';
 
-const INVALID_DATA_SOURCE_MESSAGE =
-  '\uC62C\uBC14\uB974\uC9C0 \uC54A\uC740 \uB370\uC774\uD130 \uC18C\uC2A4\uC785\uB2C8\uB2E4.';
-const DATA_SOURCE_LOADING_MESSAGE =
-  '\uB370\uC774\uD130 \uC18C\uC2A4\uB97C \uBD88\uB7EC\uC624\uB294 \uC911\uC785\uB2C8\uB2E4.';
-const DATA_SOURCE_LOGIN_REQUIRED_MESSAGE =
-  '\uB85C\uADF8\uC778 \uD6C4 \uB370\uC774\uD130 \uC18C\uC2A4\uB97C \uD655\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.';
-const DATA_SOURCE_LOAD_FAILED_MESSAGE =
-  '\uB370\uC774\uD130 \uC18C\uC2A4\uB97C \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.';
-
 type DataDetailStatusController = {
   message: string;
   status: 'status';
@@ -72,35 +63,35 @@ export function useDataDetailPageController(
 
   if (!isValidDataSourceId) {
     return {
-      message: INVALID_DATA_SOURCE_MESSAGE,
+      message: DATA_SOURCE_MESSAGES.detailInvalid,
       status: 'status',
     };
   }
 
   if (status === 'initializing') {
     return {
-      message: DATA_SOURCE_LOADING_MESSAGE,
+      message: DATA_SOURCE_MESSAGES.detailLoading,
       status: 'status',
     };
   }
 
   if (!hasAccessToken) {
     return {
-      message: DATA_SOURCE_LOGIN_REQUIRED_MESSAGE,
+      message: DATA_SOURCE_MESSAGES.detailLoginRequired,
       status: 'status',
     };
   }
 
   if (detailQuery.isLoading) {
     return {
-      message: DATA_SOURCE_LOADING_MESSAGE,
+      message: DATA_SOURCE_MESSAGES.detailLoading,
       status: 'status',
     };
   }
 
   if (isDeletedMockDataSource || detailQuery.isError || !detailQuery.data) {
     return {
-      message: DATA_SOURCE_LOAD_FAILED_MESSAGE,
+      message: DATA_SOURCE_MESSAGES.detailLoadFailed,
       status: 'status',
     };
   }

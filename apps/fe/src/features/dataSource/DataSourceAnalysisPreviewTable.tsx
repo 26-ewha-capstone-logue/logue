@@ -1,8 +1,5 @@
-import {
-  DataSourcePreviewTableBase,
-  DEFAULT_PREVIEW_TABLE_EMPTY_MESSAGE,
-  DEFAULT_PREVIEW_TABLE_ROW_EMPTY_MESSAGE,
-} from './DataSourcePreviewTableBase';
+import { DATA_SOURCE_MESSAGES } from '@/constants/messages';
+import { DataSourcePreviewTableBase } from './DataSourcePreviewTableBase';
 import {
   createDataSourcePreviewTableModel,
   type DataSourcePreviewTableModel,
@@ -17,9 +14,9 @@ type DataSourceAnalysisPreviewTableProps = {
 };
 
 export function DataSourceAnalysisPreviewTable({
-  emptyMessage = DEFAULT_PREVIEW_TABLE_EMPTY_MESSAGE,
+  emptyMessage = DATA_SOURCE_MESSAGES.previewTableEmpty,
   preview,
-  rowEmptyMessage = DEFAULT_PREVIEW_TABLE_ROW_EMPTY_MESSAGE,
+  rowEmptyMessage = DATA_SOURCE_MESSAGES.previewTableRowEmpty,
   table,
 }: DataSourceAnalysisPreviewTableProps) {
   const tableModel = table ?? createDataSourcePreviewTableModel(preview);
