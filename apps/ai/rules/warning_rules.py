@@ -119,6 +119,52 @@ def infer_date_conflict_warning(
     ]
 
 
+def infer_qdm_warning(
+    response: QuestionAnalysisResponse,
+    request: QuestionAnalysisRequest,
+) -> list[FlowWarning]:
+    """데이터 기반으로 QUESTION_DATA_MISMATCH warning 을 결정론적으로 추론한다.
+
+    FLAG 또는 STATUS_CONDITION role 의 컬럼이 동일 role 에서 2개 이상이면
+    질문-데이터 매핑이 모호하므로 QUESTION_DATA_MISMATCH 를 반환한다.
+    DIMENSION/MEASURE 는 정상 데이터셋에서도 복수 존재하므로 제외한다.
+    catalog.flow_warning_keys 에 QUESTION_DATA_MISMATCH 가 정의돼 있지 않으면
+    추론하지 않는다.
+    """
+    if response.analysis_criteria is None:
+        return []
+
+    catalog_codes = {w.code for w in request.catalog.flow_warning_keys}
+    if FlowWarningKey.QUESTION_DATA_MISMATCH not in catalog_codes:
+        return []
+
+    target_roles = {SemanticRoleType.FLAG, SemanticRoleType.STATUS_CONDITION}
+
+    role_to_columns: dict[SemanticRoleType, list[str]] = {}
+    for col in request.data_source.columns:
+        if col.semantic_role in target_roles:
+            role_to_columns.setdefault(col.semantic_role, []).append(col.column_name)
+
+    related_fields: list[str] = []
+    for role in (SemanticRoleType.FLAG, SemanticRoleType.STATUS_CONDITION):
+        cols = role_to_columns.get(role, [])
+        if len(cols) >= 2:
+            for c in cols:
+                if c not in related_fields:
+                    related_fields.append(c)
+
+    if not related_fields:
+        return []
+
+    return [
+        FlowWarning(
+            code=FlowWarningKey.QUESTION_DATA_MISMATCH,
+            related_fields=related_fields,
+            detail="동일 의미 컬럼이 둘 이상이라 질문과 데이터 매핑이 모호합니다.",
+        )
+    ]
+
+
 def apply_inferred_warnings(
     response: QuestionAnalysisResponse,
     request: QuestionAnalysisRequest,
@@ -128,8 +174,10 @@ def apply_inferred_warnings(
     동일 code 가 이미 LLM 응답에 존재하면 기존 것을 유지하고 추가하지 않는다.
     """
     existing_codes = {w.code for w in response.warnings}
-    inferred = infer_data_warnings(response, request) + infer_date_conflict_warning(
-        response, request
+    inferred = (
+        infer_data_warnings(response, request)
+        + infer_date_conflict_warning(response, request)
+        + infer_qdm_warning(response, request)
     )
     for warning in inferred:
         if warning.code not in existing_codes:
