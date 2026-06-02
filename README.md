@@ -7,7 +7,7 @@
 
   Logue는 사용자의 모호한 질문을 분석 가능한 기준으로 구조화하고, CSV 데이터에서 신뢰할 수 있는 결과와 계산 근거를 함께 제공하는 분석 지원 서비스입니다.
 
-  [빠른 시작](#-빠른-시작) · [기술 스택](#-기술-스택) · [프로젝트 구조](#-프로젝트-구조) · [기여 가이드](CONTRIBUTING.md)
+  [배포 링크](https://asklogue.co) · [시연 영상](https://www.youtube.com/channel/UCJlg-nOFnb5ouBXR9MfhFwg) · [빠른 시작](#-빠른-시작) · [기여 가이드](CONTRIBUTING.md)
 </div>
 
 <br />
@@ -29,6 +29,15 @@ Logue는 이 문제를 **Question-first 분석 경험**으로 해결합니다. �
 | 모호한 질문이 잘못된 결과로 이어질 수 있음 | 데이터 특성과 질문의 충돌을 경고하고 확인 흐름 제공 |
 | 숫자만 보고 계산 근거를 알기 어려움 | 결과와 함께 계산 기준, 해석 구조, 시각화를 제공 |
 
+## 🔗 Demo & Links
+
+| 구분 | 링크 |
+| --- | --- |
+| 배포 서비스 | [asklogue.co](https://asklogue.co) |
+| 시연 영상 | [Logue YouTube 채널](https://www.youtube.com/channel/UCJlg-nOFnb5ouBXR9MfhFwg) |
+| 시연 가이드 | [self_demo.md](self_demo.md) |
+| 샘플 CSV | [docs/logue_analysis_sample.csv](docs/logue_analysis_sample.csv) |
+
 ## ✨ Product Highlights
 
 | 기능 | 설명 |
@@ -40,6 +49,15 @@ Logue는 이 문제를 **Question-first 분석 경험**으로 해결합니다. �
 | 모호성 감지 | 날짜 기준 충돌, 데이터 특성 불일치, 지원 범위 이탈을 경고합니다. |
 | 기준 확인 및 수정 | 사용자가 분석 기준을 확인하고 필요한 경우 직접 수정할 수 있습니다. |
 | 결과 시각화 | 분석 결과를 표, 차트, 한 줄 인사이트와 함께 제공합니다. |
+
+## 📌 2026.06 기준 지원 범위
+
+| 항목 | 현재 상태 |
+| --- | --- |
+| 적용 도메인 | 마케팅/CRM 기준 predefined metrics 적용 중 |
+| 지원 지표 | `total_count`, `conversion_rate` 중심 |
+| 지원 분석 유형 | `comparison`, `ranking`만 지원 중 |
+| 데이터 입력 | CSV 업로드 기반 분석 지원 |
 
 ## 🧩 User Flow
 
