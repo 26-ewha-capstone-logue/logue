@@ -1,4 +1,6 @@
 import type { DataSourceSummary } from '@/features/dataSource';
+import ArrowLeftIcon from '@/assets/icons/arrow-left.svg';
+import ArrowRightIcon from '@/assets/icons/arrow-right.svg';
 import { Checkbox } from '@/components';
 import DataSourceRow from './DataSourceRow';
 
@@ -9,11 +11,14 @@ type DataSourceTableProps = {
   dataSources: DataSourceSummary[];
   onChat: (dataSource: DataSourceSummary) => void;
   onOpenDetail: (id: number) => void;
+  onPageChange: (page: number) => void;
   onToggleAll: () => void;
   onToggleOne: (id: number) => void;
+  page: number;
   partiallySelected: boolean;
   selectedVisibleIds: ReadonlySet<number>;
   tableMessage: string | null;
+  totalPages: number;
 };
 
 export default function DataSourceTable({
@@ -23,12 +28,18 @@ export default function DataSourceTable({
   dataSources,
   onChat,
   onOpenDetail,
+  onPageChange,
   onToggleAll,
   onToggleOne,
+  page,
   partiallySelected,
   selectedVisibleIds,
   tableMessage,
+  totalPages,
 }: DataSourceTableProps) {
+  const canGoPrevious = page > 0;
+  const canGoNext = page + 1 < totalPages;
+
   return (
     <div className="overflow-hidden rounded-12 border border-gray-300 bg-white">
       <table className="w-full border-collapse text-body4">
@@ -80,6 +91,32 @@ export default function DataSourceTable({
           )}
         </tbody>
       </table>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-end gap-8 border-t border-gray-200 px-24 py-12 text-body4 text-gray-700">
+          <button
+            type="button"
+            aria-label="이전 페이지"
+            disabled={!canGoPrevious}
+            onClick={() => onPageChange(page - 1)}
+            className="inline-flex size-32 items-center justify-center rounded-full border border-gray-300 bg-white transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
+          >
+            <ArrowLeftIcon aria-hidden className="icon-12" />
+          </button>
+          <span className="min-w-[5.6rem] text-center">
+            {page + 1} / {totalPages}
+          </span>
+          <button
+            type="button"
+            aria-label="다음 페이지"
+            disabled={!canGoNext}
+            onClick={() => onPageChange(page + 1)}
+            className="inline-flex size-32 items-center justify-center rounded-full border border-gray-300 bg-white transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
+          >
+            <ArrowRightIcon aria-hidden className="icon-12" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -74,7 +74,22 @@ export function DataSourcePreviewTable({
   const config = VARIANT_CONFIG[variant];
 
   if (!tableModel) {
-    return <div className={config.emptyClassName}>{emptyMessage}</div>;
+    const emptyContent = (
+      <div className={config.emptyClassName}>{emptyMessage}</div>
+    );
+
+    if (variant === 'detail') {
+      return (
+        <div className={config.containerClassName}>
+          <div className="border-b border-gray-200 bg-gray-100 px-16 py-12">
+            <p className="text-body3 font-semibold text-gray-900">{title}</p>
+          </div>
+          {emptyContent}
+        </div>
+      );
+    }
+
+    return emptyContent;
   }
 
   const tableContent = (

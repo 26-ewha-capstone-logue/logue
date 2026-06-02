@@ -40,8 +40,13 @@ function useDataSourceTableState() {
     },
     [],
   );
+  const changePage = useCallback((next: number, afterChange: () => void) => {
+    setPage(next);
+    afterChange();
+  }, []);
 
   return {
+    changePage,
     changeSort,
     page,
     sortKey,
@@ -149,7 +154,8 @@ export function useDataPageController() {
   const { hasAccessToken, isAuthenticated, mockDataSource, status } =
     useDataSourceUserContext();
   const { toast, showToast } = useToast();
-  const { changeSort, page, sortKey, sortOptions } = useDataSourceTableState();
+  const { changePage, changeSort, page, sortKey, sortOptions } =
+    useDataSourceTableState();
 
   const dataSourcesQuery = useDataSourceList({
     enabled: isAuthenticated,
@@ -182,6 +188,12 @@ export function useDataPageController() {
     },
     [changeSort, clearSelection],
   );
+  const handlePageChange = useCallback(
+    (next: number) => {
+      changePage(next, clearSelection);
+    },
+    [changePage, clearSelection],
+  );
   const tableMessage = getTableMessage({
     dataSourceCount: dataSources.length,
     emptyMessage: DATA_SOURCE_MESSAGES.tableEmpty,
@@ -199,9 +211,12 @@ export function useDataPageController() {
     table: {
       allSelected,
       dataSources,
+      page,
       partiallySelected,
       selectedVisibleIds,
       tableMessage,
+      totalPages: dataSourcesQuery.totalPages,
+      onPageChange: handlePageChange,
       onToggleAll: toggleAll,
       onToggleOne: toggleOne,
       ...actions.tableActions,
