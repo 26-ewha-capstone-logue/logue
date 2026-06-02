@@ -380,3 +380,113 @@ def test_apply_adds_qdm_warning() -> None:
     assert any(
         w.code == FlowWarningKey.QUESTION_DATA_MISMATCH for w in response.warnings
     )
+
+
+# ---------- QDM DIMENSION/MEASURE 모호 신호 (sample_values 겹침 / 이름 prefix) ----------
+
+
+def _request_with_columns(
+    specs: list[tuple[str, str, list]],
+    *,
+    with_qdm_key: bool = True,
+) -> QuestionAnalysisRequest:
+    """specs = (column_name, semantic_role, sample_values) 목록으로 요청을 구성한다."""
+    columns: list[DataSourceColumn] = [
+        DataSourceColumn(
+            column_name="signed_at", data_type="datetime",
+            semantic_role="DATE_CRITERIA", null_ratio=0.0, sample_values=[],
+        )
+    ]
+    for name, role, samples in specs:
+        columns.append(
+            DataSourceColumn(
+                column_name=name,
+                data_type="double" if role == "MEASURE" else "string",
+                semantic_role=role, null_ratio=0.0, sample_values=samples,
+            )
+        )
+    flow_warning_keys: list[FlowWarningKeyCatalog] = []
+    if with_qdm_key:
+        flow_warning_keys.append(
+            FlowWarningKeyCatalog(code="QUESTION_DATA_MISMATCH", name="...", comment="..."),
+        )
+    return QuestionAnalysisRequest(
+        request_id="req_cols", conversation_id=1, question=Question(content="?"),
+        data_source=DataSource(id=1, columns=columns),
+        catalog=Catalog(
+            analysis_types=["COMPARISON", "RANKING"], metric_types=["RATIO"],
+            predefined_metrics=[
+                PredefinedMetric(
+                    metric_name="cr", display_name="전환율", metric_type="RATIO",
+                    formula_numerator="a", formula_denominator="b",
+                ),
+            ],
+            supported_periods=["this_week", "last_week"],
+            flow_warning_keys=flow_warning_keys,
+        ),
+    )
+
+
+def test_dimension_overlapping_sample_values_infers_qdm() -> None:
+    req = _request_with_columns([
+        ("channel", "DIMENSION", ["paid_search", "organic"]),
+        ("source", "DIMENSION", ["paid_search", "organic"]),
+        ("device", "DIMENSION", ["mobile", "desktop"]),
+    ])
+    warnings = infer_qdm_warning(_response(_criteria()), req)
+    assert len(warnings) == 1
+    rf = warnings[0].related_fields or []
+    assert "channel" in rf and "source" in rf
+    assert "device" not in rf  # 값 공간이 달라 모호 대상 아님
+
+
+def test_dimension_shared_prefix_infers_qdm() -> None:
+    req = _request_with_columns([
+        ("device", "DIMENSION", ["mobile", "desktop", "tablet"]),
+        ("device_type", "DIMENSION", ["smartphone"]),
+        ("device_kind", "DIMENSION", ["touch"]),
+    ])
+    warnings = infer_qdm_warning(_response(_criteria()), req)
+    assert len(warnings) == 1
+    assert {"device", "device_type", "device_kind"} <= set(warnings[0].related_fields or [])
+
+
+def test_distinct_dimensions_no_qdm() -> None:
+    req = _request_with_columns([
+        ("channel", "DIMENSION", ["paid_search", "organic", "referral"]),
+        ("device", "DIMENSION", ["mobile", "desktop", "tablet"]),
+    ])
+    assert infer_qdm_warning(_response(_criteria()), req) == []
+
+
+def test_measure_shared_suffix_no_qdm() -> None:
+    # activated_users / paid_users: suffix 'users' 공유하나 prefix 와 값이 달라 오탐 금지.
+    req = _request_with_columns([
+        ("activated_users", "MEASURE", []),
+        ("paid_users", "MEASURE", []),
+        ("landing_sessions", "MEASURE", []),
+    ])
+    assert infer_qdm_warning(_response(_criteria()), req) == []
+
+
+def test_real_fixtures_qdm_behaviour() -> None:
+    """실제 eval fixture 로 AMB(모호)=QDM, 정상 dataset-a/b=무발생 을 고정한다."""
+    import json
+    from eval.composers.question_analysis import compose_request
+    from eval.loader import CASES_DIR
+
+    def _req(category: str, case_id: str) -> QuestionAnalysisRequest:
+        spec = json.loads((CASES_DIR / "question_analysis" / category / f"{case_id}.json").read_text())["spec"]
+        return QuestionAnalysisRequest.model_validate(compose_request(spec))
+
+    def _has_qdm(req: QuestionAnalysisRequest) -> bool:
+        return any(
+            w.code == FlowWarningKey.QUESTION_DATA_MISMATCH
+            for w in infer_qdm_warning(_response(_criteria()), req)
+        )
+
+    assert _has_qdm(_req("amb", "AMB-01"))   # dataset-c channel/source 값 겹침
+    assert _has_qdm(_req("amb", "AMB-02"))   # dataset-c 동일
+    assert _has_qdm(_req("amb", "AMB-07"))   # device* prefix 공유
+    assert not _has_qdm(_req("cmp", "CMP-01"))  # dataset-a 정상
+    assert not _has_qdm(_req("cmp", "CMP-08"))  # dataset-b 정상
