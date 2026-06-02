@@ -17,6 +17,22 @@
 
 <br />
 
+## Contents
+
+- [Overview](#-overview)
+- [Demo & Links](#-demo--links)
+- [빠른 시작](#-빠른-시작)
+- [Product Highlights](#-product-highlights)
+- [2026.06 기준 지원 범위](#-202606-기준-지원-범위)
+- [User Flow](#-user-flow)
+- [System Architecture](#-system-architecture)
+- [프로젝트 구조](#-프로젝트-구조)
+- [기술 스택](#-기술-스택)
+- [테스트 범위](#-테스트-범위)
+- [확장 전략](#-확장-전략)
+- [협업 컨벤션](#-협업-컨벤션)
+- [Team](#-team)
+
 ## 🧭 Overview
 
 현업 실무자는 성과를 설명하고 다음 액션을 정하기 위해 데이터를 확인해야 하지만, 실제 업무에서는 데이터가 여러 도구와 파일에 흩어져 있고 질문을 SQL, BI 필터, 분석 조건으로 번역하는 과정이 병목이 됩니다.
@@ -75,27 +91,27 @@ cd logue
 
 | 기능 | 설명 |
 | --- | --- |
-| 자연어 질문 입력 | 실무자가 궁금한 내용을 자연어로 입력합니다. |
-| 질문 분석 기준 도출 | `analysis_type`, `metric_id`, `date_field`, `group_by`, `filters` 등으로 질문을 구조화합니다. |
-| CSV 업로드 분석 | 별도 DB 연결 없이 업로드한 CSV를 기준으로 분석을 시작합니다. |
-| 스키마 의미 매핑 | 컬럼명이 달라도 날짜, 지표, 분류 기준 등 의미 단위로 역할을 추론합니다. |
-| 모호성 감지 | 날짜 기준 충돌, 데이터 특성 불일치, 지원 범위 이탈을 경고합니다. |
+| 질문 기준 구조화 | 자연어 질문을 `analysis_type`, `metric_id`, `date_field`, `group_by`, `filters` 등 분석 가능한 기준으로 변환합니다. |
+| CSV 기반 분석 | 별도 DB 연결 없이 업로드한 CSV의 컬럼 의미를 추론하고 분석을 시작합니다. |
+| 모호성 경고 | 날짜 기준 충돌, 데이터 특성 불일치, 지원 범위 이탈을 경고합니다. |
 | 기준 확인 및 수정 | 사용자가 분석 기준을 확인하고 필요한 경우 직접 수정할 수 있습니다. |
-| 결과 시각화 | 분석 결과를 표, 차트, 한 줄 인사이트와 함께 제공합니다. |
+| 결과 설명 가능성 | 분석 결과를 표, 차트, 한 줄 인사이트와 함께 제공해 계산 근거를 확인할 수 있게 합니다. |
 
 ## 📌 2026.06 기준 지원 범위
 
-| 항목 | 현재 상태 |
-| --- | --- |
-| 적용 도메인 | 마케팅/CRM 기준 predefined metrics 적용 중 |
-| 지원 지표 | `total_count`, `conversion_rate` 중심 |
-| 지원 분석 유형 | `comparison`, `ranking`만 지원 중 |
-| 데이터 입력 | CSV 업로드 기반 분석 지원 |
+현재 MVP는 마케팅/CRM 도메인의 CSV 기반 질문 분석을 안정적으로 처리하는 데 집중합니다.
+
+| 구분 | 현재 지원 | 확장 예정 |
+| --- | --- | --- |
+| 데이터 입력 | CSV 업로드 | 외부 DB, SaaS 데이터 채널 연결 |
+| 분석 유형 | `comparison`, `ranking` | trend, segmentation, anomaly 등 분석 유형 추가 |
+| 적용 도메인 | 마케팅/CRM predefined metrics | 세일즈, CS, 운영, HR, 재무, PM 도메인 확장 |
+| 지표 관리 | `total_count`, `conversion_rate` 중심 | 조직별 Metric Registry와 지표 버전 관리 |
+| 결과 활용 | 표, 차트, 한 줄 인사이트 | 반복 리포트, PDF/이미지/CSV export |
 
 ### Known Limitations
 
-- 현재는 마케팅/CRM 도메인의 predefined metrics에 최적화되어 있으며, 다른 도메인의 질문은 해석 정확도가 낮을 수 있습니다.
-- `comparison`, `ranking` 외 분석 유형은 안정 지원 범위에 포함하지 않습니다.
+- 다른 도메인 질문과 `comparison`, `ranking` 외 분석 유형은 안정 지원 범위에 포함하지 않습니다.
 - 외부 DB나 SaaS 데이터 소스 연결은 아직 지원하지 않으며, 업로드된 CSV를 기준으로 분석합니다.
 - 모호하거나 지원 범위를 벗어난 질문은 억지로 계산하지 않고 경고와 기준 수정 흐름으로 처리합니다.
 
@@ -106,6 +122,26 @@ cd logue
 3. 사용자가 자연어 질문을 입력합니다.
 4. Logue가 질문을 분석 기준으로 변환하고 사용자에게 확인을 요청합니다.
 5. 사용자가 기준을 확정하거나 수정하면 결과를 표, 차트, 설명으로 확인합니다.
+
+```mermaid
+sequenceDiagram
+  participant User as User
+  participant FE as Frontend
+  participant BE as Backend
+  participant AI as AI Server
+  participant LLM as OpenAI
+
+  User->>FE: CSV 업로드 및 자연어 질문 입력
+  FE->>BE: 분석 요청 생성
+  BE->>AI: 파일/질문 분석 요청
+  AI->>LLM: 분석 기준 구조화 요청
+  LLM-->>AI: structured criteria 반환
+  AI-->>BE: 분석 기준 및 경고 반환
+  BE-->>FE: 기준 확인 요청
+  User->>FE: 기준 확정 또는 수정
+  FE->>BE: 결과 계산 요청
+  BE-->>FE: 표, 차트, 설명 반환
+```
 
 <img src="assets/readme/solution-1.png" width="100%" alt="Logue 온보딩 기반 분석 경험" />
 
@@ -121,12 +157,28 @@ cd logue
 
 Logue는 프론트엔드, 백엔드, AI 서버를 분리해 사용자 경험, 서비스 흐름 제어, LLM 기반 분석 기준 도출을 각각 담당하도록 설계되어 있습니다.
 
-| 영역 | 역할 | 핵심 책임 |
+```mermaid
+flowchart LR
+  User["User"] --> FE["Frontend<br/>Next.js 16"]
+  FE --> BE["Backend<br/>Spring Boot 3.5"]
+  BE --> AI["AI Server<br/>FastAPI"]
+  AI --> LLM["OpenAI API<br/>Structured Outputs"]
+  BE --> DB[(PostgreSQL)]
+  BE --> Redis[(Redis)]
+  BE --> S3[(AWS S3)]
+  FE -.-> Vercel["Vercel"]
+  BE -.-> EC2["AWS EC2 / ECR"]
+  AI -.-> AIInfra["AWS EC2 / ECR"]
+```
+
+### Service Boundary
+
+| 서비스 | 책임 경계 | 주요 연결 |
 | --- | --- | --- |
-| Frontend | 사용자 인터페이스 | 질문 입력, CSV 업로드, 기준 확인, 결과 표/차트 표시 |
-| Backend | 서비스 API 및 분석 흐름 제어 | 인증, 데이터 소스 관리, 분석 작업 상태 관리, AI 서버 연동 |
-| AI | 질문/파일 분석 LLM 서비스 | CSV 컬럼 역할 분석, 질문 기준 구조화, 결과 요약 생성 |
-| Infra | 배포 및 운영 | Vercel, EC2, ECR, RDS, S3, CloudWatch, GitHub Actions 기반 운영 |
+| Frontend | 사용자 입력, CSV 업로드, 기준 확인, 결과 시각화 | Backend API |
+| Backend | 인증, 데이터 소스 관리, 분석 상태 관리, 결과 집계 | Frontend, AI Server, PostgreSQL, Redis, S3 |
+| AI Server | CSV 컬럼 역할 추론, 질문 기준 구조화, 결과 요약 | Backend, OpenAI API |
+| Infra | 배포, 이미지 관리, 로그 수집, 도메인 운영 | Vercel, GitHub Actions, AWS ECR/EC2/SSM, CloudWatch, Route 53 |
 
 <img src="assets/readme/system-architecture.png" width="100%" alt="Logue 시스템 아키텍처" />
 
@@ -184,7 +236,6 @@ logue/
 | HTTP / Server | ![HTTPX](https://img.shields.io/badge/HTTPX-2B6CB0?style=for-the-badge) ![Uvicorn](https://img.shields.io/badge/Uvicorn-2F4858?style=for-the-badge&logo=uvicorn&logoColor=white) |
 | Testing | ![pytest](https://img.shields.io/badge/pytest-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white) |
 | Package Manager | ![uv](https://img.shields.io/badge/uv-DE5FE9?style=for-the-badge&logo=uv&logoColor=white) |
-| Optional ML Extra | ![pandas](https://img.shields.io/badge/pandas-150458?style=for-the-badge&logo=pandas&logoColor=white) ![sentence-transformers](https://img.shields.io/badge/sentence--transformers-FF6F00?style=for-the-badge&logo=huggingface&logoColor=white) |
 | Infra / CI-CD | ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white) ![AWS ECR](https://img.shields.io/badge/AWS_ECR-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white) ![AWS EC2](https://img.shields.io/badge/AWS_EC2-FF9900?style=for-the-badge&logo=amazonec2&logoColor=white) ![AWS SSM](https://img.shields.io/badge/AWS_SSM-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white) ![CloudWatch](https://img.shields.io/badge/CloudWatch-FF4F8B?style=for-the-badge&logo=amazoncloudwatch&logoColor=white) |
 
 ### Common
@@ -236,9 +287,14 @@ main ← 프로덕션 배포
       └── docs/#이슈번호-설명
 ```
 
-- 기능, 버그 수정, 문서 작업은 `dev`로 PR을 올립니다.
-- 커밋 메시지는 `prefix: 한국어 설명` 형식을 따릅니다.
-- 자세한 브랜치 전략과 커밋 컨벤션은 [CONTRIBUTING.md](CONTRIBUTING.md)를 참고하세요.
+| 단계 | 컨벤션 |
+| --- | --- |
+| Issue | 작업 단위로 생성하고, 제목은 `docs: README 구조성 보강`처럼 prefix를 포함합니다. |
+| Branch | 이슈 번호를 포함해 `docs/#이슈번호-설명` 형식으로 생성합니다. |
+| Commit | `docs: README 구조성 보강`처럼 `prefix: 한국어 설명` 형식을 따릅니다. |
+| PR | `dev`를 타겟으로 올리고, PR 템플릿을 채운 뒤 `Closes #이슈번호`를 포함합니다. |
+
+자세한 브랜치 전략과 커밋 컨벤션은 [CONTRIBUTING.md](CONTRIBUTING.md)를 참고하세요.
 
 ## 👥 Team
 
