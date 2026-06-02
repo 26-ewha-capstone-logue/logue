@@ -1,6 +1,4 @@
 <div align="center">
-  <img src="assets/logo.png" width="96" alt="Logue logo" />
-
   # Logue
 
   **데이터 분석이 어려운 실무자를 위한 자연어 기반 AI 분석 웹 서비스**
