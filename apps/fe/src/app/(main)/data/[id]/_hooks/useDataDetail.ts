@@ -1,8 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { dataSourceKeys } from '@/apis/datasource';
-import { getDataSource } from '@/features/dataSource';
+import { dataSourceKeys, getDataSource } from '@/features/dataSource';
 
 type UseDataDetailParams = {
   dataSourceId: number;

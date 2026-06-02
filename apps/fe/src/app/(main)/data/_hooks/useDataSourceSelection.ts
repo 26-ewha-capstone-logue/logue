@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import type { DataSourceSummary } from '@/apis/datasource';
+import type { DataSourceSummary } from '@/features/dataSource';
 
 export function useDataSourceSelection(
   dataSources: readonly DataSourceSummary[],

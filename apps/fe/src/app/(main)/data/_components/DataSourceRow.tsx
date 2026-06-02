@@ -1,4 +1,4 @@
-import { type DataSourceSummary } from '@/apis/datasource';
+import { type DataSourceSummary } from '@/features/dataSource';
 import ChatIcon from '@/assets/icons/chat.svg';
 import { Checkbox } from '@/components';
 import { formatDateTime } from '@/lib/dateTime';

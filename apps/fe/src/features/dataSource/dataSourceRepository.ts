@@ -3,8 +3,7 @@ import {
   deleteDataSources as deleteDataSourcesRequest,
   getDataSource as getDataSourceRequest,
   getDataSources as getDataSourcesRequest,
-  type GetDataSourceListParams,
-  type GetFileResponse,
+  uploadDataSource as uploadDataSourceRequest,
 } from '@/apis/datasource';
 import {
   getMockDataSource,
@@ -13,6 +12,7 @@ import {
   isMockDataSourceId,
   withMockDataSource,
 } from '@/features/mockDataSource';
+import type { GetDataSourceListParams, GetFileResponse } from './types';
 
 type DataSourceDetailReader = (
   dataSourceId: number,
@@ -68,4 +68,8 @@ export async function deleteDataSources(dataSourceIds: number[]) {
 
 export async function deleteDataSource(dataSourceId: number) {
   return deleteMockAwareDataSource(dataSourceId, deleteDataSourceRequest);
+}
+
+export async function uploadDataSource(file: File) {
+  return uploadDataSourceRequest(file);
 }

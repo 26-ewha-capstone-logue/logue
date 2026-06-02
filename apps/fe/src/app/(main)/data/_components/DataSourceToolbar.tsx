@@ -1,6 +1,6 @@
 'use client';
 
-import type { DataSourceSort } from '@/apis/datasource';
+import type { DataSourceSort } from '@/features/dataSource';
 import SortDropdown, { type SortOption } from './SortDropdown';
 
 type DataSourceToolbarProps = {

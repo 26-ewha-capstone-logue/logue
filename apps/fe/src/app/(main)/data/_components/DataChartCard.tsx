@@ -1,9 +1,11 @@
 'use client';
 
-import type { FilePreview } from '@/apis/datasource';
 import ChatIcon from '@/assets/icons/chat.svg';
 import TrashIcon from '@/assets/icons/trash.svg';
-import { DataSourcePreviewTable } from '@/features/dataSource';
+import {
+  DataSourcePreviewTable,
+  type FilePreview,
+} from '@/features/dataSource';
 
 export type DataChartCardProps = {
   fileName: string;

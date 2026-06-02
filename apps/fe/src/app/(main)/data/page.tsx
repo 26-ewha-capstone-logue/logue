@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { type DataSourceSummary, type DataSourceSort } from '@/apis/datasource';
 import { ConfirmModal, FileUploadModal, ToastPortal } from '@/components';
 import { AUTH_MESSAGES, DATA_SOURCE_MESSAGES } from '@/constants/messages';
+import type { DataSourceSummary, DataSourceSort } from '@/features/dataSource';
 import { useStartAnalysis } from '@/hooks/useStartAnalysis';
 import { useToast } from '@/hooks/useToast';
 import { validateCsvFile } from '@/lib/fileValidation';
