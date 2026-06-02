@@ -5,18 +5,18 @@ import {
   getAccessToken,
   getRefreshToken,
   setAuthTokens,
-  shouldRefreshAccessToken,
-  type AuthTokens,
 } from './auth';
 import { getApiBaseUrl } from './apiBaseUrl';
+import {
+  getSharedReissuedAuthTokens,
+  getUsableRotatedAccessToken,
+} from './authTokenRefresh';
 
 const API_BASE_URL = getApiBaseUrl();
 
 type AuthRetryRequestConfig = InternalAxiosRequestConfig & {
   _authRetry?: boolean;
 };
-
-let reissueTokensRequest: Promise<AuthTokens> | null = null;
 
 const instance = axios.create({
   baseURL: API_BASE_URL,
@@ -35,30 +35,6 @@ instance.interceptors.request.use((config) => {
 
   return config;
 });
-
-function getReissuedAuthTokens(refreshToken: string) {
-  reissueTokensRequest ??= reissueAuthTokens(refreshToken).finally(() => {
-    reissueTokensRequest = null;
-  });
-
-  return reissueTokensRequest;
-}
-
-function getUsableRotatedAccessToken(previousRefreshToken: string) {
-  const latestAccessToken = getAccessToken();
-  const latestRefreshToken = getRefreshToken();
-
-  if (
-    latestAccessToken &&
-    latestRefreshToken &&
-    latestRefreshToken !== previousRefreshToken &&
-    !shouldRefreshAccessToken(latestAccessToken)
-  ) {
-    return latestAccessToken;
-  }
-
-  return null;
-}
 
 instance.interceptors.response.use(
   (response) => response,
@@ -83,7 +59,10 @@ instance.interceptors.response.use(
     originalRequest._authRetry = true;
 
     try {
-      const nextTokens = await getReissuedAuthTokens(refreshToken);
+      const nextTokens = await getSharedReissuedAuthTokens(
+        refreshToken,
+        reissueAuthTokens,
+      );
       setAuthTokens(nextTokens);
       originalRequest.headers.Authorization = `Bearer ${nextTokens.accessToken}`;
       return instance(originalRequest);

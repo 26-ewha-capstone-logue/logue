@@ -68,6 +68,32 @@ describe('restoreAuthSession', () => {
     );
   });
 
+  it('shares in-flight token reissue while restoring concurrent sessions', async () => {
+    installWindowStorage();
+    const nextAccessToken = createJwt(Date.now() + 120_000);
+    const reissueAuthTokens = vi.fn<ReissueAuthTokens>().mockResolvedValue({
+      accessToken: nextAccessToken,
+      refreshToken: 'next-refresh-token',
+    });
+
+    setAuthTokens({
+      accessToken: createJwt(Date.now() - 1_000),
+      refreshToken: 'refresh-token',
+    });
+
+    await expect(
+      Promise.all([
+        restoreAuthSession(reissueAuthTokens),
+        restoreAuthSession(reissueAuthTokens),
+      ]),
+    ).resolves.toEqual(['authenticated', 'authenticated']);
+
+    expect(reissueAuthTokens).toHaveBeenCalledTimes(1);
+    expect(reissueAuthTokens).toHaveBeenCalledWith('refresh-token');
+    expect(getAccessToken()).toBe(nextAccessToken);
+    expect(getRefreshToken()).toBe('next-refresh-token');
+  });
+
   it('clears tokens and returns anonymous when reissue fails', async () => {
     installWindowStorage();
     const reissueAuthTokens = vi
