@@ -125,7 +125,7 @@ Return a single JSON object. Do not include any explanation outside the JSON.
   - "채널", "지역", "카테고리" → `DIMENSION`
 - `snake_case` / `camelCase` / `PascalCase` / 한국어 가 섞여 있어도 의미만으로 판단한다. 명명 규칙 자체로 role 을 바꾸지 않는다.
 - "value", "count", "total", "amount" 처럼 의미가 모호한 영문 컬럼명은 `column_name` 만으로 판단하지 말고 `data_type` 으로 fallback 한다:
-  - 숫자형(`integer`/`double`) → `MEASURE`
+  - 숫자형(`integer`/`double`) → `MEASURE` (예: `total` integer → `MEASURE`, Example 3 참고)
   - 문자형(`string`) → `DIMENSION`
 - 단서가 부족할수록 `confidence` 를 낮추되 (예: 0.5 ~ 0.7), 반드시 6종 중 하나는 선택한다. role 결정을 유보하지 않는다.
 
@@ -268,12 +268,13 @@ Return a single JSON object. Do not include any explanation outside the JSON.
   "data_source": {
     "file_name": "metrics.csv",
     "row_count": 50,
-    "column_count": 4,
+    "column_count": 5,
     "columns": [
       {"column_name": "user_id", "data_type": "string",  "null_ratio": 0.0, "unique_ratio": 1.0, "sample_values": ["u_001", "u_002"]},
       {"column_name": "value",   "data_type": "double",  "null_ratio": 0.0, "unique_ratio": 0.8, "sample_values": [12.5, 99.1]},
       {"column_name": "count",   "data_type": "integer", "null_ratio": 0.0, "unique_ratio": 0.5, "sample_values": [1, 3, 5]},
-      {"column_name": "total",   "data_type": "string",  "null_ratio": 0.0, "unique_ratio": 0.1, "sample_values": ["A", "B"]}
+      {"column_name": "total",   "data_type": "integer", "null_ratio": 0.0, "unique_ratio": 0.7, "sample_values": [100, 250]},
+      {"column_name": "label",   "data_type": "string",  "null_ratio": 0.0, "unique_ratio": 0.1, "sample_values": ["A", "B"]}
     ]
   },
   "catalog": {
@@ -292,15 +293,16 @@ Return a single JSON object. Do not include any explanation outside the JSON.
     {"column_name": "user_id", "semantic_role": "ID_CRITERIA", "confidence": 0.95, "display_name": "user_id"},
     {"column_name": "value",   "semantic_role": "MEASURE",     "confidence": 0.6,  "display_name": "value"},
     {"column_name": "count",   "semantic_role": "MEASURE",     "confidence": 0.6,  "display_name": "count"},
-    {"column_name": "total",   "semantic_role": "DIMENSION",   "confidence": 0.55, "display_name": "total"}
+    {"column_name": "total",   "semantic_role": "MEASURE",     "confidence": 0.65, "display_name": "total"},
+    {"column_name": "label",   "semantic_role": "DIMENSION",   "confidence": 0.55, "display_name": "label"}
   ],
   "data_status_summary": {
     "total_rows": 50,
-    "total_columns": 4,
+    "total_columns": 5,
     "primary_candidates": {
       "date_fields":       [],
-      "measures":          ["value", "count"],
-      "dimensions":        ["total"],
+      "measures":          ["value", "count", "total"],
+      "dimensions":        ["label"],
       "status_conditions": [],
       "flags":             [],
       "ids":               ["user_id"]
