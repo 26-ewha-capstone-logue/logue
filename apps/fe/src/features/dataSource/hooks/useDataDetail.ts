@@ -1,19 +1,14 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { dataSourceKeys, getDataSource } from '@/features/dataSource';
+import { useDataSourceDetail } from './useDataSourceDetail';
 
 type UseDataDetailParams = {
-  dataSourceId: number;
+  dataSourceId: number | null;
   enabled: boolean;
 };
 
 export function useDataDetail({ dataSourceId, enabled }: UseDataDetailParams) {
-  const detailQuery = useQuery({
-    queryKey: dataSourceKeys.detail(dataSourceId),
-    queryFn: () => getDataSource(dataSourceId),
-    enabled,
-  });
+  const detailQuery = useDataSourceDetail(dataSourceId, { enabled });
 
   return {
     detail: detailQuery.data,

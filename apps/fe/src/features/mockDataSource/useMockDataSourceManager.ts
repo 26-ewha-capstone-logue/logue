@@ -6,19 +6,12 @@ import {
   filterVisibleMockDataSources,
   getMockDataSourceIds,
   getMockDataSourceListResponse,
-  getServerDataSourceIds,
   isMockDataSourceId,
   markMockDataSourcesDeleted,
   readDeletedMockDataSourceIds,
 } from './mockDataSource';
 
 const EMPTY_DELETED_IDS = new Set<number>();
-
-export type MockDataSourceDeletionPlan = {
-  mockDataSourceIds: number[];
-  requiresUser: boolean;
-  serverDataSourceIds: number[];
-};
 
 export function useMockDataSourceManager(userId: number | null | undefined) {
   const [sessionDeletedIdsByUser, setSessionDeletedIdsByUser] = useState(
@@ -46,16 +39,9 @@ export function useMockDataSourceManager(userId: number | null | undefined) {
     return deletedIds;
   }, [sessionDeletedIds, storageDeletedIds]);
 
-  const getDeletionPlan = useCallback(
-    (dataSourceIds: number[]): MockDataSourceDeletionPlan => {
-      const mockDataSourceIds = getMockDataSourceIds(dataSourceIds);
-
-      return {
-        mockDataSourceIds,
-        requiresUser: mockDataSourceIds.length > 0 && userId == null,
-        serverDataSourceIds: getServerDataSourceIds(dataSourceIds),
-      };
-    },
+  const canPersistDeletedDataSources = useCallback(
+    (dataSourceIds: number[]) =>
+      getMockDataSourceIds(dataSourceIds).length === 0 || userId != null,
     [userId],
   );
 
@@ -99,16 +85,16 @@ export function useMockDataSourceManager(userId: number | null | undefined) {
 
   return useMemo(
     () => ({
+      canPersistDeletedDataSources,
       deletedDataSourceIds,
-      getDeletionPlan,
       getFallbackListResponse: getMockDataSourceListResponse,
       getVisibleDataSources,
       isDeletedDataSource,
       markDeletedDataSources,
     }),
     [
+      canPersistDeletedDataSources,
       deletedDataSourceIds,
-      getDeletionPlan,
       getVisibleDataSources,
       isDeletedDataSource,
       markDeletedDataSources,

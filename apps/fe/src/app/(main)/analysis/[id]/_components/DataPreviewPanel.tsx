@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  DataSourcePreviewTable,
+  DataSourceAnalysisPreviewTable,
   type DataSourcePreviewTableModel,
 } from '@/features/dataSource';
 import LoadingDataPreview from './LoadingDataPreview';
@@ -20,7 +20,7 @@ export default function DataPreviewPanel({
   table,
 }: DataPreviewPanelProps) {
   if (table) {
-    return <DataSourcePreviewTable table={table} variant="analysis" />;
+    return <DataSourceAnalysisPreviewTable table={table} />;
   }
 
   if (isLoading) {

@@ -18,6 +18,7 @@ export const DATA_SOURCE_MESSAGES = {
   deleteTitle: '파일을 삭제하시겠어요?',
   deleteDescription: '삭제 후엔 복구할 수 없어요.',
   deleteConfirmLabel: '삭제하기',
+  deletePendingLabel: '삭제 중',
   deleteCancelLabel: '취소하기',
   fileValidation: {
     invalidType: '파일 형식이 맞지 않습니다.',
