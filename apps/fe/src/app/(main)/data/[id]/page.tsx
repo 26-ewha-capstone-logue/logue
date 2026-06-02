@@ -7,9 +7,9 @@ import { DATA_SOURCE_MESSAGES } from '@/constants/messages';
 import { useToast } from '@/hooks/useToast';
 import DataDetailStatus from './_components/DataDetailStatus';
 import DataDetailView from './_components/DataDetailView';
-import { useDataDetail } from './_hooks/useDataDetail';
-import { useDataSourceUserContext } from '../_hooks/useDataSourceUserContext';
-import { useDeleteDataSources } from '../_hooks/useDeleteDataSources';
+import { useDataDetail } from '@/features/dataSource/hooks/useDataDetail';
+import { useDataSourceUserContext } from '@/features/dataSource/hooks/useDataSourceUserContext';
+import { useDeleteDataSources } from '@/features/dataSource/hooks/useDeleteDataSources';
 
 type PageParams = { id: string };
 

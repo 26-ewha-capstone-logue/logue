@@ -7,7 +7,7 @@ import PromptInput from '../_components/PromptInput';
 import AnalysisResizableSplit from './_components/AnalysisResizableSplit';
 import AnalysisChatMessageList from './_components/AnalysisChatMessageList';
 import DataPreviewPanel from './_components/DataPreviewPanel';
-import { useAnalysisChat } from './_hooks/useAnalysisChat';
+import { useAnalysisChat } from '@/features/analysis/hooks/useAnalysisChat';
 
 type PageParams = { id: string };
 

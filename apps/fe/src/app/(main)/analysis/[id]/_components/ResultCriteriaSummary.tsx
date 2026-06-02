@@ -1,4 +1,4 @@
-import type { ResultCriteriaItemViewModel } from '../_models/analysisViewModels';
+import type { ResultCriteriaItemViewModel } from '@/features/analysis/models/analysisViewModels';
 
 type ResultCriteriaSummaryProps = {
   items: ResultCriteriaItemViewModel[];

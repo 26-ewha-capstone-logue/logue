@@ -1,15 +1,15 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { createCriteriaEditValues } from '../_adapters/normalizeCriteria';
+import { createCriteriaEditValues } from '@/features/analysis/adapters/normalizeCriteria';
 import {
   createCriteriaEditRows,
   type CriteriaEditRowSpec,
-} from '../_config/criteriaEditRows';
+} from '@/features/analysis/config/criteriaEditRows';
 import type {
   CriteriaEditValues,
   CriteriaViewModel,
-} from '../_models/analysisViewModels';
+} from '@/features/analysis/models/analysisViewModels';
 import AnalysisActionButtons from './AnalysisActionButtons';
 import AnalysisCard from './AnalysisCard';
 import {
