@@ -13,7 +13,7 @@ import pytest
 from openai import APITimeoutError
 from pydantic import BaseModel
 
-from llm.client import LLMClient, LLMResponseEmptyError
+from llm.client import LLMClient, LLMResponseEmptyError, TokenUsage
 
 
 class DummyResponse(BaseModel):
@@ -21,9 +21,24 @@ class DummyResponse(BaseModel):
     score: int
 
 
-def _stub_completion(parsed: DummyResponse | None) -> MagicMock:
+def _make_usage(
+    *, prompt: int = 0, cached: int = 0, completion: int = 0, total: int = 0
+) -> MagicMock:
+    """OpenAI usage 응답 모양의 스텁 (prompt_tokens_details.cached_tokens 포함)."""
+    usage = MagicMock()
+    usage.prompt_tokens = prompt
+    usage.completion_tokens = completion
+    usage.total_tokens = total
+    usage.prompt_tokens_details.cached_tokens = cached
+    return usage
+
+
+def _stub_completion(
+    parsed: DummyResponse | None, *, usage: MagicMock | None = None
+) -> MagicMock:
     completion = MagicMock()
     completion.choices = [MagicMock(message=MagicMock(parsed=parsed))]
+    completion.usage = usage
     return completion
 
 
@@ -43,7 +58,7 @@ def test_complete_structured_returns_parsed_model(client: LLMClient) -> None:
     parse_mock = MagicMock(return_value=_stub_completion(expected))
     client._client.chat.completions.parse = parse_mock  # type: ignore[attr-defined]
 
-    result = client.complete_structured(
+    parsed, _usage = client.complete_structured(
         system_prompt="rules",
         user_payload={"q": "x"},
         response_model=DummyResponse,
@@ -51,7 +66,7 @@ def test_complete_structured_returns_parsed_model(client: LLMClient) -> None:
         max_output_tokens=300,
     )
 
-    assert result == expected
+    assert parsed == expected
     call_kwargs = parse_mock.call_args.kwargs
     assert call_kwargs["model"] == "gpt-4.1-nano"
     assert call_kwargs["response_format"] is DummyResponse
@@ -59,6 +74,43 @@ def test_complete_structured_returns_parsed_model(client: LLMClient) -> None:
     assert call_kwargs["messages"][0] == {"role": "system", "content": "rules"}
     assert call_kwargs["messages"][1]["role"] == "user"
     assert "q" in call_kwargs["messages"][1]["content"]
+
+
+def test_complete_structured_returns_normalized_token_usage(client: LLMClient) -> None:
+    expected = DummyResponse(message="hi", score=1)
+    usage = _make_usage(prompt=2000, cached=500, completion=600, total=2600)
+    parse_mock = MagicMock(return_value=_stub_completion(expected, usage=usage))
+    client._client.chat.completions.parse = parse_mock  # type: ignore[attr-defined]
+
+    parsed, token_usage = client.complete_structured(
+        system_prompt="x",
+        user_payload="y",
+        response_model=DummyResponse,
+        model="gpt-4.1-nano",
+    )
+
+    assert parsed == expected
+    assert isinstance(token_usage, TokenUsage)
+    assert token_usage.input_tokens == 2000
+    assert token_usage.cached_input_tokens == 500
+    assert token_usage.output_tokens == 600
+    assert token_usage.total_tokens == 2600
+
+
+def test_complete_structured_usage_defaults_to_zero_when_missing(client: LLMClient) -> None:
+    """usage 가 없는 응답에서도 TokenUsage 가 0 으로 안전하게 채워져야 한다."""
+    expected = DummyResponse(message="hi", score=1)
+    parse_mock = MagicMock(return_value=_stub_completion(expected, usage=None))
+    client._client.chat.completions.parse = parse_mock  # type: ignore[attr-defined]
+
+    _parsed, token_usage = client.complete_structured(
+        system_prompt="x",
+        user_payload="y",
+        response_model=DummyResponse,
+        model="gpt-4.1-nano",
+    )
+
+    assert token_usage == TokenUsage()
 
 
 def test_complete_structured_serializes_dict_user_payload_as_utf8_json(
@@ -118,14 +170,14 @@ def test_complete_structured_retries_once_on_timeout_then_succeeds(
     )
     client._client.chat.completions.parse = parse_mock  # type: ignore[attr-defined]
 
-    result = client.complete_structured(
+    parsed, _usage = client.complete_structured(
         system_prompt="x",
         user_payload="y",
         response_model=DummyResponse,
         model="gpt-4.1-nano",
     )
 
-    assert result == expected
+    assert parsed == expected
     assert parse_mock.call_count == 2
 
 

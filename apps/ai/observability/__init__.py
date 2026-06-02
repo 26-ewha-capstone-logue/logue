@@ -7,6 +7,7 @@
 from observability.cost import calculate_cost_usd
 from observability.hashing import sha256_of
 from observability.logger import LLMEventBuilder, emit_event
+from observability.recording import record_llm_call
 from observability.redaction import redact_chart_data, redact_data_source
 
 
@@ -14,6 +15,7 @@ __all__ = [
     "LLMEventBuilder",
     "calculate_cost_usd",
     "emit_event",
+    "record_llm_call",
     "redact_chart_data",
     "redact_data_source",
     "sha256_of",

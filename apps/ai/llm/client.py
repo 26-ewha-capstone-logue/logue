@@ -10,6 +10,7 @@ user payload / Pydantic response_model / model 식별자 / temperature / max_out
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import json
 import logging
 from typing import Any, TypeVar
@@ -24,6 +25,41 @@ from llm.retry import RETRYABLE_EXCEPTIONS, with_retry
 logger = logging.getLogger("logue_ai")
 
 T = TypeVar("T", bound=BaseModel)
+
+
+@dataclass(frozen=True)
+class TokenUsage:
+    """OpenAI usage 응답을 비용 계산·로깅에 쓰기 좋게 정규화한 토큰 사용량.
+
+    `cached_input_tokens` 는 `input_tokens` 의 부분집합 (prompt_tokens_details.cached_tokens).
+    usage 가 없는 응답(스텁·예외 경로)에서는 전부 0 으로 채운다.
+    """
+
+    input_tokens: int = 0
+    cached_input_tokens: int = 0
+    output_tokens: int = 0
+    total_tokens: int = 0
+
+
+def _extract_usage(completion: Any) -> TokenUsage:
+    """OpenAI completion.usage 를 TokenUsage 로 정규화한다 (필드 누락에 방어적).
+
+    Structured Outputs 응답은 `usage.prompt_tokens` · `completion_tokens` · `total_tokens`
+    와 `usage.prompt_tokens_details.cached_tokens` 를 제공한다. 일부 필드가 없거나
+    usage 자체가 None 인 경우에도 0 으로 안전하게 채운다.
+    """
+    usage = getattr(completion, "usage", None)
+    if usage is None:
+        return TokenUsage()
+
+    details = getattr(usage, "prompt_tokens_details", None)
+    cached = getattr(details, "cached_tokens", 0) if details is not None else 0
+    return TokenUsage(
+        input_tokens=int(getattr(usage, "prompt_tokens", 0) or 0),
+        cached_input_tokens=int(cached or 0),
+        output_tokens=int(getattr(usage, "completion_tokens", 0) or 0),
+        total_tokens=int(getattr(usage, "total_tokens", 0) or 0),
+    )
 
 
 class LLMResponseEmptyError(Exception):
@@ -58,12 +94,13 @@ class LLMClient:
         model: str,
         temperature: float = 0.0,
         max_output_tokens: int | None = None,
-    ) -> T:
-        """system_prompt + user_payload 를 OpenAI 에 전달해 response_model 인스턴스를 반환한다.
+    ) -> tuple[T, TokenUsage]:
+        """system_prompt + user_payload 를 OpenAI 에 전달해 (response_model, 토큰 usage) 를 반환한다.
 
-        - user_payload 가 dict 면 JSON 직렬화 (ensure_ascii=False — 한글 그대로)
+        - user_payload 가 dict 면 JSON 직렬화 (ensure_ascii=False 로 한글 그대로)
         - response_format 에 Pydantic 모델 클래스를 전달하여 Structured Outputs 강제
         - parsed=None (refusal 등) 은 `LLMResponseEmptyError` 로 raise
+        - 반환 tuple 의 두 번째 요소는 비용 계산·로깅용 `TokenUsage`
         """
         user_message = (
             user_payload
@@ -89,4 +126,4 @@ class LLMClient:
             raise LLMResponseEmptyError(
                 "OpenAI 응답이 비어있습니다 (parsed=None — refusal 또는 컨텐츠 필터 가능성)."
             )
-        return parsed
+        return parsed, _extract_usage(completion)

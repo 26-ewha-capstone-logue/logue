@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from llm import LLMClient, load_system_prompt
 from config.model_config import model_config_for
+from observability import record_llm_call
 from schemas.api.question_analysis import QuestionAnalysisRequest, QuestionAnalysisResponse
 from schemas.llm_input.question_analysis_input import QuestionAnalysisLLMInput
 
@@ -46,9 +47,16 @@ def run(req: QuestionAnalysisRequest) -> QuestionAnalysisResponse:
     """
     llm_input = QuestionAnalysisLLMInput.from_request(req)
 
-    return _get_client().complete_structured(
+    response, usage = _get_client().complete_structured(
         system_prompt=load_system_prompt("question_analysis"),
         user_payload=llm_input.model_dump(exclude={"request_id"}),
         response_model=QuestionAnalysisResponse,
         **_cfg.as_llm_kwargs(),
     )
+    record_llm_call(
+        api_name="question_analysis",
+        request_id=req.request_id,
+        usage=usage,
+        **_cfg.as_llm_kwargs(),
+    )
+    return response
