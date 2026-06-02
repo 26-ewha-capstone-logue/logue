@@ -11,6 +11,7 @@ from rules.warning_rules import (
     apply_inferred_warnings,
     infer_data_warnings,
     infer_date_conflict_warning,
+    infer_qdm_warning,
 )
 from schemas.api.question_analysis import (
     AnalysisCriteria,
@@ -241,4 +242,141 @@ def test_apply_adds_date_conflict_warning() -> None:
     apply_inferred_warnings(response, _request_with_dates(date_count=2))
     assert any(
         w.code == FlowWarningKey.DATE_FIELD_CONFLICT for w in response.warnings
+    )
+
+
+# ---------- QUESTION_DATA_MISMATCH 추론 ----------
+
+
+def _request_with_roles(
+    *,
+    flag_count: int = 0,
+    status_count: int = 0,
+    with_qdm_key: bool = True,
+) -> QuestionAnalysisRequest:
+    """FLAG/STATUS_CONDITION 컬럼 수와 catalog 의 QUESTION_DATA_MISMATCH 정의 여부를 제어한다."""
+    columns: list[DataSourceColumn] = [
+        DataSourceColumn(
+            column_name="signed_at",
+            data_type="datetime",
+            semantic_role="DATE_CRITERIA",
+            null_ratio=0.0,
+            sample_values=[],
+        ),
+        DataSourceColumn(
+            column_name="channel",
+            data_type="string",
+            semantic_role="DIMENSION",
+            null_ratio=0.0,
+            sample_values=[],
+        ),
+        DataSourceColumn(
+            column_name="device",
+            data_type="string",
+            semantic_role="DIMENSION",
+            null_ratio=0.0,
+            sample_values=[],
+        ),
+    ]
+    for i in range(flag_count):
+        columns.append(
+            DataSourceColumn(
+                column_name=f"flag_{i}",
+                data_type="boolean",
+                semantic_role="FLAG",
+                null_ratio=0.0,
+                sample_values=[],
+            )
+        )
+    for i in range(status_count):
+        columns.append(
+            DataSourceColumn(
+                column_name=f"status_{i}",
+                data_type="string",
+                semantic_role="STATUS_CONDITION",
+                null_ratio=0.0,
+                sample_values=[],
+            )
+        )
+    for name in ("amount", "count", "revenue", "users", "orders"):
+        columns.append(
+            DataSourceColumn(
+                column_name=name,
+                data_type="double",
+                semantic_role="MEASURE",
+                null_ratio=0.0,
+                sample_values=[],
+            )
+        )
+    flow_warning_keys: list[FlowWarningKeyCatalog] = []
+    if with_qdm_key:
+        flow_warning_keys.append(
+            FlowWarningKeyCatalog(
+                code="QUESTION_DATA_MISMATCH", name="...", comment="...",
+            ),
+        )
+    return QuestionAnalysisRequest(
+        request_id="req_X",
+        conversation_id=1,
+        question=Question(content="?"),
+        data_source=DataSource(id=1, columns=columns),
+        catalog=Catalog(
+            analysis_types=["COMPARISON", "RANKING"],
+            metric_types=["RATIO"],
+            predefined_metrics=[
+                PredefinedMetric(
+                    metric_name="cr", display_name="전환율", metric_type="RATIO",
+                    formula_numerator="amount", formula_denominator="users",
+                ),
+            ],
+            supported_periods=["this_week", "last_week"],
+            flow_warning_keys=flow_warning_keys,
+        ),
+    )
+
+
+def test_two_flag_columns_infers_qdm() -> None:
+    warnings = infer_qdm_warning(
+        _response(_criteria()),
+        _request_with_roles(flag_count=2),
+    )
+    assert len(warnings) == 1
+    assert warnings[0].code == FlowWarningKey.QUESTION_DATA_MISMATCH
+    assert "flag_0" in (warnings[0].related_fields or [])
+    assert "flag_1" in (warnings[0].related_fields or [])
+
+
+def test_two_status_condition_columns_infers_qdm() -> None:
+    warnings = infer_qdm_warning(
+        _response(_criteria()),
+        _request_with_roles(status_count=2),
+    )
+    assert len(warnings) == 1
+    assert warnings[0].code == FlowWarningKey.QUESTION_DATA_MISMATCH
+    assert "status_0" in (warnings[0].related_fields or [])
+    assert "status_1" in (warnings[0].related_fields or [])
+
+
+def test_normal_request_no_qdm() -> None:
+    # 1 FLAG, 2 DIMENSION, 5 MEASURE: QDM 기준 미달, warning 없어야 함.
+    warnings = infer_qdm_warning(
+        _response(_criteria()),
+        _request_with_roles(flag_count=1),
+    )
+    assert warnings == []
+
+
+def test_catalog_without_qdm_key_returns_empty() -> None:
+    warnings = infer_qdm_warning(
+        _response(_criteria()),
+        _request_with_roles(flag_count=2, with_qdm_key=False),
+    )
+    assert warnings == []
+
+
+def test_apply_adds_qdm_warning() -> None:
+    response = _response(_criteria())
+    apply_inferred_warnings(response, _request_with_roles(flag_count=2))
+    assert any(
+        w.code == FlowWarningKey.QUESTION_DATA_MISMATCH for w in response.warnings
     )
