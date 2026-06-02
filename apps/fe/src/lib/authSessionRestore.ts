@@ -7,7 +7,10 @@ import {
   type AuthTokens,
 } from './auth';
 import type { AuthStatus } from './authSession';
-import { hasUsableRotatedTokens } from './authTokenRefresh';
+import {
+  getSharedReissuedAuthTokens,
+  hasUsableRotatedTokens,
+} from './authTokenRefresh';
 
 export type ReissueAuthTokens = (refreshToken: string) => Promise<AuthTokens>;
 
@@ -31,7 +34,10 @@ export async function restoreAuthSession(
   }
 
   try {
-    const nextTokens = await reissueAuthTokens(refreshToken);
+    const nextTokens = await getSharedReissuedAuthTokens(
+      refreshToken,
+      reissueAuthTokens,
+    );
     setAuthTokens(nextTokens);
     return 'authenticated';
   } catch {
