@@ -53,8 +53,9 @@ def detect_unsupported(
 
     reasons: list[str] = []
     # detected_intent 는 우선순위에 따라 첫 매칭 사유 1개만 채운다.
-    # (predefined-metric 의 formula 컬럼명은 카탈로그-전역 의미명이지 특정
-    # 데이터셋의 실제 컬럼명이 아니므로, formula 컬럼 존재 여부는 검사하지 않는다.)
+    # catalog 는 dataset-aware(dataset-b → catalog-b 등) 로 로드되므로
+    # formula 컬럼명은 해당 데이터셋의 실제 컬럼명과 일치한다. formula 컬럼
+    # 존재 여부를 검사해 missing_formula_column 을 결정론적으로 감지한다.
     detected_intent: str | None = None
 
     if c.metric_name not in metrics_by_name:
@@ -62,6 +63,15 @@ def detect_unsupported(
             f"metric_name '{c.metric_name}' 은 catalog.predefined_metrics 에 없습니다."
         )
         detected_intent = detected_intent or "unknown_metric"
+    else:
+        catalog_metric = metrics_by_name[c.metric_name]
+        ds_columns = {col.column_name for col in request.data_source.columns}
+        for formula_col in (catalog_metric.formula_numerator, catalog_metric.formula_denominator):
+            if formula_col is not None and formula_col not in ds_columns:
+                reasons.append(
+                    f"catalog formula 컬럼 '{formula_col}' 이 data_source.columns 에 없습니다."
+                )
+                detected_intent = detected_intent or "missing_formula_column"
     if c.standard_period not in periods:
         reasons.append(
             f"standard_period '{c.standard_period}' 은 catalog.supported_periods 에 없습니다."
