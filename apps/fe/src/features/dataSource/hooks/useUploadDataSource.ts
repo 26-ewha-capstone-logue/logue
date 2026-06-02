@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { dataSourceKeys, uploadDataSource } from '@/apis/datasource';
+import { dataSourceKeys, uploadDataSource } from '@/features/dataSource';
 import { getDataSourceErrorMessage } from '../utils/dataSourceErrorMessage';
 
 type UseUploadDataSourceOptions = {

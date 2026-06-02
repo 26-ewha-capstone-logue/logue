@@ -1,10 +1,10 @@
 'use client';
 
-import type { FilePreview } from '@/apis/datasource';
 import {
   createDataSourcePreviewTableModel,
   type DataSourcePreviewTableModel,
 } from './previewTable';
+import type { FilePreview } from './types';
 
 type DataSourcePreviewTableVariant = 'detail' | 'analysis';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { Card } from '@/components';
+import SampleDataCard from './SampleDataCard';
 
 export type SampleCard = {
   id: string;
@@ -50,11 +50,11 @@ export default function SampleDataSection({
 
       <div className="grid grid-cols-1 gap-16 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((card) => (
-          <Card
+          <SampleDataCard
             key={card.id}
             title={card.title}
             description={card.description}
-            onClick={() => onCardClick?.(card)}
+            onClick={onCardClick ? () => onCardClick(card) : undefined}
           />
         ))}
       </div>

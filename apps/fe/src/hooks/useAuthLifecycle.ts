@@ -19,15 +19,12 @@ import {
   isAllowedOAuthPopupOrigin,
   readOAuthPopupCallbackMessage,
 } from '@/lib/authRedirect';
-import {
-  AUTH_REDIRECT_PATH,
-  getLoginRedirectPath,
-  getPostAuthRedirectPath,
-  shouldRedirectAuthenticatedUser,
-  shouldRedirectPrivatePath,
-  type AuthStatus,
-} from '@/lib/authSession';
+import { getPostAuthRedirectPath, type AuthStatus } from '@/lib/authSession';
 import { restoreAuthSession } from '@/lib/authSessionRestore';
+import {
+  getAuthRouteBypassRequirements,
+  getAuthRouteDecision,
+} from '@/lib/authSessionService';
 
 type SetAuthStatus = (status: AuthStatus) => void;
 
@@ -65,28 +62,26 @@ function useAuthStatusApplier({
 
       if (nextStatus === 'anonymous') {
         queryClient.clear();
-
-        if (
-          shouldRedirectPrivatePath(nextStatus, pathname) &&
-          !consumePrivatePathRedirectBypass()
-        ) {
-          replaceLocation(getLoginRedirectPath(new URL(window.location.href)));
-        }
-
-        return;
       }
 
-      const shouldBypassAuthEntryRedirect =
-        shouldCheckAuthEntryRedirect &&
-        shouldRedirectAuthenticatedUser(pathname) &&
-        consumeAuthEntryRedirectBypass();
+      const bypassRequirements = getAuthRouteBypassRequirements({
+        pathname,
+        shouldCheckAuthEntryRedirect,
+        status: nextStatus,
+      });
+      const routeDecision = getAuthRouteDecision({
+        currentUrl: new URL(window.location.href),
+        pathname,
+        shouldBypassAuthEntryRedirect:
+          bypassRequirements.authEntry && consumeAuthEntryRedirectBypass(),
+        shouldBypassPrivatePathRedirect:
+          bypassRequirements.privatePath && consumePrivatePathRedirectBypass(),
+        shouldCheckAuthEntryRedirect,
+        status: nextStatus,
+      });
 
-      if (
-        shouldCheckAuthEntryRedirect &&
-        shouldRedirectAuthenticatedUser(pathname) &&
-        !shouldBypassAuthEntryRedirect
-      ) {
-        replaceLocation(AUTH_REDIRECT_PATH);
+      if (routeDecision.type === 'replace') {
+        replaceLocation(routeDecision.path);
       }
     },
     [pathname, queryClient, setStatus],

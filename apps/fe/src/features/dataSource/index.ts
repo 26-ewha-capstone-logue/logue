@@ -4,6 +4,7 @@ export {
   deleteDataSources,
   getDataSource,
   getDataSources,
+  uploadDataSource,
 } from './dataSourceRepository';
 export {
   createDataSourcePreviewTableModel,
@@ -11,3 +12,13 @@ export {
   type DataSourcePreviewRow,
   type DataSourcePreviewTableModel,
 } from './previewTable';
+export { dataSourceKeys } from './queryKeys';
+export type {
+  DataSourceSort,
+  DataSourceSummary,
+  FilePreview,
+  GetDataSourceListParams,
+  GetDataSourceListResponse,
+  GetFileResponse,
+  UploadFileResponse,
+} from './types';

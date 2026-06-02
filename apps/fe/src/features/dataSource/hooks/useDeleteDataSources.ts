@@ -2,9 +2,8 @@
 
 import { useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { dataSourceKeys } from '@/apis/datasource';
 import { AUTH_MESSAGES } from '@/constants/messages';
-import { deleteDataSources } from '@/features/dataSource';
+import { dataSourceKeys, deleteDataSources } from '@/features/dataSource';
 import type { MockDataSourceManager } from '@/features/mockDataSource';
 import { getDataSourceDeleteErrorMessage } from '../utils/dataSourceErrorMessage';
 
