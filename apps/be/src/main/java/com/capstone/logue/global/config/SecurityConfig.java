@@ -6,6 +6,8 @@ import com.capstone.logue.auth.filter.JWTFilter;
 import com.capstone.logue.auth.handler.OAuth2LoginFailureHandler;
 import com.capstone.logue.auth.handler.OAuth2LoginSuccessHandler;
 import com.capstone.logue.auth.provider.JWTProvider;
+import com.capstone.logue.auth.security.CustomOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,6 +40,7 @@ public class SecurityConfig {
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
     private final JWTProvider jwtProvider;
+    private final ClientRegistrationRepository clientRegistrationRepository;
 
     @Bean
     public CorsFilter corsFilter() {
@@ -68,6 +71,9 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(HttpBasicConfigurer::disable)
                 .oauth2Login((oauth2) -> oauth2
+                        .authorizationEndpoint(endpoint -> endpoint
+                                .authorizationRequestResolver(
+                                        new CustomOAuth2AuthorizationRequestResolver(clientRegistrationRepository)))
                         .successHandler(oAuth2LoginSuccessHandler)
                         .failureHandler(oAuth2LoginFailureHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
