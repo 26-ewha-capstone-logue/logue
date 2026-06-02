@@ -1,11 +1,14 @@
+<h1 align="center">Logue</h1>
+
 <div align="center">
-  # Logue
-
-  **데이터 분석이 어려운 실무자를 위한 자연어 기반 AI 분석 웹 서비스**
-
-  Logue는 사용자의 모호한 질문을 분석 가능한 기준으로 구조화하고, CSV 데이터에서 신뢰할 수 있는 결과와 계산 근거를 함께 제공하는 분석 지원 서비스입니다.
-
-  [배포 링크](https://asklogue.co) · [시연 영상](https://www.youtube.com/channel/UCJlg-nOFnb5ouBXR9MfhFwg) · [빠른 시작](#-빠른-시작) · [기여 가이드](CONTRIBUTING.md)
+  <p><strong>데이터 분석이 어려운 실무자를 위한 자연어 기반 AI 분석 웹 서비스</strong></p>
+  <p>Logue는 사용자의 모호한 질문을 분석 가능한 기준으로 구조화하고, CSV 데이터에서 신뢰할 수 있는 결과와 계산 근거를 함께 제공하는 분석 지원 서비스입니다.</p>
+  <p>
+    <a href="https://asklogue.co">배포 링크</a> ·
+    <a href="https://www.youtube.com/channel/UCJlg-nOFnb5ouBXR9MfhFwg">시연 영상</a> ·
+    <a href="https://github.com/26-ewha-capstone-logue/logue/tree/dev#-overview">Overview</a> ·
+    <a href="CONTRIBUTING.md">기여 가이드</a>
+  </p>
 </div>
 
 <br />
@@ -36,6 +39,38 @@ Logue는 이 문제를 **Question-first 분석 경험**으로 해결합니다. �
 | 시연 가이드 | [self_demo.md](self_demo.md) |
 | 샘플 CSV | [docs/logue_analysis_sample.csv](docs/logue_analysis_sample.csv) |
 
+## 🚀 빠른 시작
+
+### 사전 준비
+
+| 영역 | 필요 도구 |
+| --- | --- |
+| Frontend | Node.js 20+, Yarn |
+| Backend | JDK 21, PostgreSQL, Redis |
+| AI | Python 3.11+, [uv](https://docs.astral.sh/uv/) |
+| Build | Docker |
+
+AI 서버는 실제 LLM 호출 시 `OPENAI_API_KEY`가 필요합니다. 로컬 통합 검증에서는 `ANAL_LLM_MOCK=true`로 mock 응답을 사용할 수 있습니다.
+
+```bash
+git clone https://github.com/26-ewha-capstone-logue/logue.git
+cd logue
+```
+
+| 앱 | 개발 서버 | 테스트 | 빌드 |
+| :--: | :-- | :-- | :-- |
+| **FE** | `make dev-fe` | `make test-fe` | `make build-fe` |
+| **BE** | `make dev-be` | `make test-be` | `make build-be` |
+| **AI** | `make dev-ai` | `make test-ai` | `make build-ai` |
+
+각 앱의 상세 실행 환경은 [CONTRIBUTING.md](CONTRIBUTING.md)와 앱별 README를 참고하세요.
+
+| 앱 | 상세 문서 | 기본 포트 |
+| --- | --- | --- |
+| Frontend | [apps/fe/README.md](apps/fe/README.md) | `3000` |
+| Backend | [apps/be/README.md](apps/be/README.md) | `8080` |
+| AI | [apps/ai/README.md](apps/ai/README.md) | `8000` |
+
 ## ✨ Product Highlights
 
 | 기능 | 설명 |
@@ -57,25 +92,12 @@ Logue는 이 문제를 **Question-first 분석 경험**으로 해결합니다. �
 | 지원 분석 유형 | `comparison`, `ranking`만 지원 중 |
 | 데이터 입력 | CSV 업로드 기반 분석 지원 |
 
-## 🌱 확장 전략
+### Known Limitations
 
-Logue는 현재 MVP의 CSV 기반 질문 분석 흐름을 바탕으로, 분석 기능과 적용 대상을 단계적으로 넓혀갈 계획입니다.
-
-### 기능 확장
-
-| 단계 | 방향 | 주요 내용 |
-| --- | --- | --- |
-| 01 | 조직 기준 / Metric Registry | 지표 정의 저장 및 버전 관리, 팀 단위 승인/공유, raw data 보안 관리 |
-| 02 | 반복 분석 & 리포트화 | 이전 결과와 자동 비교, 결과 PDF/이미지/CSV export, 반복 리포트 템플릿화 |
-| 03 | 분석 범위 / 연결 확장 | 분석 및 경고 유형 추가, 외부 데이터 채널/DB 연결, 기준 컬럼 매칭 및 추천 질문 최적화 |
-
-### 타겟 확장
-
-| 단계 | 방향 | 주요 내용 |
-| --- | --- | --- |
-| 01 | 도메인 확장 | 1차 마케팅/그로스/세일즈/CS/운영, 2차 HR/재무/PM, 업종별 분석 템플릿 제공 |
-| 02 | 조직 레벨 확장 | 개인 실무자의 셀프 분석 지원, 팀 리더의 기준 공유/리포트 관리, C-level 핵심 KPI 요약 지원 |
-| 03 | 조직 규모 확장 | 개인/소규모 팀의 CSV 분석 도구, 중소기업의 반복 리포트 대체, 엔터프라이즈 사내 기준 확장 |
+- 현재는 마케팅/CRM 도메인의 predefined metrics에 최적화되어 있으며, 다른 도메인의 질문은 해석 정확도가 낮을 수 있습니다.
+- `comparison`, `ranking` 외 분석 유형은 안정 지원 범위에 포함하지 않습니다.
+- 외부 DB나 SaaS 데이터 소스 연결은 아직 지원하지 않으며, 업로드된 CSV를 기준으로 분석합니다.
+- 모호하거나 지원 범위를 벗어난 질문은 억지로 계산하지 않고 경고와 기준 수정 흐름으로 처리합니다.
 
 ## 🧩 User Flow
 
@@ -171,27 +193,6 @@ logue/
 | ---- | ---- |
 | Version Control | ![Git](https://img.shields.io/badge/Git-%23F05033?style=for-the-badge&logo=git&logoColor=white) ![GitHub](https://img.shields.io/badge/GitHub-%23121011?style=for-the-badge&logo=github&logoColor=white) |
 
-## 🚀 빠른 시작
-
-```bash
-git clone https://github.com/26-ewha-capstone-logue/logue.git
-cd logue
-```
-
-| 앱 | 개발 서버 | 테스트 | 빌드 |
-| :--: | :-- | :-- | :-- |
-| **FE** | `make dev-fe` | `make test-fe` | `make build-fe` |
-| **BE** | `make dev-be` | `make test-be` | `make build-be` |
-| **AI** | `make dev-ai` | `make test-ai` | `make build-ai` |
-
-각 앱의 상세 실행 환경은 [CONTRIBUTING.md](CONTRIBUTING.md)와 앱별 README를 참고하세요.
-
-| 앱 | 상세 문서 | 기본 포트 |
-| --- | --- | --- |
-| Frontend | [apps/fe/README.md](apps/fe/README.md) | `3000` |
-| Backend | [apps/be/README.md](apps/be/README.md) | `8080` |
-| AI | [apps/ai/README.md](apps/ai/README.md) | `8000` |
-
 ## 🧪 테스트 범위
 
 Logue MVP는 모든 자유 질의를 처리하는 범용 분석기가 아니라, 실무에서 반복적으로 쓰이는 비교와 순위형 질문을 안정적으로 해석하는 데 집중합니다.
@@ -203,6 +204,26 @@ Logue MVP는 모든 자유 질의를 처리하는 범용 분석기가 아니라,
 | 스키마 변화 | CSV 컬럼명이 달라도 의미 기준으로 매핑 |
 | 실패/모호성 처리 | 애매한 상황에서 억지 추론 대신 경고와 수정 흐름 제공 |
 | 결과 설명 | 확정된 기준과 집계 결과를 기반으로 사용자에게 읽히는 설명 생성 |
+
+## 🌱 확장 전략
+
+Logue는 현재 MVP의 CSV 기반 질문 분석 흐름을 바탕으로, 분석 기능과 적용 대상을 단계적으로 넓혀갈 계획입니다.
+
+### 기능 확장
+
+| 단계 | 방향 | 주요 내용 |
+| --- | --- | --- |
+| 01 | 조직 기준 / Metric Registry | 지표 정의 저장 및 버전 관리, 팀 단위 승인/공유, raw data 보안 관리 |
+| 02 | 반복 분석 & 리포트화 | 이전 결과와 자동 비교, 결과 PDF/이미지/CSV export, 반복 리포트 템플릿화 |
+| 03 | 분석 범위 / 연결 확장 | 분석 및 경고 유형 추가, 외부 데이터 채널/DB 연결, 기준 컬럼 매칭 및 추천 질문 최적화 |
+
+### 타겟 확장
+
+| 단계 | 방향 | 주요 내용 |
+| --- | --- | --- |
+| 01 | 도메인 확장 | 1차 마케팅/그로스/세일즈/CS/운영, 2차 HR/재무/PM, 업종별 분석 템플릿 제공 |
+| 02 | 조직 레벨 확장 | 개인 실무자의 셀프 분석 지원, 팀 리더의 기준 공유/리포트 관리, C-level 핵심 KPI 요약 지원 |
+| 03 | 조직 규모 확장 | 개인/소규모 팀의 CSV 분석 도구, 중소기업의 반복 리포트 대체, 엔터프라이즈 사내 기준 확장 |
 
 ## 🌿 협업 컨벤션
 
