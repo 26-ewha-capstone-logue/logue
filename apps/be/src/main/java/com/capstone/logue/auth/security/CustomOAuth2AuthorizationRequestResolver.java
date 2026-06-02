@@ -19,6 +19,8 @@ import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequ
  */
 public class CustomOAuth2AuthorizationRequestResolver implements OAuth2AuthorizationRequestResolver {
 
+    private static final String GOOGLE_REGISTRATION_ID = "google";
+
     private final DefaultOAuth2AuthorizationRequestResolver delegate;
 
     /**
@@ -48,7 +50,9 @@ public class CustomOAuth2AuthorizationRequestResolver implements OAuth2Authoriza
      */
     @Override
     public OAuth2AuthorizationRequest resolve(HttpServletRequest request, String clientRegistrationId) {
-        return withPrompt(delegate.resolve(request, clientRegistrationId));
+        OAuth2AuthorizationRequest authorizationRequest = delegate.resolve(request, clientRegistrationId);
+        if (!GOOGLE_REGISTRATION_ID.equals(clientRegistrationId)) return authorizationRequest;
+        return withPrompt(authorizationRequest);
     }
 
     /**
