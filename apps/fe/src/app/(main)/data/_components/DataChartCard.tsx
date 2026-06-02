@@ -3,7 +3,7 @@
 import ChatIcon from '@/assets/icons/chat.svg';
 import TrashIcon from '@/assets/icons/trash.svg';
 import {
-  DataSourceDetailPreviewTable,
+  DataSourcePreviewTable,
   type FilePreview,
 } from '@/features/dataSource';
 
@@ -45,7 +45,7 @@ export default function DataChartCard({
             className="inline-flex items-center gap-4 rounded-full bg-orange-500 px-12 py-8 text-body4 font-medium text-white transition-colors hover:bg-orange-600"
           >
             <ChatIcon aria-hidden className="icon-12 text-white" />
-            <span>{'\uCC44\uD305'}</span>
+            <span>채팅</span>
           </button>
           <button
             type="button"
@@ -53,7 +53,7 @@ export default function DataChartCard({
               e.stopPropagation();
               onDelete?.();
             }}
-            aria-label={'\uC0AD\uC81C'}
+            aria-label="삭제"
             className="text-gray-500 transition-colors hover:text-error-500"
           >
             <TrashIcon aria-hidden className="icon-16" />
@@ -61,7 +61,7 @@ export default function DataChartCard({
         </div>
       </div>
 
-      <DataSourceDetailPreviewTable preview={preview} />
+      <DataSourcePreviewTable preview={preview} variant="detail" />
     </div>
   );
 }

@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import { getAnalysisErrorMessage } from '../adapters/normalizeAnalysisError';
 import { ANALYSIS_WORKFLOW_MESSAGES } from '../config/analysisWorkflowMessages';
 import { ANALYSIS_JOB_POLICY } from '../config/analysisWorkflowPolicy';
-import type { PendingCriteriaCancelTarget } from '../utils/analysisCancelTarget';
+import { useAnalysisJobSlot } from './useAnalysisJobSlot';
 import type { CriteriaInitialMode } from './useAnalysisChatMessages';
 import {
   useCreateQuestionMutation,
@@ -18,60 +18,17 @@ type UseQuestionAnalysisControllerParams = {
   cancellation: {
     consumeCanceledCriteriaOperation: (operationKey: string) => boolean;
   };
-  dispatch: AnalysisWorkflowEffects['dispatch'];
-  messages: AnalysisWorkflowEffects['messages'];
-  notify: AnalysisWorkflowEffects['notify'];
+  effects: AnalysisWorkflowEffects;
   pending: {
     questionSubmissionLocked: boolean;
   };
   route: AnalysisWorkflowRoute;
 };
 
-export function useQuestionAnalysisController({
-  cancellation,
-  dispatch,
-  messages,
-  notify,
-  pending,
-  route,
-}: UseQuestionAnalysisControllerParams) {
-  const { consumeCanceledCriteriaOperation } = cancellation;
-  const { questionSubmissionLocked } = pending;
-  const { analysisFlowId, conversationId } = route;
-  const operationSequenceRef = useRef(0);
-  const activeOperationKeyRef = useRef<string | null>(null);
-  const handledOperationKeyRef = useRef<string | null>(null);
-  const [pendingOperationKey, setPendingOperationKey] = useState<string | null>(
-    null,
-  );
-  const [pendingAnalysis, setPendingAnalysis] =
-    useState<QuestionAnalysisContext | null>(null);
-  const [pendingCancelTarget, setPendingCancelTarget] =
-    useState<PendingCriteriaCancelTarget | null>(null);
-
-  const createOperationKey = useCallback((stage: string) => {
-    operationSequenceRef.current += 1;
-    return `${stage}-${operationSequenceRef.current}`;
-  }, []);
-  const clearPendingOperation = useCallback((operationKey: string) => {
-    if (activeOperationKeyRef.current === operationKey) {
-      activeOperationKeyRef.current = null;
-    }
-    setPendingOperationKey((current) =>
-      current === operationKey ? null : current,
-    );
-    setPendingCancelTarget((current) =>
-      current?.operationKey === operationKey ? null : current,
-    );
-    setPendingAnalysis((current) =>
-      current?.operationKey === operationKey ? null : current,
-    );
-  }, []);
-
-  const createQuestionMutation = useCreateQuestionMutation();
-  const { mutate: createQuestion, isPending: questionCreatePending } =
-    createQuestionMutation;
-  const criteriaPhase = useQuestionAnalysisPhase({
+function usePendingQuestionAnalysisPhase(
+  pendingAnalysis: QuestionAnalysisContext | null,
+) {
+  return useQuestionAnalysisPhase({
     enabled: pendingAnalysis !== null,
     getCriteriaErrorMessage:
       ANALYSIS_WORKFLOW_MESSAGES.question.getCriteriaError,
@@ -79,54 +36,49 @@ export function useQuestionAnalysisController({
     questionAnalysisTimeoutMs: ANALYSIS_JOB_POLICY.questionAnalysisTimeoutMs,
     statusPollIntervalMs: ANALYSIS_JOB_POLICY.statusPollIntervalMs,
   });
+}
 
-  useEffect(() => {
-    if (pendingAnalysis === null) return;
-    if (criteriaPhase.pending) return;
-    if (handledOperationKeyRef.current === pendingAnalysis.operationKey) {
-      return;
-    }
+export function useQuestionAnalysisController({
+  cancellation,
+  effects,
+  pending,
+  route,
+}: UseQuestionAnalysisControllerParams) {
+  const { consumeCanceledCriteriaOperation } = cancellation;
+  const { dispatch, messages, notify } = effects;
+  const { questionSubmissionLocked } = pending;
+  const { analysisFlowId, conversationId } = route;
+  const operationSequenceRef = useRef(0);
 
-    handledOperationKeyRef.current = pendingAnalysis.operationKey;
+  const createOperationKey = useCallback((stage: string) => {
+    operationSequenceRef.current += 1;
+    return `${stage}-${operationSequenceRef.current}`;
+  }, []);
+  const createQuestionMutation = useCreateQuestionMutation();
+  const { mutate: createQuestion, isPending: questionCreatePending } =
+    createQuestionMutation;
+  const criteriaSlot = useAnalysisJobSlot({
+    getJobKey: (pendingAnalysis: QuestionAnalysisContext) =>
+      pendingAnalysis.operationKey,
+    onError: (pendingAnalysis, error) => {
+      if (consumeCanceledCriteriaOperation(pendingAnalysis.operationKey)) {
+        return;
+      }
 
-    const criteria = criteriaPhase.result;
-    if (criteria) {
-      queueMicrotask(() => {
-        clearPendingOperation(pendingAnalysis.operationKey);
-        if (consumeCanceledCriteriaOperation(pendingAnalysis.operationKey)) {
-          return;
-        }
+      dispatch.questionSubmissionFailed();
+      notify.showToast(error.message);
+      messages.appendNotice(error.message, 'error');
+    },
+    onResult: (pendingAnalysis, criteria) => {
+      if (consumeCanceledCriteriaOperation(pendingAnalysis.operationKey)) {
+        return;
+      }
 
-        dispatch.questionSubmissionSucceeded();
-        messages.appendCriteriaMessage(criteria, pendingAnalysis.initialMode);
-      });
-      return;
-    }
-
-    const error = criteriaPhase.error;
-    if (error) {
-      queueMicrotask(() => {
-        clearPendingOperation(pendingAnalysis.operationKey);
-        if (consumeCanceledCriteriaOperation(pendingAnalysis.operationKey)) {
-          return;
-        }
-
-        dispatch.questionSubmissionFailed();
-        notify.showToast(error.message);
-        messages.appendNotice(error.message, 'error');
-      });
-    }
-  }, [
-    clearPendingOperation,
-    consumeCanceledCriteriaOperation,
-    criteriaPhase.error,
-    criteriaPhase.pending,
-    criteriaPhase.result,
-    dispatch,
-    messages,
-    notify,
-    pendingAnalysis,
-  ]);
+      dispatch.questionSubmissionSucceeded();
+      messages.appendCriteriaMessage(criteria, pendingAnalysis.initialMode);
+    },
+    usePhase: usePendingQuestionAnalysisPhase,
+  });
 
   const startQuestion = useCallback(
     (
@@ -134,12 +86,7 @@ export function useQuestionAnalysisController({
       appendUserMessage = true,
       initialMode: CriteriaInitialMode = 'normal',
     ) => {
-      if (
-        questionSubmissionLocked ||
-        activeOperationKeyRef.current !== null ||
-        pendingOperationKey !== null ||
-        pendingAnalysis !== null
-      ) {
+      if (questionSubmissionLocked || criteriaSlot.isSlotActive()) {
         return;
       }
 
@@ -153,11 +100,7 @@ export function useQuestionAnalysisController({
       if (!normalizedQuestion) return;
 
       const operationKey = createOperationKey('criteria');
-      activeOperationKeyRef.current = operationKey;
-      handledOperationKeyRef.current = null;
-      setPendingOperationKey(operationKey);
-      setPendingAnalysis(null);
-      setPendingCancelTarget(null);
+      criteriaSlot.startSlot(operationKey);
       dispatch.questionSubmissionStarted();
 
       if (appendUserMessage) {
@@ -174,14 +117,10 @@ export function useQuestionAnalysisController({
         },
         {
           onSuccess: (context) => {
-            setPendingCancelTarget({
-              operationKey: context.operationKey,
-              params: context.params,
-            });
-            setPendingAnalysis(context);
+            criteriaSlot.setSlotJob(context);
           },
           onError: (error, variables) => {
-            clearPendingOperation(variables.operationKey);
+            criteriaSlot.clearSlot(variables.operationKey);
             if (consumeCanceledCriteriaOperation(variables.operationKey)) {
               return;
             }
@@ -199,26 +138,30 @@ export function useQuestionAnalysisController({
     },
     [
       analysisFlowId,
-      clearPendingOperation,
       consumeCanceledCriteriaOperation,
       conversationId,
-      createQuestion,
       createOperationKey,
+      createQuestion,
+      criteriaSlot,
       dispatch,
       messages,
       notify,
-      pendingAnalysis,
-      pendingOperationKey,
       questionSubmissionLocked,
     ],
   );
+  const pendingCriteriaCancelTarget = criteriaSlot.pendingJob
+    ? {
+        operationKey: criteriaSlot.pendingJob.operationKey,
+        params: criteriaSlot.pendingJob.params,
+      }
+    : null;
 
   return {
-    clearPendingCriteriaOperation: clearPendingOperation,
-    pendingCriteriaCancelTarget: pendingCancelTarget,
+    clearPendingCriteriaOperation: criteriaSlot.clearSlot,
+    pendingCriteriaCancelTarget,
     questionAnalysisActive:
-      (questionCreatePending || criteriaPhase.pending) &&
-      pendingOperationKey !== null,
+      (questionCreatePending || criteriaSlot.phase.pending) &&
+      criteriaSlot.pendingKey !== null,
     startQuestion,
   };
 }

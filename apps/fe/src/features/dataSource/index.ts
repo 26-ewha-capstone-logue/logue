@@ -1,8 +1,8 @@
 export { default as DeleteConfirmModal } from './DeleteConfirmModal';
 export type { DeleteConfirmModalProps } from './DeleteConfirmModal';
 export {
-  DataSourceAnalysisPreviewTable,
-  DataSourceDetailPreviewTable,
+  DataSourcePreviewTable,
+  type DataSourcePreviewTableVariant,
 } from './DataSourcePreviewTable';
 export {
   deleteDataSource,

@@ -40,13 +40,12 @@ export function useDataSourceList({
     queryFn: () => getDataSources(listParams),
     enabled,
   });
+  const fallbackData = mockDataSource.getFallbackListResponse(listParams);
   const dataSources = useMemo(() => {
-    const rawDataSources =
-      query.data?.dataSources ??
-      mockDataSource.getFallbackListResponse(listParams).dataSources;
+    const rawDataSources = query.data?.dataSources ?? fallbackData.dataSources;
 
     return mockDataSource.getVisibleDataSources(rawDataSources);
-  }, [listParams, mockDataSource, query.data?.dataSources]);
+  }, [fallbackData.dataSources, mockDataSource, query.data?.dataSources]);
   const hasDataSources = dataSources.length > 0;
 
   return {
@@ -58,5 +57,7 @@ export function useDataSourceList({
       query.isError && !hasDataSources
         ? getDataSourceErrorMessage(query.error, fallbackErrorMessage)
         : null,
+    page: query.data?.page ?? fallbackData.page,
+    totalPages: query.data?.totalPages ?? fallbackData.totalPages,
   };
 }
