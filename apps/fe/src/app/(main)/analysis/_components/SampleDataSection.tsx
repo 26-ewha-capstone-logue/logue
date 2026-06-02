@@ -54,7 +54,7 @@ export default function SampleDataSection({
             key={card.id}
             title={card.title}
             description={card.description}
-            onClick={() => onCardClick?.(card)}
+            onClick={onCardClick ? () => onCardClick(card) : undefined}
           />
         ))}
       </div>
