@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AUTH_MESSAGES, DATA_SOURCE_MESSAGES } from '@/constants/messages';
 import type { DataSourceSort, DataSourceSummary } from '@/features/dataSource';
@@ -19,37 +19,56 @@ const SORT_OPTIONS = [
   { value: 'LATEST', label: '최근 업로드 순' },
 ] satisfies Array<{ value: DataSourceSort; label: string }>;
 
-export function useDataPageController() {
-  const router = useRouter();
-  const { hasAccessToken, isAuthenticated, mockDataSource, status } =
-    useDataSourceUserContext();
-  const { toast, showToast } = useToast();
+type DataSourceActionsParams = {
+  clearSelection: () => void;
+  hasAccessToken: boolean;
+  hasSelection: boolean;
+  mockDataSource: ReturnType<typeof useDataSourceUserContext>['mockDataSource'];
+  selectedVisibleIds: ReadonlySet<number>;
+  showToast: ReturnType<typeof useToast>['showToast'];
+};
+
+function useDataSourceTableState() {
   const [sortKey, setSortKey] = useState<DataSourceSort>('LATEST');
   const [page, setPage] = useState(0);
+
+  const changeSort = useCallback(
+    (next: DataSourceSort, afterChange: () => void) => {
+      setSortKey(next);
+      setPage(0);
+      afterChange();
+    },
+    [],
+  );
+  const changePage = useCallback((next: number, afterChange: () => void) => {
+    setPage(next);
+    afterChange();
+  }, []);
+
+  return {
+    changePage,
+    changeSort,
+    page,
+    sortKey,
+    sortOptions: SORT_OPTIONS,
+  };
+}
+
+function useDataSourceActions({
+  clearSelection,
+  hasAccessToken,
+  hasSelection,
+  mockDataSource,
+  selectedVisibleIds,
+  showToast,
+}: DataSourceActionsParams) {
+  const router = useRouter();
   const [uploadOpen, setUploadOpen] = useState(false);
   const startAnalysis = useStartAnalysis({
     loginRequiredMessage: AUTH_MESSAGES.loginRequired,
     fallbackErrorMessage: DATA_SOURCE_MESSAGES.startChatError,
     onError: (message) => showToast(message, 'error'),
   });
-
-  const dataSourcesQuery = useDataSourceList({
-    enabled: isAuthenticated,
-    fallbackErrorMessage: DATA_SOURCE_MESSAGES.listError,
-    mockDataSource,
-    page,
-    sort: sortKey,
-  });
-  const dataSources = dataSourcesQuery.dataSources;
-  const {
-    allSelected,
-    clearSelection,
-    hasSelection,
-    partiallySelected,
-    selectedVisibleIds,
-    toggleAll,
-    toggleOne,
-  } = useDataSourceSelection(dataSources);
   const uploadDataSourceMutation = useUploadDataSource({
     fallbackErrorMessage: DATA_SOURCE_MESSAGES.uploadError,
     hasAccessToken,
@@ -69,43 +88,112 @@ export function useDataPageController() {
     successMessage: DATA_SOURCE_MESSAGES.deleteSuccess,
   });
 
-  const handleSortChange = (next: DataSourceSort) => {
-    setSortKey(next);
-    setPage(0);
-    clearSelection();
-  };
-
-  const handleUploadClick = () => {
+  const handleUploadClick = useCallback(() => {
     if (!hasAccessToken) {
       showToast(AUTH_MESSAGES.loginRequired, 'error');
       return;
     }
 
     setUploadOpen(true);
-  };
-
-  const handleDeleteClick = () => {
+  }, [hasAccessToken, showToast]);
+  const handleDeleteClick = useCallback(() => {
     if (!hasSelection) return;
+
     deleteFlow.openDelete();
-  };
-
-  const handleDeleteConfirm = async () => {
+  }, [deleteFlow, hasSelection]);
+  const handleDeleteConfirm = useCallback(async () => {
     await deleteFlow.confirmDelete(Array.from(selectedVisibleIds));
+  }, [deleteFlow, selectedVisibleIds]);
+  const handleChat = useCallback(
+    (dataSource: DataSourceSummary) => {
+      if (!hasAccessToken) {
+        showToast(AUTH_MESSAGES.loginRequired, 'error');
+        return;
+      }
+
+      startAnalysis.startAnalysis({
+        type: 'dataSource',
+        dataSourceId: dataSource.dataSourceId,
+        fileName: dataSource.fileName,
+      });
+    },
+    [hasAccessToken, showToast, startAnalysis],
+  );
+
+  return {
+    deleteModal: {
+      isPending: deleteFlow.deletePending,
+      onClose: deleteFlow.closeDelete,
+      onConfirm: () => void handleDeleteConfirm(),
+      open: deleteFlow.deleteOpen,
+    },
+    tableActions: {
+      chatDisabled: startAnalysis.isPending,
+      chatPendingDataSourceId: startAnalysis.pendingDataSourceId,
+      onChat: handleChat,
+      onOpenDetail: (id: number) => router.push(`/data/${id}`),
+    },
+    toolbarActions: {
+      deletePending: deleteFlow.deletePending,
+      onDeleteClick: handleDeleteClick,
+      onUploadClick: handleUploadClick,
+      uploadPending: uploadDataSourceMutation.isPending,
+    },
+    uploadModal: {
+      onClose: () => setUploadOpen(false),
+      onError: (message: string) => showToast(message, 'error'),
+      onUpload: uploadDataSourceMutation.upload,
+      open: uploadOpen,
+      validateFile: (file: File) =>
+        validateCsvFile(file, DATA_SOURCE_MESSAGES.fileValidation),
+    },
   };
+}
 
-  const handleChat = (dataSource: DataSourceSummary) => {
-    if (!hasAccessToken) {
-      showToast(AUTH_MESSAGES.loginRequired, 'error');
-      return;
-    }
+export function useDataPageController() {
+  const { hasAccessToken, isAuthenticated, mockDataSource, status } =
+    useDataSourceUserContext();
+  const { toast, showToast } = useToast();
+  const { changePage, changeSort, page, sortKey, sortOptions } =
+    useDataSourceTableState();
 
-    startAnalysis.startAnalysis({
-      type: 'dataSource',
-      dataSourceId: dataSource.dataSourceId,
-      fileName: dataSource.fileName,
-    });
-  };
-
+  const dataSourcesQuery = useDataSourceList({
+    enabled: isAuthenticated,
+    fallbackErrorMessage: DATA_SOURCE_MESSAGES.listError,
+    mockDataSource,
+    page,
+    sort: sortKey,
+  });
+  const dataSources = dataSourcesQuery.dataSources;
+  const {
+    allSelected,
+    clearSelection,
+    hasSelection,
+    partiallySelected,
+    selectedVisibleIds,
+    toggleAll,
+    toggleOne,
+  } = useDataSourceSelection(dataSources);
+  const actions = useDataSourceActions({
+    clearSelection,
+    hasAccessToken,
+    hasSelection,
+    mockDataSource,
+    selectedVisibleIds,
+    showToast,
+  });
+  const handleSortChange = useCallback(
+    (next: DataSourceSort) => {
+      changeSort(next, clearSelection);
+    },
+    [changeSort, clearSelection],
+  );
+  const handlePageChange = useCallback(
+    (next: number) => {
+      changePage(next, clearSelection);
+    },
+    [changePage, clearSelection],
+  );
   const tableMessage = getTableMessage({
     dataSourceCount: dataSources.length,
     emptyMessage: DATA_SOURCE_MESSAGES.tableEmpty,
@@ -119,43 +207,28 @@ export function useDataPageController() {
   });
 
   return {
-    deleteModal: {
-      isPending: deleteFlow.deletePending,
-      onClose: deleteFlow.closeDelete,
-      onConfirm: () => void handleDeleteConfirm(),
-      open: deleteFlow.deleteOpen,
-    },
+    deleteModal: actions.deleteModal,
     table: {
       allSelected,
-      chatDisabled: startAnalysis.isPending,
-      chatPendingDataSourceId: startAnalysis.pendingDataSourceId,
       dataSources,
+      page,
       partiallySelected,
       selectedVisibleIds,
       tableMessage,
-      onChat: handleChat,
-      onOpenDetail: (id: number) => router.push(`/data/${id}`),
+      totalPages: dataSourcesQuery.totalPages,
+      onPageChange: handlePageChange,
       onToggleAll: toggleAll,
       onToggleOne: toggleOne,
+      ...actions.tableActions,
     },
     toast,
     toolbar: {
-      deletePending: deleteFlow.deletePending,
       hasSelection,
       sortKey,
-      sortOptions: SORT_OPTIONS,
-      uploadPending: uploadDataSourceMutation.isPending,
-      onDeleteClick: handleDeleteClick,
+      sortOptions,
       onSortChange: handleSortChange,
-      onUploadClick: handleUploadClick,
+      ...actions.toolbarActions,
     },
-    uploadModal: {
-      onClose: () => setUploadOpen(false),
-      onError: (message: string) => showToast(message, 'error'),
-      onUpload: uploadDataSourceMutation.upload,
-      open: uploadOpen,
-      validateFile: (file: File) =>
-        validateCsvFile(file, DATA_SOURCE_MESSAGES.fileValidation),
-    },
+    uploadModal: actions.uploadModal,
   };
 }
