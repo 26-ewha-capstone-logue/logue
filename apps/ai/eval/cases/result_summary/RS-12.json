@@ -1,0 +1,33 @@
+{
+  "id": "RS-12",
+  "input": {
+    "request_id": "rs-12",
+    "analysis_criteria": {
+      "analysis_type": "COMPARISON",
+      "metric_name": "signup_conversion_rate",
+      "metric_display_name": "가입 전환율",
+      "standard_period": "1W",
+      "compare_period": "1W",
+      "group_by": ["channel", "device", "region"],
+      "sort_by": "delta",
+      "sort_direction": "asc",
+      "limit_num": null
+    },
+    "chart_data": {
+      "columns": ["channel", "device", "region", "current", "previous", "delta"],
+      "rows": [
+        ["channel", "device", "region", 0.05, 0.12, -0.07],
+        ["organic", "desktop", "us", 0.08, 0.09, -0.01]
+      ]
+    },
+    "locale": "ko-KR"
+  },
+  "expected": {
+    "hard": {
+      "plain_text_contains": ["channel", "device", "region"]
+    },
+    "soft": {
+      "emphasis_pattern": [false, true, false]
+    }
+  }
+}

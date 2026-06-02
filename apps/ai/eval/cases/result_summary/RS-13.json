@@ -1,0 +1,34 @@
+{
+  "id": "RS-13",
+  "input": {
+    "request_id": "rs-13",
+    "analysis_criteria": {
+      "analysis_type": "RANKING",
+      "metric_name": "monthly_active_signup_conversion_rate",
+      "metric_display_name": "월간 활성 가입 전환율",
+      "standard_period": "1M",
+      "compare_period": null,
+      "group_by": ["channel"],
+      "sort_by": "metric_value",
+      "sort_direction": "desc",
+      "limit_num": 5
+    },
+    "chart_data": {
+      "columns": ["channel", "value"],
+      "rows": [
+        ["paid_search", 0.21],
+        ["organic", 0.17],
+        ["referral", 0.11]
+      ]
+    },
+    "locale": "ko-KR"
+  },
+  "expected": {
+    "hard": {
+      "plain_text_contains": ["월간 활성 가입 전환율"]
+    },
+    "soft": {
+      "emphasis_pattern": [false, true, false]
+    }
+  }
+}

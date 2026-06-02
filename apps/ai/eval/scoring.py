@@ -102,6 +102,9 @@ def score_case(
             latency_ms=latency_ms,
         )
 
+    if suite == "result_summary":
+        return _score_result_summary_case(case_id, suite, expected, actual, latency_ms)
+
     actual = _normalize_actual(suite, actual)
 
     comparisons: list[FieldComparison] = []
@@ -125,6 +128,54 @@ def score_case(
         field_comparisons=comparisons,
         error=None,
         latency_ms=latency_ms,
+    )
+
+
+def _score_result_summary_case(
+    case_id: str,
+    suite: str,
+    expected: dict[str, Any],
+    actual: dict[str, Any],
+    latency_ms: int,
+) -> CaseScore:
+    """RS dual-track 채점. hard: plain_text 키워드 포함 + segments-plain_text 무결성. soft: emphasis 패턴/키워드."""
+    description = (actual.get("description") if isinstance(actual, dict) else None) or {}
+    plain_text = description.get("plain_text") or ""
+    segments = description.get("segments") or []
+    comparisons: list[FieldComparison] = []
+
+    hard = expected.get("hard") or {}
+    for kw in hard.get("plain_text_contains", []):
+        comparisons.append(FieldComparison(
+            path=f"hard.plain_text_contains[{kw}]",
+            expected=kw, actual=plain_text, match=(kw in plain_text),
+        ))
+    joined = "".join(str(s.get("text", "")) for s in segments)
+    comparisons.append(FieldComparison(
+        path="hard.plain_text_integrity",
+        expected=plain_text, actual=joined, match=(joined == plain_text),
+    ))
+
+    soft = expected.get("soft") or {}
+    if "emphasis_pattern" in soft:
+        actual_pattern = [bool(s.get("emphasis")) for s in segments]
+        comparisons.append(FieldComparison(
+            path="soft.emphasis_pattern",
+            expected=soft["emphasis_pattern"], actual=actual_pattern,
+            match=(actual_pattern == soft["emphasis_pattern"]),
+        ))
+    emphasized_text = "".join(str(s.get("text", "")) for s in segments if s.get("emphasis"))
+    for kw in soft.get("emphasis_keywords", []):
+        comparisons.append(FieldComparison(
+            path=f"soft.emphasis_keywords[{kw}]",
+            expected=kw, actual=emphasized_text, match=(kw in emphasized_text),
+        ))
+
+    passed = all(c.match for c in comparisons)
+    hard_fail = any((not c.match) and c.path.startswith("hard.") for c in comparisons)
+    return CaseScore(
+        case_id=case_id, suite=suite, passed=passed, hard_fail=hard_fail,
+        field_comparisons=comparisons, error=None, latency_ms=latency_ms,
     )
 
 

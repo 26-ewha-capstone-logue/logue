@@ -1,0 +1,35 @@
+{
+  "id": "RS-04",
+  "input": {
+    "request_id": "rs-04",
+    "analysis_criteria": {
+      "analysis_type": "RANKING",
+      "metric_name": "resolution_rate",
+      "metric_display_name": "해결율",
+      "standard_period": "1W",
+      "compare_period": null,
+      "group_by": ["priority"],
+      "sort_by": "metric_value",
+      "sort_direction": "asc",
+      "limit_num": 3
+    },
+    "chart_data": {
+      "columns": ["priority", "value"],
+      "rows": [
+        ["urgent", 0.42],
+        ["high", 0.55],
+        ["low", 0.71]
+      ]
+    },
+    "locale": "ko-KR"
+  },
+  "expected": {
+    "hard": {
+      "plain_text_contains": ["urgent", "42%", "가장 낮은"]
+    },
+    "soft": {
+      "emphasis_pattern": [false, true, false],
+      "emphasis_keywords": ["가장 낮은"]
+    }
+  }
+}

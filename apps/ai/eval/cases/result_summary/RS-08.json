@@ -1,0 +1,33 @@
+{
+  "id": "RS-08",
+  "input": {
+    "request_id": "rs-08",
+    "analysis_criteria": {
+      "analysis_type": "COMPARISON",
+      "metric_name": "signup_conversion_rate",
+      "metric_display_name": "가입 전환율",
+      "standard_period": "1W",
+      "compare_period": "1W",
+      "group_by": ["channel"],
+      "sort_by": "delta",
+      "sort_direction": "asc",
+      "limit_num": null
+    },
+    "chart_data": {
+      "columns": ["channel", "current", "previous", "delta"],
+      "rows": [
+        ["organic", 0.10, 0.10, 0.0]
+      ]
+    },
+    "locale": "ko-KR"
+  },
+  "expected": {
+    "hard": {
+      "plain_text_contains": ["변동이 없"]
+    },
+    "soft": {
+      "emphasis_pattern": [false, true, false],
+      "emphasis_keywords": ["변동이 없"]
+    }
+  }
+}

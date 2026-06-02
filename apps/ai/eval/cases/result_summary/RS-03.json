@@ -1,0 +1,37 @@
+{
+  "id": "RS-03",
+  "input": {
+    "request_id": "rs-03",
+    "analysis_criteria": {
+      "analysis_type": "RANKING",
+      "metric_name": "purchase_conversion_rate",
+      "metric_display_name": "구매 전환율",
+      "standard_period": "1M",
+      "compare_period": null,
+      "group_by": ["category"],
+      "sort_by": "metric_value",
+      "sort_direction": "desc",
+      "limit_num": 5
+    },
+    "chart_data": {
+      "columns": ["category", "value"],
+      "rows": [
+        ["Electronics", 0.12],
+        ["Books", 0.09],
+        ["Toys", 0.07],
+        ["Apparel", 0.05],
+        ["Garden", 0.03]
+      ]
+    },
+    "locale": "ko-KR"
+  },
+  "expected": {
+    "hard": {
+      "plain_text_contains": ["Electronics", "12%", "가장 높은"]
+    },
+    "soft": {
+      "emphasis_pattern": [false, true, false],
+      "emphasis_keywords": ["가장 높은"]
+    }
+  }
+}

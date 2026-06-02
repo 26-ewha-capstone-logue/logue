@@ -1,0 +1,33 @@
+{
+  "id": "RS-11",
+  "input": {
+    "request_id": "rs-11",
+    "analysis_criteria": {
+      "analysis_type": "COMPARISON",
+      "metric_name": "signup_conversion_rate",
+      "metric_display_name": "Signup conversion rate",
+      "standard_period": "1W",
+      "compare_period": "1W",
+      "group_by": ["channel"],
+      "sort_by": "delta",
+      "sort_direction": "asc",
+      "limit_num": null
+    },
+    "chart_data": {
+      "columns": ["channel", "current", "previous", "delta"],
+      "rows": [
+        ["paid_search", 0.04, 0.09, -0.05]
+      ]
+    },
+    "locale": "en-US"
+  },
+  "expected": {
+    "hard": {
+      "plain_text_contains": ["dropped", "5%p"]
+    },
+    "soft": {
+      "emphasis_pattern": [false, true, false],
+      "emphasis_keywords": ["dropped by 5%p"]
+    }
+  }
+}
