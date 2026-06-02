@@ -11,26 +11,36 @@ import { getResultCancelKey } from '../utils/analysisCancelTarget';
 import { useUpdateCriteriaMutation } from './useCriteriaPhase';
 import { useResultPhase } from './useResultPhase';
 import type { AnalysisWorkflowEffects } from './useAnalysisWorkflowEffects';
+import type { AnalysisWorkflowRoute } from './analysisWorkflowTypes';
 
 type UseCriteriaConfirmationControllerParams = {
-  analysisFlowId: number | null;
-  consumeCanceledResult: (
-    params: Pick<QuestionResultParams, 'analysisCriteriaId' | 'messageId'>,
-  ) => boolean;
-  conversationId: number | null;
-  criteriaSubmissionLocked: boolean;
-  effects: AnalysisWorkflowEffects;
+  cancellation: {
+    consumeCanceledResult: (
+      params: Pick<QuestionResultParams, 'analysisCriteriaId' | 'messageId'>,
+    ) => boolean;
+  };
+  dispatch: AnalysisWorkflowEffects['dispatch'];
+  messages: AnalysisWorkflowEffects['messages'];
+  notify: AnalysisWorkflowEffects['notify'];
+  pending: {
+    criteriaSubmissionLocked: boolean;
+  };
+  route: AnalysisWorkflowRoute;
 };
 
 export function useCriteriaConfirmationController({
-  analysisFlowId,
-  consumeCanceledResult,
-  conversationId,
-  criteriaSubmissionLocked,
-  effects,
+  cancellation,
+  dispatch,
+  messages,
+  notify,
+  pending,
+  route,
 }: UseCriteriaConfirmationControllerParams) {
-  const { dispatch, messages, notify } = effects;
+  const { consumeCanceledResult } = cancellation;
+  const { criteriaSubmissionLocked } = pending;
+  const { analysisFlowId, conversationId } = route;
   const handledResultKeyRef = useRef<string | null>(null);
+  const activeResultSubmissionRef = useRef(false);
   const [pendingResultCancelParams, setPendingResultCancelParams] =
     useState<QuestionResultParams | null>(null);
   const [pendingResultParams, setPendingResultParams] =
@@ -56,6 +66,7 @@ export function useCriteriaConfirmationController({
       setPendingResultParams((current) =>
         current && getResultCancelKey(current) === canceledKey ? null : current,
       );
+      activeResultSubmissionRef.current = false;
     },
     [],
   );
@@ -112,7 +123,15 @@ export function useCriteriaConfirmationController({
 
   const handleConfirmCriteria = useCallback(
     (messageId: number, values: CriteriaEditValues) => {
-      if (criteriaSubmissionLocked) return;
+      if (
+        criteriaSubmissionLocked ||
+        activeResultSubmissionRef.current ||
+        updateCriteriaMutation.isPending ||
+        pendingResultParams !== null ||
+        pendingResultCancelParams !== null
+      ) {
+        return;
+      }
 
       if (conversationId === null || analysisFlowId === null) {
         notify.showToast(ANALYSIS_WORKFLOW_MESSAGES.invalidRoute);
@@ -120,6 +139,7 @@ export function useCriteriaConfirmationController({
       }
 
       handledResultKeyRef.current = null;
+      activeResultSubmissionRef.current = true;
       dispatch.criteriaSubmissionStarted();
       setPendingResultCancelParams(null);
       setPendingResultParams(null);
@@ -146,6 +166,7 @@ export function useCriteriaConfirmationController({
             setPendingResultParams(resultParams);
           },
           onError: (error) => {
+            activeResultSubmissionRef.current = false;
             setPendingResultCancelParams(null);
             setPendingResultParams(null);
             dispatch.criteriaSubmissionFailed();
@@ -166,6 +187,8 @@ export function useCriteriaConfirmationController({
       dispatch,
       messages,
       notify,
+      pendingResultCancelParams,
+      pendingResultParams,
       updateCriteriaMutation,
     ],
   );

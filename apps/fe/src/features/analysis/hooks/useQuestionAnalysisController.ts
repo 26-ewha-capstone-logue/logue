@@ -12,24 +12,34 @@ import {
   type QuestionAnalysisContext,
 } from './useCriteriaPhase';
 import type { AnalysisWorkflowEffects } from './useAnalysisWorkflowEffects';
+import type { AnalysisWorkflowRoute } from './analysisWorkflowTypes';
 
 type UseQuestionAnalysisControllerParams = {
-  analysisFlowId: number | null;
-  consumeCanceledCriteriaOperation: (operationKey: string) => boolean;
-  conversationId: number | null;
-  effects: AnalysisWorkflowEffects;
-  questionSubmissionLocked: boolean;
+  cancellation: {
+    consumeCanceledCriteriaOperation: (operationKey: string) => boolean;
+  };
+  dispatch: AnalysisWorkflowEffects['dispatch'];
+  messages: AnalysisWorkflowEffects['messages'];
+  notify: AnalysisWorkflowEffects['notify'];
+  pending: {
+    questionSubmissionLocked: boolean;
+  };
+  route: AnalysisWorkflowRoute;
 };
 
 export function useQuestionAnalysisController({
-  analysisFlowId,
-  consumeCanceledCriteriaOperation,
-  conversationId,
-  effects,
-  questionSubmissionLocked,
+  cancellation,
+  dispatch,
+  messages,
+  notify,
+  pending,
+  route,
 }: UseQuestionAnalysisControllerParams) {
-  const { dispatch, messages, notify } = effects;
+  const { consumeCanceledCriteriaOperation } = cancellation;
+  const { questionSubmissionLocked } = pending;
+  const { analysisFlowId, conversationId } = route;
   const operationSequenceRef = useRef(0);
+  const activeOperationKeyRef = useRef<string | null>(null);
   const handledOperationKeyRef = useRef<string | null>(null);
   const [pendingOperationKey, setPendingOperationKey] = useState<string | null>(
     null,
@@ -44,6 +54,9 @@ export function useQuestionAnalysisController({
     return `${stage}-${operationSequenceRef.current}`;
   }, []);
   const clearPendingOperation = useCallback((operationKey: string) => {
+    if (activeOperationKeyRef.current === operationKey) {
+      activeOperationKeyRef.current = null;
+    }
     setPendingOperationKey((current) =>
       current === operationKey ? null : current,
     );
@@ -121,7 +134,14 @@ export function useQuestionAnalysisController({
       appendUserMessage = true,
       initialMode: CriteriaInitialMode = 'normal',
     ) => {
-      if (questionSubmissionLocked) return;
+      if (
+        questionSubmissionLocked ||
+        activeOperationKeyRef.current !== null ||
+        pendingOperationKey !== null ||
+        pendingAnalysis !== null
+      ) {
+        return;
+      }
 
       if (conversationId === null || analysisFlowId === null) {
         notify.showToast(ANALYSIS_WORKFLOW_MESSAGES.invalidRoute);
@@ -133,6 +153,7 @@ export function useQuestionAnalysisController({
       if (!normalizedQuestion) return;
 
       const operationKey = createOperationKey('criteria');
+      activeOperationKeyRef.current = operationKey;
       handledOperationKeyRef.current = null;
       setPendingOperationKey(operationKey);
       setPendingAnalysis(null);
@@ -186,6 +207,8 @@ export function useQuestionAnalysisController({
       dispatch,
       messages,
       notify,
+      pendingAnalysis,
+      pendingOperationKey,
       questionSubmissionLocked,
     ],
   );
