@@ -27,7 +27,7 @@ export default function DeleteConfirmModal({
   title = DATA_SOURCE_MESSAGES.deleteTitle,
   description = DATA_SOURCE_MESSAGES.deleteDescription,
   confirmLabel = DATA_SOURCE_MESSAGES.deleteConfirmLabel,
-  pendingConfirmLabel = confirmLabel,
+  pendingConfirmLabel = DATA_SOURCE_MESSAGES.deletePendingLabel,
   cancelLabel = DATA_SOURCE_MESSAGES.deleteCancelLabel,
 }: DeleteConfirmModalProps) {
   return (
