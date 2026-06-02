@@ -13,7 +13,7 @@ import {
 import type {
   BarChartViewModel,
   ChartTabViewModel,
-} from '../_models/analysisViewModels';
+} from '@/features/analysis/models/analysisViewModels';
 
 const BAR_COLORS = [
   'var(--color-orange-200)',

@@ -1,5 +1,5 @@
 import AlertIcon from '@/assets/icons/alert.svg';
-import type { AnalysisWarningViewModel } from '../_models/analysisWarningTypes';
+import type { AnalysisWarningViewModel } from '@/features/analysis/models/analysisWarningTypes';
 
 export type AnalysisWarningListProps = {
   warnings: AnalysisWarningViewModel[];

@@ -1,4 +1,4 @@
-import type { FilePreview } from '@/apis/datasource';
+import type { FilePreview } from './types';
 
 export type DataSourcePreviewColumn = {
   key: string;

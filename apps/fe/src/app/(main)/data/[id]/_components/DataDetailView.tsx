@@ -1,7 +1,7 @@
 'use client';
 
-import type { GetFileResponse } from '@/apis/datasource';
 import { ConfirmModal } from '@/components';
+import type { GetFileResponse } from '@/features/dataSource';
 import { formatDateTime } from '@/lib/dateTime';
 import { formatFileSize } from '@/lib/fileValidation';
 import DataChartCard from '../../_components/DataChartCard';

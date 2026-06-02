@@ -7,8 +7,8 @@ import AnalyzingIndicator from './AnalyzingIndicator';
 import QuestionAnalysisResult from './QuestionAnalysisResult';
 import UploadedFileBadge from './UploadedFileBadge';
 import VerificationResult from './VerificationResult';
-import type { ChatMessage } from '../_hooks/useAnalysisChatMessages';
-import type { AnalysisChatMessageListViewModel } from '../_hooks/useAnalysisChatViewModel';
+import type { ChatMessage } from '@/features/analysis/hooks/useAnalysisChatMessages';
+import type { AnalysisChatMessageListViewModel } from '@/features/analysis/hooks/useAnalysisChatViewModel';
 
 type AnalysisChatMessageListProps = {
   viewModel: AnalysisChatMessageListViewModel;
