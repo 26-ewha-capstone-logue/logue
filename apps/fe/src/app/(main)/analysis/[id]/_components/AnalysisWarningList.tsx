@@ -20,7 +20,7 @@ export default function AnalysisWarningList({
         className={`inline-flex items-center gap-4 text-orange-500 ${titleClassName}`}
       >
         <AlertIcon aria-hidden className="icon-16 text-orange-500" />
-        <span>?곗씠??寃쎄퀬</span>
+        <span>데이터 경고</span>
       </div>
       <ul className={listClassName}>
         {warnings.map((warning) => (
