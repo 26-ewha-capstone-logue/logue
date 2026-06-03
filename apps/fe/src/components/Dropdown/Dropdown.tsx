@@ -23,7 +23,7 @@ export default function Dropdown({
   options,
   value,
   onChange,
-  placeholder = '?좏깮',
+  placeholder = '선택',
   icon,
   className = '',
   helperText,
