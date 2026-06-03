@@ -298,6 +298,9 @@ main ← 프로덕션 배포
 
 ## 👥 Team
 
+팀 번호: 19<br>
+지도 교수: 컴퓨터공학과 하진용 교수님
+
 | <img src="https://github.com/maetelson.png" width="120" alt="손하늘 GitHub avatar" /> | <img src="https://github.com/gyesswhat.png" width="120" alt="김겨레 GitHub avatar" /> | <img src="https://github.com/jxxxxxn.png" width="120" alt="민지인 GitHub avatar" /> |
 | :--: | :--: | :--: |
 | **손하늘** | **김겨레** | **민지인** |
