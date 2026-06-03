@@ -128,18 +128,31 @@ def _qdm_name_prefix(column_name: str) -> str:
     return column_name.split("_", 1)[0].lower()
 
 
+def _is_categorical(col) -> bool:
+    """sample_values 겹침이 모호 신호로 의미 있는 범주형(문자열) 컬럼인지 판정한다.
+
+    숫자형(`integer`/`double`) 컬럼은 작은 정수(0/1/2 등)를 자연히 공유하므로 값 겹침이
+    모호 신호가 되지 못한다(예: `landing_sessions` 와 `signup_complete`). 값 겹침 신호는
+    `string` 컬럼에만 적용한다.
+    """
+    return getattr(col, "data_type", None) == "string"
+
+
 def _columns_look_ambiguous(a, b) -> bool:
     """두 컬럼이 같은 의미를 가리킬 가능성(모호)을 결정론적으로 판정한다.
 
     신호 두 가지 중 하나라도 만족하면 모호로 본다.
-    1. sample_values 값 공간이 겹친다 (같은 카테고리 값을 공유 = 같은 축).
-    2. 이름 prefix(첫 토큰)를 공유한다 (예: `device`, `device_type`, `device_kind`).
+    1. 이름 prefix(첫 토큰)를 공유한다 (예: `device`, `device_type`, `device_kind`).
+    2. (범주형 한정) sample_values 값 공간이 겹친다 (같은 카테고리 값을 공유 = 같은 축).
+       숫자형 컬럼은 정수 공유 오탐을 막기 위해 값 겹침을 보지 않는다.
     """
-    a_vals = {str(v).lower() for v in (a.sample_values or [])}
-    b_vals = {str(v).lower() for v in (b.sample_values or [])}
-    if a_vals and b_vals and (a_vals & b_vals):
+    if _qdm_name_prefix(a.column_name) == _qdm_name_prefix(b.column_name):
         return True
-    return _qdm_name_prefix(a.column_name) == _qdm_name_prefix(b.column_name)
+    if _is_categorical(a) and _is_categorical(b):
+        a_vals = {str(v).lower() for v in (a.sample_values or [])}
+        b_vals = {str(v).lower() for v in (b.sample_values or [])}
+        return bool(a_vals and b_vals and (a_vals & b_vals))
+    return False
 
 
 def infer_qdm_warning(

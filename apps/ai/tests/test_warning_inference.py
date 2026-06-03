@@ -469,6 +469,16 @@ def test_measure_shared_suffix_no_qdm() -> None:
     assert infer_qdm_warning(_response(_criteria()), req) == []
 
 
+def test_numeric_columns_overlapping_values_no_qdm() -> None:
+    # 숫자형 컬럼은 작은 정수(0/1/2)를 자연히 공유한다. 값 겹침만으로 모호 판정하면 안 됨
+    # (prod 오탐 회귀 가드: landing_sessions/signup_complete 가 needConfirm 으로 새던 케이스).
+    req = _request_with_columns([
+        ("landing_sessions", "MEASURE", [1, 0, 2]),
+        ("signup_complete", "MEASURE", [1, 0, 1]),
+    ])
+    assert infer_qdm_warning(_response(_criteria()), req) == []
+
+
 def test_real_fixtures_qdm_behaviour() -> None:
     """실제 eval fixture 로 AMB(모호)=QDM, 정상 dataset-a/b=무발생 을 고정한다."""
     import json
