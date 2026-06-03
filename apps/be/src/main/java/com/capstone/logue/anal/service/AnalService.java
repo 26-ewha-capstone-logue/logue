@@ -179,9 +179,7 @@ public class AnalService {
      */
     public GetSummaryResponse getSummary(Long conversationId, Long analysisFlowId) {
 
-        validateConversationAccess(conversationId, analysisFlowId);
-        AnalysisFlow analysisFlow = analysisFlowRepository.findById(analysisFlowId)
-                .orElseThrow(() -> new LogueException(ErrorCode.ANALYSIS_FLOW_NOT_FOUND));
+        AnalysisFlow analysisFlow = validateConversationAccess(conversationId, analysisFlowId);
 
         AiTaggingJob job = aiTaggingJobRepository
                 .findTopByAnalysisFlowIdAndStageOrderByCreatedAtDescIdDesc(analysisFlowId, JobStage.DATA_STATUS)
@@ -302,7 +300,7 @@ public class AnalService {
      *                        분석 흐름을 찾을 수 없는 경우 (AN003),
      *                        분석 흐름이 해당 대화에 속하지 않는 경우 (A002)
      */
-    private void validateConversationAccess(Long conversationId, Long analysisFlowId) {
+    private AnalysisFlow validateConversationAccess(Long conversationId, Long analysisFlowId) {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new LogueException(ErrorCode.CONVERSATION_NOT_FOUND));
 
@@ -317,5 +315,7 @@ public class AnalService {
         if (!analysisFlow.getConversation().getId().equals(conversationId)) {
             throw new LogueException(ErrorCode.FORBIDDEN);
         }
+
+        return analysisFlow;
     }
 }
