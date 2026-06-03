@@ -6,7 +6,7 @@
   <p>
     <a href="https://asklogue.co" target="_blank">배포 링크</a> ·
     <a href="https://youtu.be/nv7EoLZvIy8" target="_blank">시연 영상</a> ·
-    <a href="https://github.com/26-ewha-capstone-logue/logue/tree/dev#-overview">Overview</a> ·
+    <a href="https://github.com/26-ewha-capstone-logue/logue/tree/main#-overview">Overview</a> ·
     <a href="CONTRIBUTING.md">기여 가이드</a>
   </p>
 </div>
