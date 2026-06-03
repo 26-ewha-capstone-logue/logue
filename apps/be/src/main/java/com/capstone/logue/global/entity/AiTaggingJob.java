@@ -107,7 +107,7 @@ public class AiTaggingJob extends BaseTimeEntity {
 
 
     @Column(name = "retry_count", nullable = false)
-    private int retryCount = 0;
+    private int retryCount;
 
     /**
      * 작업 상태를 RUNNING으로 변경합니다.
