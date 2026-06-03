@@ -4,8 +4,8 @@
   <p><strong>데이터 분석이 어려운 실무자를 위한 자연어 기반 AI 분석 웹 서비스</strong></p>
   <p>Logue는 사용자의 모호한 질문을 분석 가능한 기준으로 구조화하고, CSV 데이터에서 신뢰할 수 있는 결과와 계산 근거를 함께 제공하는 분석 지원 서비스입니다.</p>
   <p>
-    <a href="https://asklogue.co">배포 링크</a> ·
-    <a href="https://youtu.be/nv7EoLZvIy8">시연 영상</a> ·
+    <a href="https://asklogue.co" target="_blank">배포 링크</a> ·
+    <a href="https://youtu.be/nv7EoLZvIy8" target="_blank">시연 영상</a> ·
     <a href="https://github.com/26-ewha-capstone-logue/logue/tree/dev#-overview">Overview</a> ·
     <a href="CONTRIBUTING.md">기여 가이드</a>
   </p>
