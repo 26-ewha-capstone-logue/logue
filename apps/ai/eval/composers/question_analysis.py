@@ -37,7 +37,12 @@ def compose_request(spec: dict[str, Any]) -> dict[str, Any]:
 
     columns = [_field_to_column(f) for f in dataset.get("fields", [])]
 
-    catalog = copy.deepcopy(load_fixture("catalog"))
+    suffix = dataset_id.rsplit("-", 1)[-1]
+    catalog_fixture = f"catalog-{suffix}"
+    try:
+        catalog = copy.deepcopy(load_fixture(catalog_fixture))
+    except FileNotFoundError:
+        catalog = copy.deepcopy(load_fixture("catalog"))
     for key, value in (spec.get("catalog_overrides") or {}).items():
         catalog[key] = value
 

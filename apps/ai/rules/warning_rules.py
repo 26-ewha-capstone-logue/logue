@@ -119,6 +119,91 @@ def infer_date_conflict_warning(
     ]
 
 
+def _qdm_name_prefix(column_name: str) -> str:
+    """컬럼명의 첫 토큰(`_` 기준, 소문자)을 반환한다.
+
+    suffix 공유(예: `activated_users` 와 `paid_users` 의 `users`)는 정상 데이터셋에서도
+    흔하므로 모호 신호로 보지 않는다. prefix 만 비교해 오탐을 피한다.
+    """
+    return column_name.split("_", 1)[0].lower()
+
+
+def _columns_look_ambiguous(a, b) -> bool:
+    """두 컬럼이 같은 의미를 가리킬 가능성(모호)을 결정론적으로 판정한다.
+
+    신호 두 가지 중 하나라도 만족하면 모호로 본다.
+    1. sample_values 값 공간이 겹친다 (같은 카테고리 값을 공유 = 같은 축).
+    2. 이름 prefix(첫 토큰)를 공유한다 (예: `device`, `device_type`, `device_kind`).
+    """
+    a_vals = {str(v).lower() for v in (a.sample_values or [])}
+    b_vals = {str(v).lower() for v in (b.sample_values or [])}
+    if a_vals and b_vals and (a_vals & b_vals):
+        return True
+    return _qdm_name_prefix(a.column_name) == _qdm_name_prefix(b.column_name)
+
+
+def infer_qdm_warning(
+    response: QuestionAnalysisResponse,
+    request: QuestionAnalysisRequest,
+) -> list[FlowWarning]:
+    """데이터 기반으로 QUESTION_DATA_MISMATCH warning 을 결정론적으로 추론한다.
+
+    role 별 모호 판정 기준이 다르다.
+    - FLAG / STATUS_CONDITION: 정상 데이터셋에서 0~1개라 2개 이상이면 곧 모호.
+    - DIMENSION / MEASURE: 정상 데이터셋도 복수(채널+디바이스, measure 다수)라 개수만으로는
+      판정하지 않는다. 같은 role 컬럼 쌍이 sample_values 가 겹치거나 이름 prefix 를 공유할 때만
+      모호로 본다 (`_columns_look_ambiguous`).
+    catalog.flow_warning_keys 에 QUESTION_DATA_MISMATCH 가 정의돼 있지 않으면 추론하지 않는다.
+    """
+    if response.analysis_criteria is None:
+        return []
+
+    catalog_codes = {w.code for w in request.catalog.flow_warning_keys}
+    if FlowWarningKey.QUESTION_DATA_MISMATCH not in catalog_codes:
+        return []
+
+    by_role: dict[SemanticRoleType, list] = {}
+    for col in request.data_source.columns:
+        by_role.setdefault(col.semantic_role, []).append(col)
+
+    related_fields: list[str] = []
+
+    def _add(names: list[str]) -> None:
+        for n in names:
+            if n not in related_fields:
+                related_fields.append(n)
+
+    # 개수 기준 (singular-by-contract roles)
+    for role in (SemanticRoleType.FLAG, SemanticRoleType.STATUS_CONDITION):
+        cols = by_role.get(role, [])
+        if len(cols) >= 2:
+            _add([c.column_name for c in cols])
+
+    # 모호 신호 기준 (plural-by-contract roles)
+    for role in (SemanticRoleType.DIMENSION, SemanticRoleType.MEASURE):
+        cols = by_role.get(role, [])
+        if len(cols) < 2:
+            continue
+        ambiguous: set[str] = set()
+        for i in range(len(cols)):
+            for j in range(i + 1, len(cols)):
+                if _columns_look_ambiguous(cols[i], cols[j]):
+                    ambiguous.add(cols[i].column_name)
+                    ambiguous.add(cols[j].column_name)
+        _add([c.column_name for c in cols if c.column_name in ambiguous])
+
+    if not related_fields:
+        return []
+
+    return [
+        FlowWarning(
+            code=FlowWarningKey.QUESTION_DATA_MISMATCH,
+            related_fields=related_fields,
+            detail="동일 의미 컬럼이 둘 이상이라 질문과 데이터 매핑이 모호합니다.",
+        )
+    ]
+
+
 def apply_inferred_warnings(
     response: QuestionAnalysisResponse,
     request: QuestionAnalysisRequest,
@@ -128,8 +213,10 @@ def apply_inferred_warnings(
     동일 code 가 이미 LLM 응답에 존재하면 기존 것을 유지하고 추가하지 않는다.
     """
     existing_codes = {w.code for w in response.warnings}
-    inferred = infer_data_warnings(response, request) + infer_date_conflict_warning(
-        response, request
+    inferred = (
+        infer_data_warnings(response, request)
+        + infer_date_conflict_warning(response, request)
+        + infer_qdm_warning(response, request)
     )
     for warning in inferred:
         if warning.code not in existing_codes:

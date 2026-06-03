@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from llm import LLMClient, load_system_prompt
 from config.model_config import model_config_for
+from observability import record_llm_call
 from schemas.api.file_analysis import FileAnalysisRequest, FileAnalysisResponse
 from schemas.llm_input.file_analysis_input import FileAnalysisLLMInput
 
@@ -46,9 +47,16 @@ def run(req: FileAnalysisRequest) -> FileAnalysisResponse:
     """
     llm_input = FileAnalysisLLMInput.from_request(req)
 
-    return _get_client().complete_structured(
+    response, usage = _get_client().complete_structured(
         system_prompt=load_system_prompt("file_analysis"),
         user_payload=llm_input.model_dump(exclude={"request_id"}),
         response_model=FileAnalysisResponse,
         **_cfg.as_llm_kwargs(),
     )
+    record_llm_call(
+        api_name="file_analysis",
+        request_id=req.request_id,
+        usage=usage,
+        **_cfg.as_llm_kwargs(),
+    )
+    return response

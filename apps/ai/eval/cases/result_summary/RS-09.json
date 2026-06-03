@@ -1,0 +1,34 @@
+{
+  "id": "RS-09",
+  "input": {
+    "request_id": "rs-09",
+    "analysis_criteria": {
+      "analysis_type": "RANKING",
+      "metric_name": "visits",
+      "metric_display_name": "방문 수",
+      "standard_period": "1W",
+      "compare_period": null,
+      "group_by": ["channel"],
+      "sort_by": "metric_value",
+      "sort_direction": "desc",
+      "limit_num": 5
+    },
+    "chart_data": {
+      "columns": ["channel", "value"],
+      "rows": [
+        ["paid_search", 120000],
+        ["organic", 100000],
+        ["referral", 64000]
+      ]
+    },
+    "locale": "ko-KR"
+  },
+  "expected": {
+    "hard": {
+      "plain_text_contains": ["120,000"]
+    },
+    "soft": {
+      "emphasis_pattern": [false, true, false]
+    }
+  }
+}

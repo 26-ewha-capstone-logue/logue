@@ -142,13 +142,12 @@ def test_unknown_compare_period_returns_unsupported() -> None:
     assert "this_year" in result.reason
 
 
-def test_metric_formula_column_absent_returns_none() -> None:
-    """카탈로그 지표의 formula 컬럼은 카탈로그-전역 의미명이지 특정 데이터셋의
-    실제 컬럼명이 아니다. data_source.columns 에 그 의미명이 없더라도(컬럼명이
-    rename 된 데이터셋) 동일 지표를 계산할 수 있으므로 unsupported 가 아니다.
+def test_metric_formula_column_absent_returns_missing_formula_column() -> None:
+    """catalog 가 dataset-aware 이므로 formula 컬럼은 해당 데이터셋의 실제 컬럼명이다.
+    catalog formula 컬럼이 data_source.columns 에 없으면 missing_formula_column 을 반환한다.
 
-    회귀 방지: formula = signup_complete/landing_sessions 인데 data_source 는
-    source/device_type/visits/signups + DATE_CRITERIA 만 가진 경우."""
+    UNS-04 재현: formula = signup_complete/landing_sessions 인데 data_source 에
+    signup_complete 가 없는 경우."""
     req = QuestionAnalysisRequest(
         request_id="req_X",
         conversation_id=1,
@@ -161,21 +160,14 @@ def test_metric_formula_column_absent_returns_none() -> None:
                     semantic_role="DATE_CRITERIA", null_ratio=0.0, sample_values=[],
                 ),
                 DataSourceColumn(
-                    column_name="source", data_type="string",
+                    column_name="channel", data_type="string",
                     semantic_role="DIMENSION", null_ratio=0.0, sample_values=[],
                 ),
                 DataSourceColumn(
-                    column_name="device_type", data_type="string",
-                    semantic_role="DIMENSION", null_ratio=0.0, sample_values=[],
-                ),
-                DataSourceColumn(
-                    column_name="visits", data_type="integer",
+                    column_name="landing_sessions", data_type="integer",
                     semantic_role="MEASURE", null_ratio=0.0, sample_values=[],
                 ),
-                DataSourceColumn(
-                    column_name="signups", data_type="integer",
-                    semantic_role="MEASURE", null_ratio=0.0, sample_values=[],
-                ),
+                # signup_complete 는 의도적으로 제거
             ],
         ),
         catalog=Catalog(
@@ -197,6 +189,58 @@ def test_metric_formula_column_absent_returns_none() -> None:
         ),
     )
     result = detect_unsupported(_response(_criteria()), req)
+    assert isinstance(result, UnsupportedQuestion)
+    assert "signup_complete" in result.reason
+    assert result.detected_intent == "missing_formula_column"
+
+
+def test_metric_formula_columns_present_no_formula_reason() -> None:
+    """catalog formula 컬럼이 data_source.columns 에 모두 있으면 formula 관련 reason 이 없다."""
+    req = QuestionAnalysisRequest(
+        request_id="req_X",
+        conversation_id=1,
+        question=Question(content="?"),
+        data_source=DataSource(
+            id=1,
+            columns=[
+                DataSourceColumn(
+                    column_name="signed_at", data_type="datetime",
+                    semantic_role="DATE_CRITERIA", null_ratio=0.0, sample_values=[],
+                ),
+                DataSourceColumn(
+                    column_name="channel", data_type="string",
+                    semantic_role="DIMENSION", null_ratio=0.0, sample_values=[],
+                ),
+                DataSourceColumn(
+                    column_name="a", data_type="integer",
+                    semantic_role="MEASURE", null_ratio=0.0, sample_values=[],
+                ),
+                DataSourceColumn(
+                    column_name="b", data_type="integer",
+                    semantic_role="MEASURE", null_ratio=0.0, sample_values=[],
+                ),
+            ],
+        ),
+        catalog=Catalog(
+            analysis_types=["COMPARISON", "RANKING"],
+            metric_types=["RATIO"],
+            predefined_metrics=[
+                PredefinedMetric(
+                    metric_name="cr", display_name="전환율", metric_type="RATIO",
+                    formula_numerator="a",
+                    formula_denominator="b",
+                ),
+            ],
+            supported_periods=["this_week", "last_week"],
+            flow_warning_keys=[
+                FlowWarningKeyCatalog(
+                    code="QUESTION_DATA_MISMATCH", name="...", comment="...",
+                ),
+            ],
+        ),
+    )
+    result = detect_unsupported(_response(_criteria()), req)
+    # formula 컬럼이 모두 있으므로 formula 관련 reason 이 없다(다른 위반도 없으므로 None).
     assert result is None
 
 

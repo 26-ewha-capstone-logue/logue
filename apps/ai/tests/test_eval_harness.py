@@ -448,3 +448,38 @@ def test_runner_unknown_suite_returns_error() -> None:
     result = run_case("ghost_suite", {"id": "C1", "input": {}})  # type: ignore[arg-type]
     assert result.error is not None
     assert "ghost_suite" in result.error or "알 수 없는" in result.error
+
+
+# ---------- composer: dataset-aware catalog ----------
+
+
+def test_composer_dataset_b_uses_catalog_b_formula_columns() -> None:
+    """dataset-b spec 은 catalog-b 를 로드하므로 signup_conversion_rate formula 가
+    signups/visits 로 설정된다."""
+    from eval.composers import compose_question_analysis_request
+
+    payload = compose_question_analysis_request({
+        "id": "CMP-B",
+        "dataset": "dataset-b",
+        "question": "이번 주 가입 전환율 top 5",
+    })
+    metrics = {m["metric_name"]: m for m in payload["catalog"]["predefined_metrics"]}
+    scr = metrics["signup_conversion_rate"]
+    assert scr["formula_numerator"] == "signups"
+    assert scr["formula_denominator"] == "visits"
+
+
+def test_composer_dataset_a_uses_default_catalog_formula_columns() -> None:
+    """dataset-a spec 은 catalog-a fixture 가 없으므로 기본 catalog 를 폴백 로드한다.
+    signup_conversion_rate formula 는 signup_complete/landing_sessions 이다."""
+    from eval.composers import compose_question_analysis_request
+
+    payload = compose_question_analysis_request({
+        "id": "CMP-A",
+        "dataset": "dataset-a",
+        "question": "이번 주 가입 전환율 top 5",
+    })
+    metrics = {m["metric_name"]: m for m in payload["catalog"]["predefined_metrics"]}
+    scr = metrics["signup_conversion_rate"]
+    assert scr["formula_numerator"] == "signup_complete"
+    assert scr["formula_denominator"] == "landing_sessions"
